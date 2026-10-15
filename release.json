@@ -1,9 +1,10 @@
 {
   "date": "2026-10-15",
-  "questions": 62,
+  "questions": 96,
   "rounds": [
     76,
-    77
+    77,
+    78
   ],
   "sharedHashes": {
     "entry/grading.js": "b4e2573009c602523c9068789dc8fb45274fe66f09c945fece19709dd58e4915",
