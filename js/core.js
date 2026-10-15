@@ -1,7 +1,8 @@
 (function(root,factory){
   const G=typeof module==='object'&&module.exports?require('../shared/entry/grading.js'):root.EntryGrading;
-  const api=factory(G);if(typeof module==='object'&&module.exports)module.exports=api;else root.SemuonCore=api;
-})(globalThis,function(G){
+  const F=typeof module==='object'&&module.exports?require('./tax-forms.js'):root.SemuonTaxForms;
+  const api=factory(G,F);if(typeof module==='object'&&module.exports)module.exports=api;else root.SemuonCore=api;
+})(globalThis,function(G,F){
   'use strict';
   const EXAM='tax2',KEY='semuon-tax2-v1',VERSION=1,SUBJECTS=['theory','practical','voucher'];
   const labels={theory:'이론 학습',practical:'일반전표 입력',voucher:'매입매출전표 입력'};
@@ -58,7 +59,10 @@
         if(v.date)assert(/^\d{4}-\d{2}-\d{2}$/.test(v.date),'수정 전 거래일 형식을 확인해 주세요.');
       }
     }
-    if(p.subject==='theory'){
+    if(p.form)F.validForm(p.form);
+    if(p.taxExtras){const x=p.taxExtras;if(x.omitted)assert(/^\d{4}-(0[1-9]|1[0-2])$/.test(x.omitted.period),'확정신고 개시연월을 확인해 주세요.');if(x.partners)for(const [a,v]of Object.entries(x.partners)){field(a,'분개 계정');field(v,'분개 거래처');assert(x.partnerOptions?.includes(v),'분개 거래처 선택값이 없습니다.');}}
+    if(p.form&&!p.voucher){assert(p.subject!=='theory','신고서·급여는 실무 분야로 등록해 주세요.');}
+    else if(p.subject==='theory'){
       assert(Array.isArray(p.choices)&&p.choices.length===4&&p.choices.every(v=>typeof v==='string'&&v.trim()),'이론은 원문 그대로 보기 4개를 입력해 주세요.');
       assert(Number.isInteger(p.answer)&&p.answer>=0&&p.answer<4,'이론 정답은 0~3 인덱스로 확인해 주세요.');
       if(p.acceptedAnswers)assert(p.acceptedAnswers.length&&p.acceptedAnswers.every(n=>Number.isInteger(n)&&n>=0&&n<4),'복수 정답의 보기 번호를 확인해 주세요.');
@@ -87,7 +91,7 @@
   }
   const identity=p=>stable([p.subject,norm(p.source.name),String(p.source.round||''),norm(p.source.questionNo)]);
   const fingerprint=p=>stable([p.subject,norm(p.source.originalText),p.exhibit||null,(p.source.evidence||[]).map(e=>e.data)]);
-  const answerSignature=p=>stable({choices:p.choices,answer:p.answer,acceptedAnswers:p.acceptedAnswers,answers:p.answers,alternateAnswers:p.alternateAnswers,voucher:p.voucher,variants:p.variants,acceptedTypes:p.acceptedTypes,acceptedAmounts:p.acceptedAmounts,requiredAccountCodes:p.requiredAccountCodes,requiresDeletion:p.requiresDeletion});
+  const answerSignature=p=>stable({choices:p.choices,answer:p.answer,acceptedAnswers:p.acceptedAnswers,answers:p.answers,alternateAnswers:p.alternateAnswers,voucher:p.voucher,variants:p.variants,acceptedTypes:p.acceptedTypes,acceptedAmounts:p.acceptedAmounts,requiredAccountCodes:p.requiredAccountCodes,requiresDeletion:p.requiresDeletion,form:p.form,taxExtras:p.taxExtras});
   function plan(current,spec){
     assert(spec?.examId===EXAM&&spec.schemaVersion===VERSION,'전산세무 2급 등록 파일(버전 1)만 가져올 수 있습니다.');assert(Array.isArray(spec.items)&&spec.items.length>0,'등록할 문제가 없습니다.');
     const add=[],duplicates=[],all=[...current];
@@ -98,10 +102,13 @@
   }
   function fresh(){return{schemaVersion:VERSION,examId:EXAM,revision:0,items:[],drafts:{},history:[],inbox:[],settings:{fontSize:18,reviewLimit:6}}}
   function grade(p,input){
+    assert(input&&typeof input==='object','입력 답안을 확인해 주세요.');
+    if(p.form&&!p.voucher)return F.gradeForm(p.form,input.form||{});
     if(p.subject==='theory'){assert(Number.isInteger(input.choice)&&input.choice>=0&&input.choice<4,'답을 선택해 주세요.');const correct=(p.acceptedAnswers||[p.answer]).includes(input.choice);return{correct,wrongLabels:correct?[]:['선택지']};}
     if(p.subject==='practical'){const r=G.practical(p,input.rows||[]);return{correct:r.ok,wrongLabels:r.wrongLabels}}
-    const r=G.voucher(p,input.voucher||{},input.rows||[]);return{correct:r.correct,wrongLabels:r.wrongLabels,checks:r.checks};
+    const r=G.voucher(p,input.voucher||{},input.rows||[]),extra=F.gradeExtras(p,input),wrongLabels=[...r.wrongLabels,...extra.wrongLabels];return{correct:!wrongLabels.length,wrongLabels,checks:r.checks};
   }
+  function broadTopics(p){const s=[p.type,...(p.tags||[]),p.form?.kind||''].join(' '),out=[];if(p.subject==='voucher'||/부가가치세|부가세|의제매입/.test(s))out.push('부가가치세');if(/소득세|원천징수|급여|예수금|연말정산|퇴직연금|payroll|yearend/.test(s))out.push('소득세');if(/원가|제조간접|공손|종합원가/.test(s))out.push('원가회계');if(!out.length||p.subject==='practical'&&!p.form)out.push('재무회계');return[...new Set(out)]}
   // semuon-grade: 채점 버튼 결과. semuon-self: ‘알고 있어요 · 통과/틀렸어요 · 다시 연습’ 직접 표시(답안 없음, 복습 엔진에는 notebook으로 전달).
   const SOURCES=['semuon-grade','semuon-self'];
   function active(s,now=Date.now()){const ids=new Set(s.items.map(p=>p.id));return s.history.filter(e=>e.examId===EXAM&&SOURCES.includes(e.source)&&ids.has(e.problemId)&&!e.cancelledAt&&typeof e.correct==='boolean'&&Number.isFinite(Date.parse(e.at))&&Date.parse(e.at)<=now)}
@@ -128,5 +135,5 @@
     for(const [id,draft]of Object.entries(incoming.drafts)){const key=remap.get(id);if(key&&!next.drafts[key])next.drafts[key]=clone(draft)}
     return next;
   }
-  return{EXAM,KEY,VERSION,SUBJECTS,labels,clone,norm,stable,assert,validateItem,plan,fresh,grade,active,reviewStates,stats,validateState,merge,identity,fingerprint,answerSignature};
+  return{EXAM,KEY,VERSION,SUBJECTS,labels,clone,norm,stable,assert,validateItem,plan,fresh,grade,active,reviewStates,stats,validateState,merge,identity,fingerprint,answerSignature,broadTopics};
 });
