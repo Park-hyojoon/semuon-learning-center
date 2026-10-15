@@ -1,0 +1,57 @@
+/* These overrides affect Semuon only; the accounting app keeps its own typography. */
+.semuon [data-entry-host] *{box-shadow:none!important;text-shadow:none!important}
+.semuon [data-entry-host] .question{padding:22px;margin:0;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.semuon [data-entry-host] :is(p,.prompt,.question-brief,.answer-workspace,.answer-box,.answer-reveal){font-size:var(--font-body)!important;color:var(--ink);line-height:1.7}
+.semuon [data-entry-host] :is(span,small,kbd,summary,th,td,label,output,.tag,.tip,.result,.attempt-info,.attempt,.field-feedback,.kclep-help,.balance-item){font-size:var(--font-ui)!important}
+.semuon [data-entry-host] :is(input,select,button,.btn){font-size:var(--font-ui)!important;min-height:44px!important;height:auto!important;line-height:1.5!important;padding:8px!important;zoom:1!important}
+.semuon [data-entry-host] :is(h2,h3){font-size:22px!important;color:var(--ink);line-height:1.5}
+.semuon [data-entry-host] :is(.kclep-shell,.entry-wrap){zoom:1!important;transform:none!important;max-width:100%}
+.semuon [data-entry-host] :is(.balance-panel,.before-box):not(:is(.kclep-shell,.entry-wrap) *){background:var(--surface)!important;border:1px solid var(--line)!important;zoom:1!important;transform:none!important;max-width:100%}
+.semuon [data-entry-host] :is(.kclep-caption,.journal-head,.kclep-help,.voucher-summary,th):not(:is(.kclep-shell,.entry-wrap) *){background:#e8eee7!important;color:var(--ink)!important;border-color:var(--line)!important}
+.semuon [data-entry-host] :is(input,select):not(:is(.kclep-shell,.entry-wrap) *){background:#fff!important;color:var(--ink)!important;border:1px solid #b4c4b6!important}
+.semuon [data-entry-host] :is(.entry-wrap,.kclep-scroll,.kclep-subfields){overflow:auto!important;max-width:100%}
+.semuon [data-entry-host] :is(.entry-wrap table,.voucher-entry-table,.journal-table){min-width:1120px!important;font-size:16px!important}
+.semuon [data-entry-host] :is(th,td):not(:is(.kclep-shell,.entry-wrap) *){padding:8px!important;height:auto!important;line-height:1.5!important;border-color:var(--line)!important}
+.semuon [data-entry-host] .entry-table input,.semuon [data-entry-host] .entry-table select,.semuon [data-entry-host] .entry-wrap input,.semuon [data-entry-host] .entry-wrap select,.semuon [data-entry-host] .voucher-entry-table input,.semuon [data-entry-host] .voucher-entry-table select,.semuon [data-entry-host] .journal-table input,.semuon [data-entry-host] .journal-table select,.semuon [data-entry-host] .kclep-subfields input,.semuon [data-entry-host] .kclep-subfields select{font-size:var(--font-ui)!important;height:44px!important;min-height:44px!important}
+.semuon [data-entry-host] .qactions{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:20px 0}
+.semuon [data-entry-host] .btn{background:var(--primary);border:1px solid var(--primary);border-radius:8px;color:#fff;transform:none!important}
+.semuon [data-entry-host] .question-layout{display:block!important}
+/* 2026-10-14 사용자 지정: 증빙이 있는 매입매출 문제는 왼쪽 문제 · 오른쪽 영수증 50:50. 문제 글은 영수증 아랫줄에 맞춘다. 좁은 화면은 위아래. */
+.semuon [data-entry-host] .exhibit-layout{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:end;margin:15px 0}
+.semuon [data-entry-host] .exhibit-layout>*{min-width:0}
+.semuon [data-entry-host] .exhibit-layout>.prompt{margin:0!important;align-self:end}
+.semuon [data-entry-host] .exhibit-layout>.exhibit{margin:0}.semuon [data-entry-host] .exhibit-layout>.exhibit-inv{max-width:none}
+@media(max-width:1100px){.semuon [data-entry-host] .exhibit-layout{grid-template-columns:minmax(0,1fr)}.semuon [data-entry-host] .exhibit-layout>.prompt{align-self:start}}
+.semuon [data-entry-host] :is(.qnum,.answer-side){background:var(--soft);color:var(--primary)}
+.semuon [data-entry-host] .answer-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.semuon [data-entry-host] .answer-line{display:flex;flex-wrap:wrap;gap:8px;font-size:16px;border-bottom:1px solid var(--line);padding:8px}
+.semuon [data-entry-host] .kclep-titlebar{display:flex;flex-wrap:wrap;gap:8px;padding:12px!important}
+.semuon [data-entry-host] .question-brief{width:100%!important;position:static!important}
+.semuon [data-entry-host] .answer-workspace{min-width:0!important}
+.semuon [data-entry-host] .entry-row .account{min-width:160px}
+.semuon [data-entry-host] .cash-label,.semuon [data-entry-host] .cash-balance{display:none}
+.semuon [data-entry-host] .balance-panel{display:flex;flex-wrap:wrap;gap:12px;padding:12px!important}
+.semuon [data-entry-host] .balance-item strong{font-size:20px!important}
+@media(max-width:760px){.semuon [data-entry-host] .question{padding:14px}.semuon [data-entry-host] .answer-columns{grid-template-columns:1fr}.semuon [data-entry-host] .entry-wrap{width:100%}}
+.semuon [data-entry-host] .journal-head{min-width:0!important;display:flex;flex-wrap:wrap;gap:12px;padding:12px!important}
+.semuon [data-entry-host] .journal-head span{flex:0 1 auto!important;white-space:normal!important}
+.semuon [data-entry-host] .kclep-help{min-width:0!important;white-space:normal!important;display:flex;flex-wrap:wrap;gap:12px}
+.semuon .account-search-overlay *{box-shadow:none!important;text-shadow:none!important}
+.semuon .account-search-dialog{border:1px solid var(--line);color:var(--ink)}
+.semuon .account-search-option.active,.semuon .account-search-option:hover{background:var(--soft);color:var(--primary)}
+.semuon .account-search-input{border-color:var(--primary)}
+.semuon .account-search-close{min-height:44px}
+/* 2026-10-14 사용자 지정: 전표 입력표(KcLep 재현)는 학습 센터 entry/*.css의 색·테두리를 그대로 쓰고, 세무온은 높이·여백만 촘촘하게 맞춘다. 글자 크기는 유지 */
+.semuon [data-entry-host] :is(.kclep-shell,.entry-wrap) :is(th,td){padding:0 4px!important;line-height:1.3!important;height:32px!important;vertical-align:middle!important}
+.semuon [data-entry-host] :is(.voucher-entry-table,.journal-table,.entry-table,.entry-wrap table,.kclep-subfields) :is(input:not([type=checkbox]),select){height:30px!important;min-height:30px!important;padding:0 6px!important;line-height:1.3!important;width:100%}
+.semuon [data-entry-host] :is(.voucher-entry-table,.journal-table,.entry-table,.entry-wrap table) input[type=checkbox]{width:22px;height:22px;min-height:0!important;padding:0!important}
+.semuon [data-entry-host] .kclep-titlebar{padding:5px 10px!important;gap:6px;align-items:center}
+.semuon [data-entry-host] .kclep-titlebar :is(input,select,output){height:30px!important;min-height:30px!important;padding:0 6px!important}
+.semuon [data-entry-host] :is(.kclep-caption,.journal-head,.kclep-help,.voucher-summary){padding:3px 10px!important;gap:8px;min-height:0!important}
+.semuon [data-entry-host] .voucher-summary>*{padding-top:2px!important;padding-bottom:2px!important}
+.semuon [data-entry-host] .kclep-feedback{padding:5px 10px!important;margin:0!important}
+.semuon [data-entry-host] .kclep-help :is(kbd,button){min-height:26px!important;height:26px!important;padding:0 6px!important}
+/* 2026-10-14 사용자 지정: 유형 태그를 문제 제목 오른쪽 같은 줄에 둔다(좁으면 다음 줄로) */
+.semuon [data-entry-host] .qhead>div{display:flex;align-items:center;gap:6px 12px;flex-wrap:wrap;min-width:0}
+.semuon [data-entry-host] .qhead>div>:is(h2,h3){margin:0!important}
+.semuon [data-entry-host] .qhead>div>.tag{flex:none}

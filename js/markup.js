@@ -1,0 +1,61 @@
+/* 문제 글자 표시(2026-10-14): 문제 글·증빙·보기를 드래그한 뒤 오른쪽 클릭 → 파랑·빨강·초록 글자, 형광펜, 굵게, 밑줄, 지움, 되돌리기.
+   원문 데이터는 바꾸지 않고 화면에만 칠한다. 표시는 같은 탭의 새로고침에서만 유지한다. 세무온에 다시 접속하거나 다른 메뉴로 나갔다 들어오면(뒤로 가기 포함) 모두 지운다. 탭별 sessionStorage 사용. 학습기록과 백업에는 들어가지 않는다. */
+(function(root){
+ 'use strict';
+ const KEY='semuon-tax2-marks-v1',kinds=['blue','red','green','highlight','bold','underline'],colors=kinds.slice(0,3),idPattern=/^[A-Za-z0-9_-]{1,100}:(prompt|exhibit|choice):\d+$/;
+ const blocks=new Map(),undo=[],copy=v=>v===undefined?undefined:JSON.parse(JSON.stringify(v));
+ let marks={},pending=[],readable=true,popup,status,undoButton;
+ try{if(performance.getEntriesByType('navigation')[0]?.type!=='reload')sessionStorage.removeItem(KEY)}catch(_){}
+ function valid(v){return v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).length<=2000&&Object.entries(v).every(([id,e])=>idPattern.test(id)&&e&&typeof e.text==='string'&&e.text.length<=100000&&Array.isArray(e.spans)&&e.spans.length<=3000&&e.spans.every(s=>s&&kinds.includes(s.kind)&&Number.isInteger(s.start)&&Number.isInteger(s.end)&&s.start>=0&&s.end>s.start&&s.end<=e.text.length))}
+ function load(){try{const raw=sessionStorage.getItem(KEY),v=raw?JSON.parse(raw):{};if(!valid(v))throw Error('format');marks=v;readable=true}catch(_){readable=false}}
+ function spansFor(id){const b=blocks.get(id),e=marks[id];return b&&e?.text===b.text?e.spans:[]}
+ function renderBlock(id){
+  const b=blocks.get(id);if(!b?.root.isConnected)return;const spans=spansFor(id),tpl=b.template.cloneNode(true),walker=document.createTreeWalker(tpl,NodeFilter.SHOW_TEXT),nodes=[];
+  while(walker.nextNode())nodes.push(walker.currentNode);let offset=0;
+  for(const node of nodes){const start=offset,end=start+node.data.length;offset=end;const hit=spans.filter(s=>s.start<end&&s.end>start);if(!hit.length)continue;
+   const cuts=[...new Set([start,end,...hit.flatMap(s=>[Math.max(start,s.start),Math.min(end,s.end)])])].sort((a,b)=>a-b),frag=document.createDocumentFragment();
+   for(let i=0;i<cuts.length-1;i++){const from=cuts[i],to=cuts[i+1],text=node.data.slice(from-start,to-start),styles=kinds.filter(k=>hit.some(s=>s.kind===k&&s.start<=from&&s.end>=to));
+    if(!styles.length)frag.append(document.createTextNode(text));else{const span=document.createElement('span');span.className='question-mark '+styles.map(k=>'qm-'+k).join(' ');span.textContent=text;frag.append(span)}}
+   node.replaceWith(frag)}
+  b.root.replaceChildren(...tpl.childNodes);
+ }
+ // 화면에 새로 그린 문제를 등록한다. 카드에는 data-problem-id가 있어야 한다.
+ function attach(container){
+  if(!container)return;setup();for(const [id,b] of blocks)if(!b.root.isConnected)blocks.delete(id);
+  container.querySelectorAll('[data-problem-id]').forEach(card=>{const pid=card.dataset.problemId;if(!/^[A-Za-z0-9_-]{1,100}$/.test(pid))return;
+   for(const [type,selector] of [['prompt','.prompt'],['exhibit','.exhibit'],['choice','.choice > span']])card.querySelectorAll(selector).forEach((el,i)=>{
+    if(el.parentElement?.closest('[data-question-mark-block]'))return;const id=pid+':'+type+':'+i;el.dataset.questionMarkBlock=id;blocks.set(id,{root:el,text:el.textContent,template:el.cloneNode(true)});if(spansFor(id).length)renderBlock(id)})});
+ }
+ function endpoint(node){const el=node.nodeType===Node.ELEMENT_NODE?node:node.parentElement;return el?.closest('[data-question-mark-block]')}
+ function offsetIn(rootEl,node,at){const r=document.createRange();r.selectNodeContents(rootEl);r.setEnd(node,at);return r.toString().length}
+ function selected(){const sel=getSelection();if(!sel||sel.isCollapsed||sel.rangeCount!==1)return[];const range=sel.getRangeAt(0),a=endpoint(range.startContainer),z=endpoint(range.endContainer);
+  if(!a||!z||!blocks.has(a.dataset.questionMarkBlock)||!blocks.has(z.dataset.questionMarkBlock)||!range.toString().trim())return[];const found=[];
+  for(const [id,b] of blocks){if(!b.root.isConnected||!b.root.getClientRects().length||!range.intersectsNode(b.root))continue;const start=b.root.contains(range.startContainer)?offsetIn(b.root,range.startContainer,range.startOffset):0,end=b.root.contains(range.endContainer)?offsetIn(b.root,range.endContainer,range.endOffset):b.text.length;if(end>start)found.push({id,start,end})}
+  return found}
+ function hide(){if(popup){popup.hidden=true;pending=[]}}
+ function place(x,y){const r=popup.getBoundingClientRect();popup.style.left=Math.max(8,Math.min(x,innerWidth-r.width-8))+'px';popup.style.top=Math.max(8,Math.min(y,innerHeight-r.height-8))+'px'}
+ function report(m){status.textContent=m;status.hidden=!m}
+ function save(next){if(!readable){report('기존 표시를 읽지 못해 저장을 중지했습니다.');return false}try{if(!valid(next))throw Error('format');sessionStorage.setItem(KEY,JSON.stringify(next));marks=next;return true}catch(_){report('저장하지 못했습니다. 기존 표시는 그대로 유지됩니다.');return false}}
+ function trim(spans,sel,kind){return spans.flatMap(s=>{if((kind!=='clear'&&(colors.includes(kind)?!colors.includes(s.kind):s.kind!==kind))||s.end<=sel.start||s.start>=sel.end)return[s];const kept=[];if(s.start<sel.start)kept.push({...s,end:sel.start});if(s.end>sel.end)kept.push({...s,start:sel.end});return kept})}
+ function apply(kind){if(!pending.length)return;const next={...marks},before=new Map();
+  for(const sel of pending){const b=blocks.get(sel.id);if(!before.has(sel.id))before.set(sel.id,copy(marks[sel.id]));const spans=trim(spansFor(sel.id),sel,kind);if(kind!=='clear')spans.push({start:sel.start,end:sel.end,kind});if(spans.length)next[sel.id]={text:b.text,spans};else delete next[sel.id]}
+  if(!save(next))return;undo.push(before);if(undo.length>30)undo.shift();undoButton.disabled=false;before.forEach((_,id)=>renderBlock(id));getSelection()?.removeAllRanges();report('');hide()}
+ let ready=false;
+ function setup(){if(ready)return;ready=true;load();
+  popup=document.createElement('div');popup.className='question-mark-popup';popup.hidden=true;popup.setAttribute('role','toolbar');popup.setAttribute('aria-label','선택한 문제 글자 표시');
+  popup.innerHTML='<div class="question-mark-actions"><button type="button" data-question-mark="blue" aria-label="파란 글자색" title="파란 글자색"><span class="question-mark-swatch qm-swatch-blue"></span></button><button type="button" data-question-mark="red" aria-label="빨간 글자색" title="빨간 글자색"><span class="question-mark-swatch qm-swatch-red"></span></button><button type="button" data-question-mark="green" aria-label="초록 글자색" title="초록 글자색"><span class="question-mark-swatch qm-swatch-green"></span></button><button type="button" data-question-mark="highlight" aria-label="노란 형광펜" title="노란 형광펜"><span class="qm-highlight">가</span></button><button type="button" data-question-mark="bold" aria-label="굵은 글씨" title="굵은 글씨"><strong>가</strong></button><button type="button" data-question-mark="underline" aria-label="밑줄" title="밑줄"><span class="qm-underline">가</span></button><button type="button" data-question-mark="clear" aria-label="선택한 글자의 표시 지우기" title="선택한 글자의 표시 지우기">지움</button><button type="button" class="question-mark-undo" aria-label="직전 표시 되돌리기" title="직전 표시 되돌리기" disabled>↶</button></div><p class="question-mark-status" role="status" aria-live="polite" hidden></p>';
+  document.body.append(popup);status=popup.querySelector('.question-mark-status');undoButton=popup.querySelector('.question-mark-undo');
+  document.addEventListener('contextmenu',e=>{if(matchMedia('(pointer:coarse)').matches||e.target.closest('input,textarea,select,button,a,[contenteditable]')){hide();return}
+   const found=selected(),target=e.target.closest('[data-question-mark-block]');if(!found.length||!target||!found.some(f=>f.id===target.dataset.questionMarkBlock)){hide();return}
+   e.preventDefault();pending=found;popup.hidden=false;popup.querySelectorAll('[data-question-mark]').forEach(b=>b.disabled=!readable);report(readable?'':'기존 표시를 읽지 못해 저장을 중지했습니다.');
+   const r=getSelection().getRangeAt(0).getBoundingClientRect();place(e.clientX||r.left,e.clientY||r.bottom);if(!e.clientX&&!e.clientY)popup.querySelector('button:not(:disabled)')?.focus({preventScroll:true})});
+  popup.addEventListener('pointerdown',e=>{if(e.target.closest('button'))e.preventDefault()});
+  popup.querySelectorAll('[data-question-mark]').forEach(b=>b.addEventListener('click',()=>apply(b.dataset.questionMark)));
+  undoButton.addEventListener('click',()=>{if(!undo.length)return;const before=undo.at(-1),next={...marks};before.forEach((e,id)=>{if(e===undefined)delete next[id];else next[id]=copy(e)});if(!save(next))return;undo.pop();before.forEach((_,id)=>renderBlock(id));undoButton.disabled=!undo.length;getSelection()?.removeAllRanges();hide()});
+  document.addEventListener('pointerdown',e=>{if(popup&&!popup.hidden&&!popup.contains(e.target))hide()});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&popup&&!popup.hidden){e.preventDefault();hide()}});
+  addEventListener('scroll',e=>{if(!popup.contains(e.target))hide()},true);addEventListener('resize',hide);
+  addEventListener('storage',e=>{if(e.key===KEY||e.key===null){hide();undo.length=0;undoButton.disabled=true;load();blocks.forEach((_,id)=>renderBlock(id))}});
+ }
+ root.SemuonMarkup={attach};
+})(globalThis);

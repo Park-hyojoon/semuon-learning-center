@@ -1,0 +1,25 @@
+{
+  "date": "2026-10-15",
+  "questions": 56,
+  "rounds": [
+    76,
+    77
+  ],
+  "sharedHashes": {
+    "entry/grading.js": "b4e2573009c602523c9068789dc8fb45274fe66f09c945fece19709dd58e4915",
+    "entry/accounts.js": "845b48445b5428859a95e2d2bf0101ed8157e10e2cd411708d0b6495b321875a",
+    "entry/practical.js": "63555d0f226c260317f5ceb23c510ae8480497717b91c59733d3ae918c8cb23b",
+    "entry/voucher.js": "bf7c369471e0c54dd17d5e8247153b0b6a68f7aa4261771dc8548680567d8db7",
+    "entry/correction.js": "4c1190da34767cdcdd15748afbb8a592b0ac8108f78b55fb2d9435131fac0f3e",
+    "entry/correction.css": "e5d92b19c3da9295de1c7716cb0896323be3d767ba94484f8c5108d43c5c921b",
+    "entry/common.css": "b27a5a9ae719b1a0765ac94d0f5c8b749bf03d23dae2bac60fbfa9b51499fcbe",
+    "entry/practical.css": "f6950afd29a2216f15ae161f846686bd83955372c84a3844ee2a214b3b03390b",
+    "entry/voucher.css": "4eb8d39271c907106fd3c4d2d35ba77349a8c7f1272226797e98dd5db237bfd0",
+    "account-search.js": "1c23072275cd7fd8463bc77228a132abec02f0fcac4dffd91d676ff0f9234a5a",
+    "data-tables.js": "659fcb67468d6920a777d3adfdeeec4b7dfd5e1bdcce0907c93ab7405d6e0063",
+    "data-tables.css": "cd78d2a2a00e5321eeb58ab685eb2956ee958f76acbfc24fd3048eda094742a5",
+    "review-engine.js": "a9d5f583acaa4eebc59b44604a0b92cfa44ec23b6d8b6e4521f591e2d5d71d9a",
+    "combo-review.js": "705a7f350da48997316cf82052e839e529492a519799887c269cfa8a6ef9ce7b",
+    "combo-review.css": "fd2ae6af1e7e754d4350c14f1640d7634b476ad2d571f8aeb7498371942fec95"
+  }
+}
