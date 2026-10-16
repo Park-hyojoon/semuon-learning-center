@@ -61,7 +61,8 @@
     }
     if(p.form)F.validForm(p.form);
     if(p.taxExtras){const x=p.taxExtras;if(x.omitted)assert(/^\d{4}-(0[1-9]|1[0-2])$/.test(x.omitted.period),'확정신고 개시연월을 확인해 주세요.');if(x.partners)for(const [a,v]of Object.entries(x.partners)){field(a,'분개 계정');field(v,'분개 거래처');assert(x.partnerOptions?.includes(v),'분개 거래처 선택값이 없습니다.');}}
-    if(p.form&&!p.voucher){assert(p.subject!=='theory','신고서·급여는 실무 분야로 등록해 주세요.');}
+    if(p.formEntry)assert(p.form&&p.formEntry==='practical'&&p.subject==='practical','추가 결산자료는 일반전표와 함께 등록해 주세요.');
+    if(p.form&&!p.voucher&&p.formEntry!=='practical'){assert(p.subject!=='theory','신고서·급여는 실무 분야로 등록해 주세요.');}
     else if(p.subject==='theory'){
       assert(Array.isArray(p.choices)&&p.choices.length===4&&p.choices.every(v=>typeof v==='string'&&v.trim()),'이론은 원문 그대로 보기 4개를 입력해 주세요.');
       assert(Number.isInteger(p.answer)&&p.answer>=0&&p.answer<4,'이론 정답은 0~3 인덱스로 확인해 주세요.');
@@ -69,7 +70,7 @@
     }else if(p.subject==='practical'){
       rows(p.answers,'정답');for(const alt of p.alternateAnswers||[])rows(alt,'허용 대체답안');
       // Separate rows may use different codes for the same account (e.g. receivables).
-      for(const list of [p.answers,...(p.alternateAnswers||[])])for(const r of list)if(r.accountCode){assert(!p.requiredAccountCodes?.[r.account]||String(p.requiredAccountCodes[r.account])===String(r.accountCode),'같은 계정의 필수 코드가 서로 다릅니다.');p.requiredAccountCodes={...(p.requiredAccountCodes||{}),[r.account]:String(r.accountCode)}}
+      for(const list of [p.answers,...(p.alternateAnswers||[])])for(const r of list)if(r.accountCode&&!p.perRowAccountCodes){assert(!p.requiredAccountCodes?.[r.account]||String(p.requiredAccountCodes[r.account])===String(r.accountCode),'같은 계정의 필수 코드가 서로 다릅니다.');p.requiredAccountCodes={...(p.requiredAccountCodes||{}),[r.account]:String(r.accountCode)}}
     }else{
       const v=p.voucher;assert(v&&/^\d{4}-\d{2}-\d{2}$/.test(v.date)&&!Number.isNaN(Date.parse(v.date))&&new Date(v.date).toISOString().slice(0,10)===v.date,'거래일자를 확인해 주세요.');
       const types=[...G.TYPES.sales,...G.TYPES.purchase];assert(types.includes(v.type),'공유 입력기에 없는 전표 유형입니다. 해당 시험 자료 확인이 필요합니다.');
@@ -87,11 +88,12 @@
       // A complete official answer must pass the existing common grader.
       for(const a of p.variants){const e={...v,journal:a.journal,deleted:true,type:a.type||v.type,...(a.supply===undefined?{}:{supply:a.supply,vat:a.vat})};const coded=a.rows.map(r=>({...r,accountCode:r.accountCode||p.requiredAccountCodes?.[r.account]||G.REQUIRED_ACCOUNT_CODES[r.account]||''}));assert(G.voucher(p,e,coded).correct,'허용 분개와 윗단 정답 조건이 모순됩니다.');}
     }
+    if(p.formEntry||p.perRowAccountCodes){const input={rows:clone(p.answers),form:p.form?Object.fromEntries(p.form.fields.map(f=>[f.key,Array.isArray(f.expected)?f.expected[0]:f.expected])):{}};assert(grade(p,input).correct,'분개·행별 코드·추가 결산자료의 정답 조건이 모순됩니다.');}
     p.tags=Array.isArray(p.tags)?p.tags.filter(t=>typeof t==='string'):[];p.addedDate=p.addedDate||new Date().toISOString().slice(0,10);return p;
   }
   const identity=p=>stable([p.subject,norm(p.source.name),String(p.source.round||''),norm(p.source.questionNo)]);
   const fingerprint=p=>stable([p.subject,norm(p.source.originalText),p.exhibit||null,(p.source.evidence||[]).map(e=>e.data)]);
-  const answerSignature=p=>stable({choices:p.choices,answer:p.answer,acceptedAnswers:p.acceptedAnswers,answers:p.answers,alternateAnswers:p.alternateAnswers,voucher:p.voucher,variants:p.variants,acceptedTypes:p.acceptedTypes,acceptedAmounts:p.acceptedAmounts,requiredAccountCodes:p.requiredAccountCodes,requiresDeletion:p.requiresDeletion,form:p.form,taxExtras:p.taxExtras});
+  const answerSignature=p=>stable({choices:p.choices,answer:p.answer,acceptedAnswers:p.acceptedAnswers,answers:p.answers,alternateAnswers:p.alternateAnswers,voucher:p.voucher,variants:p.variants,acceptedTypes:p.acceptedTypes,acceptedAmounts:p.acceptedAmounts,requiredAccountCodes:p.requiredAccountCodes,requiresDeletion:p.requiresDeletion,form:p.form,taxExtras:p.taxExtras,formEntry:p.formEntry,perRowAccountCodes:p.perRowAccountCodes});
   function plan(current,spec){
     assert(spec?.examId===EXAM&&spec.schemaVersion===VERSION,'전산세무 2급 등록 파일(버전 1)만 가져올 수 있습니다.');assert(Array.isArray(spec.items)&&spec.items.length>0,'등록할 문제가 없습니다.');
     const add=[],duplicates=[],all=[...current];
@@ -103,9 +105,9 @@
   function fresh(){return{schemaVersion:VERSION,examId:EXAM,revision:0,items:[],drafts:{},history:[],inbox:[],settings:{fontSize:18,reviewLimit:6}}}
   function grade(p,input){
     assert(input&&typeof input==='object','입력 답안을 확인해 주세요.');
-    if(p.form&&!p.voucher)return F.gradeForm(p.form,input.form||{});
+    if(p.form&&!p.voucher&&p.formEntry!=='practical')return F.gradeForm(p.form,input.form||{});
     if(p.subject==='theory'){assert(Number.isInteger(input.choice)&&input.choice>=0&&input.choice<4,'답을 선택해 주세요.');const correct=(p.acceptedAnswers||[p.answer]).includes(input.choice);return{correct,wrongLabels:correct?[]:['선택지']};}
-    if(p.subject==='practical'){const r=G.practical(p,input.rows||[]);return{correct:r.ok,wrongLabels:r.wrongLabels}}
+    if(p.subject==='practical'){let problem=p,userRows=input.rows||[];if(p.perRowAccountCodes){const accounts=new Set([p.answers,...(p.alternateAnswers||[])].flat().filter(r=>r.accountCode).map(r=>r.account)),alias=(name,code)=>accounts.has(name)?name+' ['+String(code||'')+']':name,convert=r=>{const a=G.accountParts(r.accountValue||r.account),name=alias(a.name,r.accountCode||a.code);return{...r,account:name,accountValue:(r.accountCode||a.code)?(r.accountCode||a.code)+'|'+name:name}};problem={...p,answers:p.answers.map(convert),alternateAnswers:(p.alternateAnswers||[]).map(list=>list.map(convert))};userRows=userRows.map(convert)}const r=G.practical(problem,userRows),extra=F.gradeExtras(p,input),wrongLabels=[...r.wrongLabels,...extra.wrongLabels];return{correct:!wrongLabels.length,wrongLabels}}
     const r=G.voucher(p,input.voucher||{},input.rows||[]),extra=F.gradeExtras(p,input),wrongLabels=[...r.wrongLabels,...extra.wrongLabels];return{correct:!wrongLabels.length,wrongLabels,checks:r.checks};
   }
   function broadTopics(p){const s=[p.type,...(p.tags||[]),p.form?.kind||''].join(' '),out=[];if(p.subject==='voucher'||/부가가치세|부가세|의제매입/.test(s))out.push('부가가치세');if(/소득세|원천징수|급여|예수금|연말정산|퇴직연금|payroll|yearend/.test(s))out.push('소득세');if(/원가|제조간접|공손|종합원가/.test(s))out.push('원가회계');if(!out.length||p.subject==='practical'&&!p.form)out.push('재무회계');return[...new Set(out)]}
