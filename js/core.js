@@ -13,6 +13,9 @@
   const text=(s,label)=>{assert(typeof s==='string'&&s.trim(),label+'을 입력해 주세요.');return s};
   const field=(s,label)=>{text(s,label);assert(!/[<>"&]/.test(s),label+'의 특수문자는 확인이 필요합니다. 원문은 보존하고 입력용 명칭을 확인해 주세요.');return s};
   const amount=(n,label)=>{assert(Number.isSafeInteger(n),label+'은 정수 원 단위로 입력해 주세요.');return n};
+  const immutableItems=new WeakSet();
+  function freeze(value){if(value&&typeof value==='object'&&!Object.isFrozen(value)){for(const child of Object.values(value))freeze(child);Object.freeze(value)}return value}
+  function immutableItem(raw){if(immutableItems.has(raw))return raw;const p=freeze(validateItem(raw));immutableItems.add(p);return p}
   function row(r,label){
     assert(r&&['D','C'].includes(r.side),label+'의 차변/대변을 확인해 주세요.');field(r.account,label+' 계정과목');amount(r.amount,label+' 금액');
     assert(['',undefined,'판','제'].includes(r.division),label+'의 판/제 구분을 확인해 주세요.');
@@ -29,6 +32,7 @@
     for(const f of list){text(f.name,'첨부 파일명');assert(/^data:(image\/(png|jpeg|webp)|application\/pdf|text\/plain);base64,[A-Za-z0-9+/=\r\n]+$/.test(f.data||''),'첨부 자료는 PNG/JPEG/WebP/PDF/TXT만 허용합니다.');assert(f.data.length<3000000,'첨부 한 파일은 약 2MB 이하로 넣어 주세요.');}
   }
   function validateItem(raw){
+    if(raw&&immutableItems.has(raw))return raw;
     assert(raw&&raw.examId===EXAM,'전산세무 2급 자료만 등록할 수 있습니다.');
     const p=clone(raw);assert(typeof p.id==='string'&&/^[a-zA-Z0-9_-]{1,100}$/.test(p.id),'문제 ID를 확인해 주세요.');
     assert(SUBJECTS.includes(p.subject),'이론·일반전표·매입매출전표만 등록할 수 있습니다.');
@@ -94,12 +98,19 @@
   const identity=p=>stable([p.subject,norm(p.source.name),String(p.source.round||''),norm(p.source.questionNo)]);
   const fingerprint=p=>stable([p.subject,norm(p.source.originalText),p.exhibit||null,(p.source.evidence||[]).map(e=>e.data)]);
   const answerSignature=p=>stable({choices:p.choices,answer:p.answer,acceptedAnswers:p.acceptedAnswers,answers:p.answers,alternateAnswers:p.alternateAnswers,voucher:p.voucher,variants:p.variants,acceptedTypes:p.acceptedTypes,acceptedAmounts:p.acceptedAmounts,requiredAccountCodes:p.requiredAccountCodes,requiresDeletion:p.requiresDeletion,form:p.form,taxExtras:p.taxExtras,formEntry:p.formEntry,perRowAccountCodes:p.perRowAccountCodes});
+  function problemIndex(items){
+    const ids=new Map(),identities=new Map(),prints=new Map(),keys=new WeakMap();let order=0;
+    const key=p=>{if(!keys.has(p))keys.set(p,{identity:identity(p),print:fingerprint(p)});return keys.get(p)};
+    const add=p=>{const k=key(p),entry={p,order:order++};if(!ids.has(p.id))ids.set(p.id,entry);if(!identities.has(k.identity))identities.set(k.identity,entry);if(!prints.has(k.print))prints.set(k.print,entry)};
+    const find=p=>{const k=key(p);return[ids.get(p.id),identities.get(k.identity),prints.get(k.print)].filter(Boolean).sort((a,b)=>a.order-b.order)[0]?.p};
+    items.forEach(add);return{add,find,key};
+  }
   function plan(current,spec){
     assert(spec?.examId===EXAM&&spec.schemaVersion===VERSION,'전산세무 2급 등록 파일(버전 1)만 가져올 수 있습니다.');assert(Array.isArray(spec.items)&&spec.items.length>0,'등록할 문제가 없습니다.');
-    const add=[],duplicates=[],all=[...current];
-    for(const raw of spec.items){const p=validateItem(raw),found=all.find(q=>q.id===p.id||identity(q)===identity(p)||fingerprint(q)===fingerprint(p));
-      if(found){assert(fingerprint(found)===fingerprint(p)&&answerSignature(found)===answerSignature(p),'기존 문제와 원문 또는 정답이 충돌합니다: '+p.title);duplicates.push({id:found.id,title:p.title});}
-      else{add.push(p);all.push(p)}
+    const add=[],duplicates=[],index=problemIndex(current);
+    for(const raw of spec.items){const p=validateItem(raw),found=index.find(p);
+      if(found){assert(index.key(found).print===index.key(p).print&&answerSignature(found)===answerSignature(p),'기존 문제와 원문 또는 정답이 충돌합니다: '+p.title);duplicates.push({id:found.id,title:p.title});}
+      else{add.push(p);index.add(p)}
     }return{add,duplicates};
   }
   function fresh(){return{schemaVersion:VERSION,examId:EXAM,revision:0,items:[],drafts:{},history:[],inbox:[],settings:{fontSize:18,reviewLimit:6}}}
@@ -114,28 +125,29 @@
   // semuon-grade: 채점 버튼 결과. semuon-self: ‘알고 있어요 · 통과/틀렸어요 · 다시 연습’ 직접 표시(답안 없음, 복습 엔진에는 notebook으로 전달).
   const SOURCES=['semuon-grade','semuon-self'];
   function active(s,now=Date.now()){const ids=new Set(s.items.map(p=>p.id));return s.history.filter(e=>e.examId===EXAM&&SOURCES.includes(e.source)&&ids.has(e.problemId)&&!e.cancelledAt&&typeof e.correct==='boolean'&&Number.isFinite(Date.parse(e.at))&&Date.parse(e.at)<=now)}
-  function reviewStates(s,now){const out={theory:{history:{}},practical:{cards:{}},voucher:{cards:{}}};for(const p of s.items){const history=active(s,now).filter(e=>e.problemId===p.id).map(e=>e.source==='semuon-self'?{...e,source:'notebook'}:e);if(p.subject==='theory')out.theory.history[p.id]=history;else out[p.subject].cards[p.id]={history}}return out}
+  function reviewStates(s,now){const out={theory:{history:{}},practical:{cards:{}},voucher:{cards:{}}},byProblem=new Map();for(const e of active(s,now)){if(!byProblem.has(e.problemId))byProblem.set(e.problemId,[]);byProblem.get(e.problemId).push(e.source==='semuon-self'?{...e,source:'notebook'}:e)}for(const p of s.items){const history=byProblem.get(p.id)||[];if(p.subject==='theory')out.theory.history[p.id]=history;else out[p.subject].cards[p.id]={history}}return out}
   function stats(s,now=Date.now()){
     const events=active(s,now),latest=new Map();events.slice().sort((a,b)=>Date.parse(a.at)-Date.parse(b.at)).forEach(e=>latest.set(e.problemId,e));const good=events.filter(e=>e.correct).length;
     return{registered:s.items.length,attempts:events.length,solved:latest.size,wrong:[...latest.values()].filter(e=>!e.correct).length,rate:events.length?Math.round(good/events.length*100):null};
   }
-  function validateState(s){
+  function validateState(s,cache){
     assert(s?.examId===EXAM&&s.schemaVersion===VERSION,'다른 시험 또는 지원하지 않는 백업입니다.');assert(Array.isArray(s.items)&&Array.isArray(s.history)&&Array.isArray(s.inbox)&&s.drafts&&typeof s.drafts==='object','백업 구조를 확인해 주세요.');
     assert(Number.isInteger(s.revision)&&s.revision>=0,'저장 버전을 확인해 주세요.');
     const ids=new Map();for(const raw of s.items){const p=validateItem(raw);assert(!ids.has(p.id),'문제 ID가 중복됩니다.');ids.set(p.id,p)}
-    const events=new Set();for(const e of s.history){assert(typeof e.id==='string'&&!events.has(e.id),'채점 기록 ID가 중복되거나 없습니다.');events.add(e.id);const p=ids.get(e.problemId);assert(p&&e.subject===p.subject&&e.examId===EXAM&&SOURCES.includes(e.source)&&Number.isFinite(Date.parse(e.at)),'다른 시험/출처이거나 손상된 학습기록입니다.');if(e.source==='semuon-self')assert(typeof e.correct==='boolean'&&e.input==null&&Array.isArray(e.wrongLabels)&&!e.wrongLabels.length,'직접 표시한 학습기록을 확인해 주세요.');else{const g=grade(p,e.input);assert(g.correct===e.correct&&stable(g.wrongLabels)===stable(e.wrongLabels),'답안과 채점 결과가 일치하지 않습니다.')}if(e.cancelledAt)assert(Number.isFinite(Date.parse(e.cancelledAt)),'취소 날짜를 확인해 주세요.');}
+    const events=new Set();for(const e of s.history){assert(typeof e.id==='string'&&!events.has(e.id),'채점 기록 ID가 중복되거나 없습니다.');events.add(e.id);const p=ids.get(e.problemId),signature=cache&&stable(e),previous=cache?.get(e.id);if(previous&&previous.problem===p&&previous.signature===signature)continue;assert(p&&e.subject===p.subject&&e.examId===EXAM&&SOURCES.includes(e.source)&&Number.isFinite(Date.parse(e.at)),'다른 시험/출처이거나 손상된 학습기록입니다.');if(e.source==='semuon-self')assert(typeof e.correct==='boolean'&&e.input==null&&Array.isArray(e.wrongLabels)&&!e.wrongLabels.length,'직접 표시한 학습기록을 확인해 주세요.');else{const g=grade(p,e.input);assert(g.correct===e.correct&&stable(g.wrongLabels)===stable(e.wrongLabels),'답안과 채점 결과가 일치하지 않습니다.')}if(e.cancelledAt)assert(Number.isFinite(Date.parse(e.cancelledAt)),'취소 날짜를 확인해 주세요.');if(cache)cache.set(e.id,{problem:p,signature});}
     assert(s.settings&&[18,20,22,24].includes(s.settings.fontSize)&&[6,9,12].includes(s.settings.reviewLimit),'글자 크기·복습 목표 설정을 확인해 주세요.');
     const inboxIds=new Set();for(const m of s.inbox){assert(m&&typeof m.id==='string'&&!inboxIds.has(m.id)&&Number.isFinite(Date.parse(m.at)),'접수 자료 목록을 확인해 주세요.');inboxIds.add(m.id);attachments(m.evidence||[]);if(m.originalFile)attachments([m.originalFile]);}
     return s;
   }
+  function stateValidator(){const cache=new Map();return s=>validateState(s,cache)}
   function merge(current,incoming){
     validateState(incoming);const next=clone(current),planned=incoming.items.length?plan(current.items,{examId:EXAM,schemaVersion:VERSION,items:incoming.items}):{add:[],duplicates:[]};next.items.push(...planned.add);
     // Resolve references of duplicate originals without duplicating events.
-    const remap=new Map(incoming.items.map(p=>[p.id,next.items.find(q=>identity(q)===identity(p)||fingerprint(q)===fingerprint(p)).id]));
+    const index=problemIndex(next.items),remap=new Map(incoming.items.map(p=>[p.id,index.find(p).id]));
     for(const raw of incoming.history){const e={...clone(raw),problemId:remap.get(raw.problemId)},old=next.history.find(h=>h.id===e.id);if(old){const a={...old},b={...e};delete a.cancelledAt;delete b.cancelledAt;assert(stable(a)===stable(b),'같은 채점 기록의 내용이 충돌합니다.');if(e.cancelledAt)old.cancelledAt=e.cancelledAt;}else next.history.push(e)}
     for(const material of incoming.inbox){const old=next.inbox.find(m=>m.id===material.id);if(old)assert(stable(old)===stable(material),'같은 접수 자료의 원문이 충돌합니다.');else next.inbox.push(clone(material));}
     for(const [id,draft]of Object.entries(incoming.drafts)){const key=remap.get(id);if(key&&!next.drafts[key])next.drafts[key]=clone(draft)}
     return next;
   }
-  return{EXAM,KEY,VERSION,SUBJECTS,labels,clone,norm,stable,assert,validateItem,plan,fresh,grade,active,reviewStates,stats,validateState,merge,identity,fingerprint,answerSignature,broadTopics};
+  return{EXAM,KEY,VERSION,SUBJECTS,labels,clone,norm,stable,assert,validateItem,immutableItem,stateValidator,plan,fresh,grade,active,reviewStates,stats,validateState,merge,identity,fingerprint,answerSignature,broadTopics};
 });

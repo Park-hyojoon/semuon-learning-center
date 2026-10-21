@@ -1,5 +1,5 @@
 {
-  "date": "2026-10-20",
+  "date": "2026-10-21",
   "questions": 780,
   "rounds": [
     76,
@@ -26,6 +26,13 @@
     125,
     126
   ],
+  "runtime": {
+    "bankVersion": "bank-89659197105c",
+    "indexVersion": "e19b87fc723d",
+    "bankBytes": 7465908,
+    "exhibitGroups": 19
+  },
+  "storageVersion": 2,
   "sharedHashes": {
     "entry/grading.js": "b4e2573009c602523c9068789dc8fb45274fe66f09c945fece19709dd58e4915",
     "entry/accounts.js": "845b48445b5428859a95e2d2bf0101ed8157e10e2cd411708d0b6495b321875a",
