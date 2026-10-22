@@ -64,7 +64,7 @@
       }
     }
     if(p.form)F.validForm(p.form);
-    if(p.taxExtras){const x=p.taxExtras;if(x.omitted)assert(/^\d{4}-(0[1-9]|1[0-2])$/.test(x.omitted.period),'확정신고 개시연월을 확인해 주세요.');if(x.partners)for(const [a,v]of Object.entries(x.partners)){field(a,'분개 계정');field(v,'분개 거래처');assert(x.partnerOptions?.includes(v),'분개 거래처 선택값이 없습니다.');}}
+    if(p.taxExtras){const x=p.taxExtras;if(x.omitted?.acceptedPeriods)assert(Array.isArray(x.omitted.acceptedPeriods)&&x.omitted.acceptedPeriods.includes(x.omitted.period)&&x.omitted.acceptedPeriods.every(v=>/^\d{4}-(0[1-9]|1[0-2])$/.test(v)),'허용 확정신고 개시연월을 확인해 주세요.');if(x.omitted)assert(/^\d{4}-(0[1-9]|1[0-2])$/.test(x.omitted.period),'확정신고 개시연월을 확인해 주세요.');if(x.partners)for(const [a,v]of Object.entries(x.partners)){field(a,'분개 계정');field(v,'분개 거래처');assert(x.partnerOptions?.includes(v),'분개 거래처 선택값이 없습니다.');}}
     if(p.formEntry)assert(p.form&&p.formEntry==='practical'&&p.subject==='practical','추가 결산자료는 일반전표와 함께 등록해 주세요.');
     if(p.form&&!p.voucher&&p.formEntry!=='practical'){assert(p.subject!=='theory','신고서·급여는 실무 분야로 등록해 주세요.');}
     else if(p.subject==='theory'){
