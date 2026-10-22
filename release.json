@@ -1,6 +1,6 @@
 {
   "date": "2026-10-22",
-  "questions": 1058,
+  "questions": 1266,
   "rounds": [
     76,
     77,
@@ -32,12 +32,18 @@
     119,
     118,
     117,
-    116
+    116,
+    110,
+    111,
+    112,
+    113,
+    114,
+    115
   ],
   "runtime": {
-    "bankVersion": "bank-6ada01e6b401",
+    "bankVersion": "bank-23d542f39315",
     "indexVersion": "e19b87fc723d",
-    "bankBytes": 22403434,
+    "bankBytes": 29131095,
     "exhibitGroups": 19
   },
   "storageVersion": 2,
