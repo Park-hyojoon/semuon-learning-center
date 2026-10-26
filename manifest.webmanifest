@@ -1,0 +1,17 @@
+{
+  "id": "./",
+  "name": "세무온 · 전산세무 2급",
+  "short_name": "세무온",
+  "description": "전산세무 2급 이론·전표·신고서 학습과 오답 복습",
+  "lang": "ko",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f8f5f1",
+  "theme_color": "#155e59",
+  "icons": [
+    { "src": "./assets/semuon-app-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./assets/semuon-app-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./assets/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

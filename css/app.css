@@ -53,3 +53,11 @@
 @media(max-width:760px){.semuon #review-list:has(>.question-row){padding:4px 12px}}
 /* 2026-10-15 사용자 지정: 오늘 복습의 [3문제] 버튼을 제목 오른쪽에 둔다 */
 .title-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap}.title-row h1{margin:5px 0 8px}
+/* 공통 가이드 6.1: 브라우저 전체화면은 탐색 메뉴 접기와 독립적으로 전환한다. */
+.app-topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:flex-end;gap:16px;margin:0 0 20px;padding:8px 0;background:var(--canvas)}
+.app-topbar .app-date{flex:1;min-width:0;margin:0}
+.fullscreen-toggle{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:44px;min-height:44px;margin:0;white-space:nowrap;font-size:var(--font-ui)}
+.fullscreen-toggle svg{flex:none}.fullscreen-toggle[aria-disabled=true]{cursor:wait;opacity:.7}
+html:fullscreen,html:-webkit-full-screen{background:var(--canvas)}
+@media(max-width:760px){.app-topbar{gap:8px}.app-topbar .fullscreen-toggle{padding:10px}.app-topbar [data-fullscreen-label]{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}}
+@media print{.app-topbar .fullscreen-toggle{display:none}}
