@@ -1,5 +1,5 @@
 {
-  "date": "2026-10-23",
+  "date": "2026-10-26",
   "questions": 1290,
   "rounds": [
     76,
@@ -42,9 +42,9 @@
     null
   ],
   "runtime": {
-    "bankVersion": "bank-37cdff6ef7b7",
+    "bankVersion": "bank-0b815d198ec1",
     "indexVersion": "e19b87fc723d",
-    "bankBytes": 29209109,
+    "bankBytes": 29240737,
     "exhibitGroups": 19
   },
   "storageVersion": 2,
