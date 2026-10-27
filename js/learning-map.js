@@ -38,7 +38,7 @@
   }
   const outcomes=new Map();
   for(const[id,events]of histories){
-   const days=new Map();for(const e of events.sort((a,b)=>Date.parse(a.at)-Date.parse(b.at)||a.order-b.order))days.set(day(e.at),e);
+   const days=new Map();for(const e of events.sort((a,b)=>Date.parse(a.at)-Date.parse(b.at)||a.order-b.order)){if(!days.has(day(e.at)))days.set(day(e.at),e)}
    const recent=[...days.values()].slice(-3),weights=recent.map((_,i)=>4-recent.length+i),sum=weights.reduce((a,b)=>a+b,0),rate=recent.reduce((s,e,i)=>s+(e.correct?weights[i]:0),0)/sum;
    outcomes.set(id,{rate,latest:recent.at(-1),days:days.size});
   }
@@ -69,7 +69,7 @@
   return`<svg class="lm-radar" viewBox="0 0 560 450" role="img" aria-label="${esc(course.name)} 영역별 학습 확인도. ${axes.map(a=>esc(a.title)+' '+scoreLabel(a)).join(', ')}"><title>${esc(course.name)} 학습 확인도</title>${grid}${spokes}<polygon points="${polygon(TARGET)}" class="lm-radar-target"/>${plot}${dots}${labels}${numbers}</svg>`;
  }
  const legend=()=>`<p class="lm-legend"><span class="lm-dot-key ready"></span>기준선 도달 <span class="lm-dot-key weak"></span>학습 중 <span class="lm-dot-key unseen"></span>미학습 <span class="lm-line-key"></span>참고기준 ${TARGET}점</p>`;
- function methodology(){return`<details class="lm-method"><summary>점수는 어떻게 계산하나요?</summary><div><p><strong>학습 확인도는 정답 결과와 학습 범위를 함께 나타내는 참고 지표입니다.</strong> 빨간선 ${TARGET}점은 기초 점검을 위한 이 학습센터의 자체 복습 목표입니다.</p><ul><li>문제별로 최근 서로 다른 3학습일의 마지막 채점 결과를 사용합니다. 최근 날짜부터 3·2·1의 비중으로 반영하며, 기록이 적으면 있는 날짜만 계산합니다. 날짜는 한국 시간 기준입니다.</li><li>소단원 확인도 = 최근 정답률 × 학습 범위. 학습 범위는 서로 다른 문제 3개분을 채점하면 100%가 됩니다. 같은 문제를 반복해도 문제 수는 늘지 않습니다. 여러 소단원에 연결된 문제는 비중을 나눠 반영합니다.</li><li>영역·과목 점수는 등록 문제가 있는 소단원 점수의 평균입니다. 미학습 소단원은 아직 확인하지 못한 범위이므로 평균에 0으로 반영하고, 화면에는 ‘미학습’으로 구분합니다. ‘자료 없음’은 평균에서 제외합니다.</li><li>취소한 채점·직접 통과/다시 연습 표시·전원 정답 문항·105회 이하 기출은 계산에서 제외합니다. 기존 기록은 그대로 보존됩니다.</li></ul><p>복합 문제의 정오답은 연결된 개념을 함께 참고하므로 특정 개념의 오답을 확정하는 진단은 아닙니다. 연습을 이어가며 결과를 확인하세요.</p></div></details>`}
+ function methodology(){return`<details class="lm-method"><summary>점수는 어떻게 계산하나요?</summary><div><p><strong>학습 확인도는 정답 결과와 학습 범위를 함께 나타내는 참고 지표입니다.</strong> 빨간선 ${TARGET}점은 기초 점검을 위한 이 학습센터의 자체 복습 목표입니다.</p><ul><li>문제별로 최근 서로 다른 3학습일의 첫 채점 결과를 사용합니다. 당일 수정 정답은 점수를 올리지 않습니다. 최근 날짜부터 3·2·1의 비중으로 반영하며, 기록이 적으면 있는 날짜만 계산합니다. 날짜는 한국 시간 기준입니다.</li><li>소단원 확인도 = 최근 정답률 × 학습 범위. 학습 범위는 서로 다른 문제 3개분을 채점하면 100%가 됩니다. 같은 문제를 반복해도 문제 수는 늘지 않습니다. 여러 소단원에 연결된 문제는 비중을 나눠 반영합니다.</li><li>영역·과목 점수는 등록 문제가 있는 소단원 점수의 평균입니다. 미학습 소단원은 아직 확인하지 못한 범위이므로 평균에 0으로 반영하고, 화면에는 ‘미학습’으로 구분합니다. ‘자료 없음’은 평균에서 제외합니다.</li><li>취소한 채점·직접 통과/다시 연습 표시·전원 정답 문항·105회 이하 기출은 계산에서 제외합니다. 기존 기록은 그대로 보존됩니다.</li></ul><p>복합 문제의 정오답은 연결된 개념을 함께 참고하므로 특정 개념의 오답을 확정하는 진단은 아닙니다. 연습을 이어가며 결과를 확인하세요.</p></div></details>`}
  function mount(host,state,{href,initialCourse='fa',initialScope='all',initialPillar='',onSelection=()=>{}}={}){
   let courseId=initialCourse,scope=['all','theory','practice'].includes(initialScope)?initialScope:'all',pillarId=initialPillar,data;
   function unitLink(u){const format=scope==='all'?'':'&format='+scope;return href('pages/topic.html?topic='+encodeURIComponent(u.course)+'&tag='+encodeURIComponent(u.id)+format)}

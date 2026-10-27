@@ -1,0 +1,122 @@
+/* Personal, append-only book progress and local review guidance. No external AI calls. */
+(function(root,factory){const node=typeof module==='object'&&module.exports,C=node?require('./curriculum.js'):root.SemuonCurriculum,Core=node?require('./core.js'):root.SemuonCore,api=factory(C,Core);if(node)module.exports=api;else root.SemuonProgress=api})(globalThis,function(C,Core){
+ 'use strict';
+ const INTERVALS=[1,3,7,14,30],DAY=86400000;
+ const day=at=>new Date((typeof at==='number'?at:Date.parse(at))+9*3600000).toISOString().slice(0,10);
+ const add=(d,n)=>new Date(Date.parse(d+'T00:00:00Z')+n*DAY).toISOString().slice(0,10);
+ const validDate=d=>typeof d==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d)&&Number.isFinite(Date.parse(d))&&new Date(d+'T00:00:00Z').toISOString().slice(0,10)===d;
+ const eligible=p=>!(Number(p.source?.round)>0&&Number(p.source.round)<=105)&&!p.source?.officialAllAccepted;
+ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const modeName=mode=>mode==='theory'?'이론':'실무';
+ function event(state,values,now=Date.now()){
+  const last=(state.progressEvents||[]).reduce((n,e)=>Math.max(n,Date.parse(e.at)||0),0);
+  return{id:crypto.randomUUID(),at:new Date(Math.max(now,last+1)).toISOString(),...values};
+ }
+ function track(unit,mode,today){
+  const grades=unit.grades.filter(g=>g.mode===mode),reviews=unit.reviews.filter(e=>e.mode===mode&&e.date<=today),firstGrade=grades.length?day(grades[0].at):null;
+  const base=mode==='theory'?(unit.studiedOn||firstGrade||reviews[0]?.date):(firstGrade||reviews[0]?.date||null);
+  const total=unit.problems.filter(p=>(p.subject==='theory'?'theory':'practice')===mode).length;
+  if(!base||base>today)return{mode,total,started:false,due:null,stage:0,lastDay:null};
+  const daily=new Map(),slot=d=>{if(!daily.has(d))daily.set(d,{done:false,again:false});return daily.get(d)};
+  for(const e of reviews)if(e.date>=base)slot(e.date)[e.outcome==='again'?'again':'done']=true;
+  for(const g of grades)if(!g.correct&&day(g.at)>=base&&day(g.at)<=today)slot(day(g.at)).again=true;
+  let stage=0,lastDay=base;
+  for(const[d,r]of [...daily].sort(([a],[b])=>a.localeCompare(b))){if(r.again){stage=0;lastDay=d}else if(r.done&&d>lastDay){stage=Math.min(stage+1,INTERVALS.length-1);lastDay=d}}
+  return{mode,total,started:true,stage,lastDay,due:add(lastDay,INTERVALS[stage]),interval:INTERVALS[stage]};
+ }
+ function analyze(state,{now=Date.now()}={}){
+  const today=day(now),units=C.units.map(u=>({...u,completed:false,studiedOn:null,hasStudyRecord:false,reviews:[],grades:[],problems:[],pending:[]})),byUnit=new Map(units.map(u=>[u.id,u]));
+  const progress=(state.progressEvents||[]).slice().sort((a,b)=>Date.parse(a.at)-Date.parse(b.at)||a.id.localeCompare(b.id));
+  for(const e of progress){const u=byUnit.get(e.unitId);if(!u)continue;if(e.action==='complete'){u.completed=true;u.studiedOn=e.date;u.hasStudyRecord=true}else if(e.action==='reopen')u.completed=false;else if(e.action==='date'){u.studiedOn=e.date;u.hasStudyRecord=true}else if(e.action==='review')u.reviews.push(e)}
+  const byProblem=new Map();for(const p of state.items.filter(eligible)){const ids=[...new Set(C.classify(p).units)];byProblem.set(p.id,{problem:p,ids});for(const id of ids)byUnit.get(id)?.problems.push(p)}
+  const latest=new Map(),grades=[],seen=new Set();
+  for(const e of state.history.slice().sort((a,b)=>Date.parse(a.at)-Date.parse(b.at))){const entry=byProblem.get(e.problemId);if(!entry||e.examId!=='tax2'||e.source!=='semuon-grade'||e.cancelledAt||typeof e.correct!=='boolean'||!Number.isFinite(Date.parse(e.at))||Date.parse(e.at)>now||seen.has(e.id))continue;seen.add(e.id);const g={...e,mode:entry.problem.subject==='theory'?'theory':'practice'};grades.push(g);latest.set(e.problemId,g);for(const id of entry.ids)byUnit.get(id)?.grades.push(g)}
+  for(const[id,g]of latest)if(!g.correct)for(const uId of byProblem.get(id).ids)byUnit.get(uId)?.pending.push(g);
+  for(const u of units)u.tracks=['theory','practice'].map(mode=>track(u,mode,today));
+  const courses=C.courses.map(c=>{const children=units.filter(u=>u.course===c.name);return{...c,units:children,completed:children.filter(u=>u.completed).length}}),due=[];
+  for(const u of units)if(u.completed){const tracks=u.tracks.filter(t=>t.total&&t.due&&t.due<=today);if(tracks.length)due.push({unit:u,tracks,date:tracks.map(t=>t.due).sort()[0],kind:'due'})}
+  due.sort((a,b)=>a.date.localeCompare(b.date)||b.unit.pending.length-a.unit.pending.length||units.indexOf(a.unit)-units.indexOf(b.unit));
+  const scheduled=Core.questionSchedules(state,now);
+  const next=units.find(u=>!u.completed)||null,completed=units.filter(u=>u.completed).length;
+  const nextDue=units.filter(u=>u.completed).flatMap(u=>u.tracks.filter(t=>t.total&&t.due&&t.due>today).map(t=>({unit:u,...t}))).sort((a,b)=>a.due.localeCompare(b.due))[0]||null;
+  const weekStart=add(today,-6),days=new Set([...progress.filter(e=>e.date&&e.date>=weekStart&&e.date<=today).map(e=>e.date),...grades.filter(g=>day(g.at)>=weekStart).map(g=>day(g.at))]);
+  const data={today,units,courses,progress,grades,latest,due,next,nextDue,completed,recordDays:days.size,schedules:scheduled,uncertain:Core.uncertainties(state,now)};
+  data.tasks=reviewTasks(data,today);return data;
+ }
+ function conceptTitle(p,u){
+  const base=p.source?.subtopic||String(p.type||'').replace(/^(재무회계|원가회계|부가가치세|소득세)\s*·?\s*/,''),leaves=(p.tags||[]).filter(t=>['중요성','보수주의','계속기업','기업실체','기간별보고','목적적합성','검증가능성','중립성','피드백가치','수탁책임'].includes(t));
+  return base&&base!==u.title?base+(leaves.length===1&&!base.includes(leaves[0])?' · '+leaves[0]:''):'소단원 종합';
+ }
+ function unitPlan(data,unitId,mode='theory',date=data.today){
+  const unit=data.units.find(u=>u.id===unitId);if(!unit)return null;
+  const histories=new Map();for(const g of unit.grades.filter(g=>g.mode===mode)){if(!histories.has(g.problemId))histories.set(g.problemId,[]);histories.get(g.problemId).push(g)}
+  const all=unit.problems.filter(p=>(p.subject==='theory'?'theory':'practice')===mode).map(problem=>{const events=histories.get(problem.id)||[],daily=new Map();for(const g of events){const d=day(g.at);if(!daily.has(d))daily.set(d,g)}return{problem,concept:conceptTitle(problem,unit),events,first:events[0],last:[...daily.values()].at(-1),schedule:data.schedules.get(problem.id)}}),known=new Set(all.filter(r=>r.events.length).map(r=>r.concept));
+  const available=all.filter(r=>!r.schedule.due||r.schedule.due<=date&&!(date===data.today&&r.schedule.practicedToday));
+  for(const r of available){r.priority=r.last&&!r.last.correct||r.events.at(-1)?.correct===false?0:data.uncertain.has(r.problem.id)?1:!known.has(r.concept)?2:r.events.length?3:4;r.reason=['첫 풀이 오답 재확인','헷갈림 표시 재확인','미확인 개념 점검','복습일 도래 · 기억 확인','다른 문제로 개념 확인'][r.priority]}
+  for(const r of available)if(r.priority===0&&r.last?.correct)r.reason='최근 오답 재확인';
+  available.sort((a,b)=>a.priority-b.priority||String(a.schedule.due||'9999').localeCompare(String(b.schedule.due||'9999'))||Number(Boolean(b.problem.source?.subtopic))-Number(Boolean(a.problem.source?.subtopic))||a.problem.id.localeCompare(b.problem.id));
+  const entries=[],concepts=new Set();for(const r of available){if(concepts.has(r.concept))continue;entries.push(r);concepts.add(r.concept);if(entries.length===3)break}for(const r of available){if(entries.length===3)break;if(!entries.includes(r))entries.push(r)}
+  return{unit,mode,date,entries,total:all.length,minutes:entries.length?(mode==='theory'?1+entries.length*2:2+entries.length*5):0,nextDue:all.map(r=>r.schedule.due).filter(d=>d&&d>date).sort()[0]||null};
+ }
+ function reviewTasks(data,date=data.today){
+  const tasks=[];for(const unit of data.units){for(const mode of ['theory','practice']){const t=unit.tracks.find(t=>t.mode===mode),plan=unitPlan(data,unit.id,mode,date);if(!t.total)continue;
+    const practicedToday=unit.grades.some(g=>g.mode===mode&&day(g.at)===data.today)||unit.reviews.some(r=>r.mode===mode&&r.date===data.today);
+    if(date===data.today&&practicedToday)continue;
+    const scheduled=plan.entries.some(r=>r.first&&r.schedule.due&&r.schedule.due<=date||r.priority===1),bookDue=unit.completed&&t.due&&t.due<=date;
+    if(plan.entries.length&&(scheduled||bookDue))tasks.push({unit,mode,plan,kind:plan.entries.some(r=>r.priority===0)?'wrong':'due',date:t.due||date});
+  }}
+  return tasks.sort((a,b)=>Math.min(...a.plan.entries.map(r=>r.priority))-Math.min(...b.plan.entries.map(r=>r.priority))||a.date.localeCompare(b.date)||data.units.indexOf(a.unit)-data.units.indexOf(b.unit));
+ }
+ function sessionLink(plan,href){const q=new URLSearchParams({unit:plan.unit.id,mode:plan.mode,ids:plan.entries.map(r=>r.problem.id).join(',')});if(plan.date>day(Date.now()))q.set('preview',plan.date);return href('pages/progress.html?'+q)}
+ function planHTML(plan,href){
+  const future=plan.date>day(Date.now()),concepts=new Map();for(const r of plan.entries){if(!concepts.has(r.concept))concepts.set(r.concept,{...r,count:0});concepts.get(r.concept).count++}return`<article class="pr-plan"><div class="row spread"><small>${esc(plan.unit.course)} · ${modeName(plan.mode)} · ${plan.date}</small>${plan.entries.length?`<span class="pill">${plan.entries.length}문제 · 예상 약 ${plan.minutes}분</span>`:''}</div><h3>${esc(plan.unit.label)}</h3>${plan.entries.length?`<ul class="pr-plan-concepts">${[...concepts.values()].map(r=>`<li><strong>${esc(r.concept)}${r.count>1?' · '+r.count+'문제':''}</strong><span>${esc(r.reason)}</span></li>`).join('')}</ul><a class="btn ${future?'secondary':''}" href="${sessionLink(plan,href)}">${future?'복습 내용 미리보기':'복습 문제 시작'} →</a>`:`<p class="help">${plan.total?'문제는 복습 대기 중입니다.'+(plan.nextDue?' 다음 예정 '+plan.nextDue:''):'등록 문제가 없습니다. 교재 '+plan.unit.page+'쪽의 핵심 개념을 책을 덮고 설명해 보세요.'}</p>`}</article>`;
+ }
+ function cardsHTML(data,href,{date=data.today,limit=3}={}){
+  const tasks=reviewTasks(data,date);return tasks.length?tasks.slice(0,limit).map(t=>planHTML(t.plan,href)).join('')+(tasks.length>limit?`<p class="help">추가 ${tasks.length-limit}개 복습은 아래 소단원에서 확인하세요.</p>`:''):`<p>${date===data.today?'오늘':'내일'} 예정된 복습이 없습니다.</p><p class="help">${data.completed?'아래 소단원을 펼쳐 다음 복습일을 확인하세요.':'학습한 소단원을 체크하면 복습 일정이 시작됩니다.'}</p>`;
+ }
+ function calendarHTML(examDate,today,month=today.slice(0,7)){
+  const [year,m]=month.split('-').map(Number),first=new Date(Date.UTC(year,m-1,1)),count=new Date(Date.UTC(year,m,0)).getUTCDate(),offset=first.getUTCDay(),distance=validDate(examDate)?Math.round((Date.parse(examDate)-Date.parse(today))/DAY):null,label=distance===null?'시험일 미설정':distance===0?'D-Day':distance>0?'D-'+distance:'D+'+Math.abs(distance),cells=[];
+  for(let i=0;i<42;i++){const n=i-offset+1,d=month+'-'+String(n).padStart(2,'0');cells.push(n<1||n>count?'<td></td>':`<td><time datetime="${d}" class="${d===today?'is-today ':''}${d===examDate?'is-exam':''}" title="${d}${d===today?' · 오늘':''}${d===examDate?' · 시험일':''}">${n}</time></td>`)}
+  return`<aside class="pr-calendar" aria-label="시험일과 달력"><div class="pr-exam"><strong>${label}</strong><span>${validDate(examDate)?examDate+' 시험':'설정에서 시험일 입력'}</span></div><div class="pr-calendar-nav"><button type="button" data-calendar-step="-1" aria-label="이전 달">‹</button><strong>${year}년 ${m}월</strong><button type="button" data-calendar-step="1" aria-label="다음 달">›</button></div><table aria-label="${year}년 ${m}월 달력"><thead><tr>${['일','월','화','수','목','금','토'].map(d=>'<th scope="col">'+d+'</th>').join('')}</tr></thead><tbody>${Array.from({length:6},(_,i)=>'<tr>'+cells.slice(i*7,i*7+7).join('')+'</tr>').join('')}</tbody></table></aside>`;
+ }
+ function weeklySummary(state,end=day(Date.now()),now=Date.now()){
+  const a=analyze(state,{now}),start=add(end,-6),events=a.progress.filter(e=>e.date&&e.date>=start&&e.date<=end),grades=a.grades.filter(g=>day(g.at)>=start&&day(g.at)<=end),latest=new Map();for(const g of grades)latest.set(g.problemId,g);
+  const lines=['[세무온 주간 학습 점검]',`기간: ${start} ~ ${end}`,`현재 진도: ${a.completed}/${a.units.length}개 소단원 완료`];
+  for(const c of a.courses){const done=c.units.filter(u=>u.completed);lines.push(`${c.name}: ${c.completed}/${c.units.length}단원${done.length?' · 완료 '+done.map(u=>String(u.number).padStart(2,'0')+(u.studiedOn?'('+u.studiedOn+')':'(날짜 미상)')).join(', '):''}`)}
+  if(validDate(state.settings.examDate))lines.push('시험일: '+state.settings.examDate+' · 남은 날짜 '+Math.round((Date.parse(state.settings.examDate)-Date.parse(a.today))/DAY)+'일');
+  const newIds=[...new Set(events.filter(e=>e.action==='complete').map(e=>e.unitId))];lines.push('이번 기간 완료 표시: '+(newIds.map(id=>{const u=a.units.find(u=>u.id===id);return u.course+' '+u.number+'단원'}).join(', ')||'없음'));
+  for(const mode of ['theory','practice']){const records=events.filter(e=>e.action==='review'&&e.mode===mode),again=records.filter(e=>e.outcome==='again').length;lines.push(`${modeName(mode)} 복습 기록: ${records.length}건${again?' · 다시 보기 '+again+'건':''}`)}
+  const solved=[...latest.values()],good=solved.filter(g=>g.correct).length;lines.push(`실제 채점: 서로 다른 ${solved.length}문제 · 각 문제의 기간 내 마지막 결과 정답 ${good}, 오답 ${solved.length-good}`);
+  const firstDaily=new Map();for(const g of grades){const key=g.problemId+'|'+day(g.at);if(!firstDaily.has(key))firstDaily.set(key,g)}const firsts=[...firstDaily.values()],firstGood=firsts.filter(g=>g.correct).length;lines.push(`날짜별 첫 채점: ${firsts.length}건 · 정답 ${firstGood}, 오답 ${firsts.length-firstGood} · 같은 날 재채점 ${grades.length-firsts.length}건`);
+  const weak=a.units.filter(u=>u.pending.length).sort((x,y)=>y.pending.length-x.pending.length).slice(0,5);lines.push('현재 오답 연결 단원: '+(weak.map(u=>`${u.course} ${u.number}단원(${u.pending.length}문제)`).join(', ')||'없음'));
+  const conceptsFor=ids=>[...new Set(a.units.flatMap(u=>u.problems.filter(p=>ids.has(p.id)).map(p=>u.course+' '+u.number+'단원 '+conceptTitle(p,u))))].slice(0,5).join(', ')||'없음',daily=new Map();for(const g of a.grades){const key=g.problemId+'|'+day(g.at);if(!daily.has(key))daily.set(key,g)}const lastFirst=new Map();for(const g of daily.values())lastFirst.set(g.problemId,g);
+  lines.push('첫 풀이 오답 재확인: '+conceptsFor(new Set([...lastFirst.values()].filter(g=>!g.correct).map(g=>g.problemId))));lines.push('헷갈림 재확인: '+conceptsFor(new Set(a.uncertain.keys())));
+  lines.push('프로그램 추천: '+(a.tasks.slice(0,3).map(t=>`${t.unit.course} ${t.unit.number}단원 ${t.kind==='wrong'?'오답 확인':'복습'}`).join(', ')||'오늘 예정된 복습 없음'));
+  if(a.next)lines.push(`다음 목차: ${a.next.course} ${a.next.number}. ${a.next.title}`);
+  lines.push('완료 체크는 책 학습 기록이며 문제 정답률과 별개입니다.','요청: 위 기록을 바탕으로 다음 일주일의 복습·진도 우선순위를 짧게 제안해 주세요.');return lines.join('\n');
+ }
+ function mount(host,getState,{href,save,notify=()=>{}}){
+  let data,weekEnd=day(Date.now()),viewOffset=new URLSearchParams(location.search).get('day')==='tomorrow'?1:0,calendarMonth=day(Date.now()).slice(0,7);
+  const unitLink=(u,mode)=>href('pages/topic.html?topic='+encodeURIComponent(u.course)+'&tag='+encodeURIComponent(u.id)+(mode?'&format='+(mode==='theory'?'theory':'practice'):''));
+  function when(t){if(!t.total)return'등록 문제 없음';if(!t.started)return'첫 학습 후 시작';if(t.due<data.today)return t.due+' · 복습 예정일 지남';if(t.due===data.today)return'오늘 복습';return t.due+' 예정'}
+  function reviewRow(u,t){return`<div class="pr-track"><div><strong>${modeName(t.mode)}</strong><span>${esc(when(t))}</span></div><div class="row"><a class="btn secondary" href="${unitLink(u,t.mode)}">${t.started?'문제 확인':'처음 연습'}</a><button class="btn secondary" type="button" data-review="done" data-unit="${u.id}" data-mode="${t.mode}">복습 완료</button><button class="btn secondary" type="button" data-review="again" data-unit="${u.id}" data-mode="${t.mode}">내일 다시 보기</button></div></div>`}
+  function unitRow(u){const due=u.tracks.filter(t=>t.total&&t.due).map(t=>modeName(t.mode)+' '+(t.due<=data.today?'복습 필요':t.due)).join(' · ');return`<li class="pr-unit ${u.completed?'complete':''}"><div class="pr-unit-main"><label class="pr-check"><input type="checkbox" data-complete="${u.id}" data-focus="check-${u.id}" ${u.completed?'checked':''}><span><strong>${esc(u.label)}</strong><small>${u.page}쪽</small></span></label><div class="pr-unit-date">${u.completed?`<input type="date" max="${data.today}" value="${u.studiedOn||''}" data-study-date="${u.id}" data-focus="date-${u.id}" aria-label="${esc(u.title)} 학습 완료일" title="학습 완료일 · 이전 날짜로 수정할 수 있습니다.">`:'<span class="help">미완료</span>'}</div><a class="pr-problem-link" href="${unitLink(u)}" aria-label="${esc(u.title)} 문제 열기">문제 →</a></div>${u.completed?`<details class="pr-review" data-open-key="review-${u.id}"><summary>복습 일정·기록 <span>${esc(due||'완료일 또는 첫 학습일을 확인하세요.')}</span></summary><div>${u.tracks.filter(t=>t.total).map(t=>reviewRow(u,t)+planHTML(unitPlan(data,u.id,t.mode,[data.today,t.due||data.today].sort().at(-1)),href)).join('')}</div></details>`:''}</li>`}
+  function render(){const open=new Set([...host.querySelectorAll('details[open][data-open-key]')].map(el=>el.dataset.openKey)),first=!host.children.length,focus=document.activeElement?.dataset.focus;data=analyze(getState());
+   const targetDate=add(data.today,viewOffset);
+   host.innerHTML=`<div class="pr-overview"><div class="pr-top"><strong>전체 ${data.completed}/${data.units.length}개 소단원 완료</strong><span class="pr-completion-bar" aria-hidden="true"><span style="width:${data.completed/data.units.length*100}%"></span></span></div></div>
+    <div class="pr-guidance"><section class="card"><div class="row spread"><h2>${viewOffset?'내일':'오늘'}의 복습</h2><div class="pr-day-switch" role="group" aria-label="복습할 날짜"><button type="button" data-plan-offset="0" aria-pressed="${!viewOffset}">오늘</button><button type="button" data-plan-offset="1" aria-pressed="${Boolean(viewOffset)}">내일</button></div></div>${cardsHTML(data,href,{date:targetDate})}</section>
+    <section class="card"><h2>다음 진도</h2>${data.next?`<p class="eyebrow">${esc(data.next.course)}</p><h3>${esc(data.next.label)}</h3><p class="help">${data.tasks.length?'오늘 복습을 먼저 확인한 뒤 이어가세요.':'교재 목차의 다음 미완료 소단원입니다.'}</p><a class="btn secondary" href="${unitLink(data.next)}">단원 문제 보기 →</a>`:'<p>전체 소단원을 완료했습니다. 예정된 복습을 이어가세요.</p>'}</section></div>
+    <div class="pr-courses">${data.courses.map(c=>`<details class="pr-course" data-open-key="course-${c.id}"><summary><strong>${esc(c.name)}</strong><span>${c.completed}/${c.units.length} 완료</span></summary><ol>${c.units.map(unitRow).join('')}</ol></details>`).join('')}</div>
+    <details class="pr-weekly" data-open-key="weekly"><summary>GPT와 주간 점검 <span>최근 7일 중 ${data.recordDays}일 기록</span></summary><div><div class="row"><label class="field"><span>요약 기간의 마지막 날</span><input id="pr-week-end" type="date" max="${data.today}" value="${weekEnd}"></label><button class="btn secondary" id="pr-copy-week" type="button">주간 요약 복사</button></div><p class="help">평소 복습은 프로그램 안내대로 진행하고, 필요할 때 최근 7일 요약을 GPT에게 전달하세요.</p><textarea id="pr-week-text" readonly rows="10" aria-label="GPT에게 전달할 주간 학습 요약" hidden></textarea></div></details>
+    <details class="pr-method" data-open-key="method"><summary>복습 기준</summary><div><p>책 학습 완료와 문제 채점은 별도로 기록합니다. 완료일은 오늘로 시작하며 이전 날짜로 바꾸거나 비워 둘 수 있습니다.</p><p>이론은 완료일부터 시작합니다. 완료일을 모를 때와 실무는 첫 실제 채점일이나 첫 복습 기록일부터 시작합니다. 1일 뒤 확인하고, 다른 날 복습을 완료하면 간격이 3·7·14·30일로 늘어납니다. 오답이나 ‘내일 다시 보기’가 있던 날은 다음 날 다시 확인합니다.</p><p>문제는 날짜별 첫 실제 채점의 오답, 직접 표시한 헷갈림, 미확인 개념을 우선해 최대 3개를 고릅니다. 개념은 연결된 문제 기준이며 특정 개념의 약점을 확정하는 진단은 아닙니다. 예상 시간은 문제 수로 계산합니다.</p><p>오늘 푼 문제는 결과와 해설 확인 후 기본 목록에서 쉬고, 다음 복습일에 다시 나타납니다. 당일 수정 정답은 복습 간격과 학습 지도 점수를 올리지 않습니다. ‘전체 문제 보기’로 언제든 다시 열 수 있습니다.</p><p>진도·복습·헷갈림 기록과 시험일은 전체 백업에 함께 보관합니다. 체크 해제도 이전 기록을 지우지 않습니다. GPT 요약은 직접 복사하며 자동 요청은 하지 않습니다.</p></div></details>`;
+   const calendar=document.getElementById('progress-calendar');if(calendar){calendar.innerHTML=calendarHTML(getState().settings.examDate,data.today,calendarMonth);calendar.onclick=e=>{const button=e.target.closest('[data-calendar-step]');if(!button)return;const [y,m]=calendarMonth.split('-').map(Number);calendarMonth=new Date(Date.UTC(y,m-1+Number(button.dataset.calendarStep),1)).toISOString().slice(0,7);render();calendar.querySelector('[data-calendar-step=\"'+button.dataset.calendarStep+'\"]')?.focus()}}
+   for(const el of host.querySelectorAll('details[data-open-key]'))el.open=open.has(el.dataset.openKey)||(first&&el.dataset.openKey==='course-fa');
+   if(focus)host.querySelector(`[data-focus="${focus}"]`)?.focus({preventScroll:true});
+  }
+  const record=values=>{try{save(values);render()}catch(e){render();notify(e.message)}};
+  host.addEventListener('change',e=>{const unitId=e.target.dataset.complete,dateId=e.target.dataset.studyDate;if(unitId){const u=data.units.find(u=>u.id===unitId);record({unitId,action:e.target.checked?'complete':'reopen',date:e.target.checked?(u.hasStudyRecord?u.studiedOn:data.today):null})}else if(dateId){const value=e.target.value;if(value&&(!validDate(value)||value>data.today)){notify('오늘 또는 이전 날짜를 입력해 주세요.');e.target.value=data.units.find(u=>u.id===dateId).studiedOn||'';return}record({unitId:dateId,action:'date',date:value||null})}else if(e.target.id==='pr-week-end'){if(validDate(e.target.value)&&e.target.value<=data.today)weekEnd=e.target.value;else e.target.value=weekEnd}});
+  host.addEventListener('click',async e=>{const monthStep=e.target.closest('[data-calendar-step]');if(monthStep){const [y,m]=calendarMonth.split('-').map(Number);calendarMonth=new Date(Date.UTC(y,m-1+Number(monthStep.dataset.calendarStep),1)).toISOString().slice(0,7);render();host.querySelector('[data-calendar-step=\"'+monthStep.dataset.calendarStep+'\"]')?.focus();return}const offset=e.target.closest('[data-plan-offset]');if(offset){viewOffset=Number(offset.dataset.planOffset);render();host.querySelector('[data-plan-offset=\"'+viewOffset+'\"]')?.focus();return}const review=e.target.closest('[data-review]');if(review){record({unitId:review.dataset.unit,action:'review',mode:review.dataset.mode,outcome:review.dataset.review,date:data.today});return}if(e.target.id==='pr-copy-week'){const box=host.querySelector('#pr-week-text'),text=weeklySummary(getState(),weekEnd);box.value=text;box.hidden=false;try{await navigator.clipboard.writeText(text);notify('주간 요약을 복사했습니다.')}catch(_){box.focus();box.select();const copied=document.execCommand('copy');notify(copied?'주간 요약을 복사했습니다.':'요약을 선택했습니다. 복사해서 사용해 주세요.')}}});
+  render();return{refresh:render};
+ }
+ return{INTERVALS,day,add,validDate,event,analyze,conceptTitle,unitPlan,reviewTasks,sessionLink,planHTML,cardsHTML,calendarHTML,weeklySummary,mount};
+});
