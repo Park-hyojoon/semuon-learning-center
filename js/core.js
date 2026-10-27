@@ -6,6 +6,9 @@
   'use strict';
   const EXAM='tax2',KEY='semuon-tax2-v1',VERSION=1,SUBJECTS=['theory','practical','voucher'];
   const labels={theory:'이론 학습',practical:'일반전표 입력',voucher:'매입매출전표 입력'};
+  const FONT_DEFAULTS={fontUiPt:10.5,fontBodyPt:12,fontUiFamily:'default',fontBodyFamily:'default'};
+  const FONT_FAMILIES={default:{label:'기본 글꼴 (Noto Sans KR)',css:'"Noto Sans KR", "Malgun Gothic", "Segoe UI", system-ui, sans-serif'},malgun:{label:'맑은 고딕',css:'"Malgun Gothic", "Segoe UI", system-ui, sans-serif'},nanum:{label:'나눔고딕',css:'"Nanum Gothic", "Malgun Gothic", system-ui, sans-serif'},gulim:{label:'굴림',css:'Gulim, "Malgun Gothic", system-ui, sans-serif'},batang:{label:'바탕',css:'Batang, "Noto Serif KR", serif'},mono:{label:'고정폭 글꼴',css:'Consolas, "D2Coding", monospace'}};
+  function fontPreferences(settings){const old=settings.fontSize||18;return{fontUiPt:settings.fontUiPt??Math.max(16,old-2)*72/96,fontBodyPt:settings.fontBodyPt??old*72/96,fontUiFamily:settings.fontUiFamily||'default',fontBodyFamily:settings.fontBodyFamily||'default'}}
   const clone=x=>JSON.parse(JSON.stringify(x));
   const norm=x=>String(x??'').normalize('NFKC').trim().replace(/\s+/g,' ');
   function stable(x){if(Array.isArray(x))return '['+x.map(stable).join(',')+']';if(x&&typeof x==='object')return '{'+Object.keys(x).sort().map(k=>JSON.stringify(k)+':'+stable(x[k])).join(',')+'}';return JSON.stringify(x)}
@@ -115,7 +118,7 @@
       else{add.push(p);index.add(p)}
     }return{add,duplicates};
   }
-  function fresh(){return{schemaVersion:VERSION,examId:EXAM,revision:0,items:[],drafts:{},history:[],inbox:[],settings:{fontSize:18,reviewLimit:6}}}
+  function fresh(){return{schemaVersion:VERSION,examId:EXAM,revision:0,items:[],drafts:{},history:[],inbox:[],settings:{fontSize:18,reviewLimit:6,...FONT_DEFAULTS}}}
   function grade(p,input){
     assert(input&&typeof input==='object','입력 답안을 확인해 주세요.');
     if(p.form&&!p.voucher&&p.formEntry!=='practical')return F.gradeForm(p.form,input.form||{});
@@ -138,6 +141,8 @@
     const ids=new Map();for(const raw of s.items){const p=validateItem(raw);assert(!ids.has(p.id),'문제 ID가 중복됩니다.');ids.set(p.id,p)}
     const events=new Set();for(const e of s.history){assert(typeof e.id==='string'&&!events.has(e.id),'채점 기록 ID가 중복되거나 없습니다.');events.add(e.id);const p=ids.get(e.problemId),signature=cache&&stable(e),previous=cache?.get(e.id);if(previous&&previous.problem===p&&previous.signature===signature)continue;assert(p&&e.subject===p.subject&&e.examId===EXAM&&SOURCES.includes(e.source)&&Number.isFinite(Date.parse(e.at)),'다른 시험/출처이거나 손상된 학습기록입니다.');if(e.source==='semuon-self')assert(typeof e.correct==='boolean'&&e.input==null&&Array.isArray(e.wrongLabels)&&!e.wrongLabels.length,'직접 표시한 학습기록을 확인해 주세요.');else{const g=grade(p,e.input);assert(g.correct===e.correct&&stable(g.wrongLabels)===stable(e.wrongLabels),'답안과 채점 결과가 일치하지 않습니다.')}if(e.cancelledAt)assert(Number.isFinite(Date.parse(e.cancelledAt)),'취소 날짜를 확인해 주세요.');if(cache)cache.set(e.id,{problem:p,signature});}
     assert(s.settings&&[18,20,22,24].includes(s.settings.fontSize)&&[6,9,12].includes(s.settings.reviewLimit),'글자 크기·복습 목표 설정을 확인해 주세요.');
+    for(const key of ['fontUiPt','fontBodyPt'])if(s.settings[key]!==undefined)assert(typeof s.settings[key]==='number'&&Number.isFinite(s.settings[key])&&s.settings[key]>=1&&s.settings[key]<=30,'글자 크기는 1~30pt로 입력해 주세요.');
+    for(const key of ['fontUiFamily','fontBodyFamily'])if(s.settings[key]!==undefined)assert(Object.hasOwn(FONT_FAMILIES,s.settings[key]),'글꼴 설정을 확인해 주세요.');
     const inboxIds=new Set();for(const m of s.inbox){assert(m&&typeof m.id==='string'&&!inboxIds.has(m.id)&&Number.isFinite(Date.parse(m.at)),'접수 자료 목록을 확인해 주세요.');inboxIds.add(m.id);attachments(m.evidence||[]);if(m.originalFile)attachments([m.originalFile]);}
     return s;
   }
@@ -151,5 +156,5 @@
     for(const [id,draft]of Object.entries(incoming.drafts)){const key=remap.get(id);if(key&&!next.drafts[key])next.drafts[key]=clone(draft)}
     return next;
   }
-  return{EXAM,KEY,VERSION,SUBJECTS,labels,clone,norm,stable,assert,validateItem,immutableItem,stateValidator,plan,fresh,grade,active,reviewStates,stats,validateState,merge,identity,fingerprint,answerSignature,broadTopics};
+  return{EXAM,KEY,VERSION,SUBJECTS,labels,FONT_DEFAULTS,FONT_FAMILIES,fontPreferences,clone,norm,stable,assert,validateItem,immutableItem,stateValidator,plan,fresh,grade,active,reviewStates,stats,validateState,merge,identity,fingerprint,answerSignature,broadTopics};
 });

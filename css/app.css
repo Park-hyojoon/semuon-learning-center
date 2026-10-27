@@ -70,3 +70,18 @@ html:fullscreen,html:-webkit-full-screen{background:var(--canvas)}
 .tag-picker-option[aria-selected=true]{background:var(--soft);color:var(--primary)}.tag-picker-option:hover,.tag-picker-option.is-active{background:#dfede7;outline:2px solid var(--primary);outline-offset:-2px}
 @media print{.tag-picker-popup{display:none}}
 .problem-material-table{margin:12px 0;max-width:100%;overflow-x:auto}.problem-material-table table{width:100%;border-collapse:collapse;font-size:var(--font-body);line-height:1.5}.problem-material-table th,.problem-material-table td{padding:8px 10px;border:1px solid var(--line);vertical-align:top;white-space:normal;word-break:normal;overflow-wrap:break-word}.problem-material-table th{background:var(--soft);font-weight:700}.problem-material-table td:empty{min-width:16px}.prompt>p{margin:0 0 12px}
+/* Personal font settings: independent UI and reading scopes, pt converted to px by applyFont. */
+:root{--font-body:16px;--font-ui:14px;--font-ui-family:"Noto Sans KR","Malgun Gothic","Segoe UI",system-ui,sans-serif;--font-body-family:"Noto Sans KR","Malgun Gothic","Segoe UI",system-ui,sans-serif;--font-description:max(14px,var(--font-ui))}
+body.semuon{font-family:var(--font-ui-family);font-size:var(--font-ui)}
+.semuon .app-sidebar,.semuon .app-topbar,.semuon .field,.semuon .toolbar,.semuon .btn,.semuon .help,.semuon .eyebrow,.semuon .app-footer,.semuon dialog{font-family:var(--font-ui-family)}
+.semuon .app-nav a,.semuon .field,.semuon summary,.semuon .topic-source{font-size:var(--font-ui)}
+.semuon button,.semuon input,.semuon select,.semuon textarea{font-family:var(--font-ui-family)!important;font-size:var(--font-ui)!important}
+.semuon h1{font-size:calc(var(--font-ui)*1.8)}.semuon h2{font-size:calc(var(--font-ui)*1.45)}.semuon h3{font-size:calc(var(--font-ui)*1.2)}
+.semuon .app-brand{font-size:calc(var(--font-ui)*1.6)}.semuon .app-brand small{font-size:var(--font-ui)}
+.semuon .prompt,.semuon .choices,.semuon .original-text,.semuon .data-box,.semuon .exhibit,.semuon .answer-reveal>div{font-family:var(--font-body-family)!important;font-size:var(--font-body)!important}
+.semuon .prompt :is(table,td,th),.semuon .question figure.table-scroll :is(table,td,th),.semuon .theory-card figure.table-scroll :is(table,td,th){font-family:var(--font-body-family)!important;font-size:var(--font-body)!important}
+.semuon .question h2,.semuon .theory-card h2,.semuon .tax-form-question h2{font-family:var(--font-body-family);font-size:calc(var(--font-body)*1.45)}
+.semuon .nav-footer,.semuon .help,.semuon .app-footer,.semuon[data-page=settings] .card>p{font-family:var(--font-ui-family);font-size:var(--font-description);font-weight:500;line-height:1.8}
+.font-settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.font-setting{min-width:0;margin:0;padding:12px 16px;border:1px solid var(--line);border-radius:8px}.font-setting legend{font-weight:700;padding:0 6px}.font-setting .field{margin-bottom:10px}.font-setting input,.font-setting select{padding:4px 6px;min-height:30px}.font-setting .row{align-items:end}.font-setting .font-size-field{width:130px;max-width:100%;margin:0}.font-setting .font-reset{padding:3px 8px;min-height:30px;margin-bottom:1px}.font-setting .help{margin:8px 0 0}
+@media(max-width:680px){.font-settings-grid{grid-template-columns:1fr}}
+.semuon [data-entry-host] :is(.entry-table,.voucher-entry-table,.journal-table) :is(td,th){font-family:var(--font-ui-family)!important;font-size:var(--font-ui)!important}
