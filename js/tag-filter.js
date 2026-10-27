@@ -47,13 +47,14 @@
   }
   return definitions.find(([name])=>compact(name)===t)?.[0]||definitions.find(([,re])=>re.test(t))?.[0]||(/^결산/.test(t)?'결산':'기타 세부 유형');
  }
- function create(items,tagsOf){
+ function createLegacy(items,tagsOf){
   const groups=new Map();for(const tag of new Set(items.flatMap(tagsOf))){if(!tag||topics.includes(tag))continue;const name=groupOf(tag);if(!groups.has(name))groups.set(name,new Set());groups.get(name).add(tag)}
   const rows=[{value:'',label:'전체'},{section:'대표 유형 · 모든 분야 함께 풀기'},...topics.map(value=>({value,label:value})),{section:'세부 유형'}];
   const order=[...definitions.map(([name])=>name),'결산','학습 모음','기타 세부 유형'];
   for(const name of order){const children=groups.get(name);if(!children?.size)continue;rows.push({value:name,label:name,parent:true});for(const value of [...children].sort(compare))if(value!==name)rows.push({value,label:value,child:true})}
   return{rows,matches(p,value){const tags=tagsOf(p);return!value||tags.includes(value)||(groups.has(value)&&tags.some(t=>groups.get(value).has(t)))}};
  }
+ function create(items,tagsOf,legacyValue){return root.SemuonCurriculum.model(items,tagsOf,legacyValue,createLegacy(items,tagsOf))}
  let previous=null;
  function mount({select,host,labelId,model}){
   previous?.dispose();const doc=select.ownerDocument,button=doc.createElement('button'),popup=doc.createElement('div'),value=doc.createElement('span');let opened=false,active=0,buffer='',typedAt=0;
