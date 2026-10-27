@@ -50,7 +50,7 @@
   $('#review-session-next').onclick=()=>act(next);$('#questions').addEventListener('click',e=>{if(e.target.closest('[data-dismiss-completed]'))act(next)});
   status();if(remaining.length)await mountList('topic',remaining,$('#questions'),$('#entry-host'),{rerender:()=>unitReviewPage().catch(fail),onUpdate:status});else $('#questions').innerHTML='<p class="notice">이번 복습 문제는 오늘 모두 확인했습니다.</p>';
  }
- function progressPage(){if(new URLSearchParams(location.search).has('unit')){unitReviewPage().catch(fail);return}content.innerHTML=head('진도표','교재 목차 순서대로 학습 완료를 체크하고 오늘의 복습을 확인하세요.','<div id="progress-calendar"></div>')+'<div id="progress-host"></div>';SemuonProgress.mount($('#progress-host'),snapshot,{href,notify:toast,save:values=>store.update(s=>{const e=SemuonProgress.event(s,values);(s.progressEvents||(s.progressEvents=[])).push(e)})})}
+ function progressPage(){if(new URLSearchParams(location.search).has('unit')){unitReviewPage().catch(fail);return}content.innerHTML=head('진도표','교재 목차 순서대로 학습 완료를 체크하고 오늘의 복습을 확인하세요.')+'<div id="progress-host"></div>';SemuonProgress.mount($('#progress-host'),snapshot,{href,notify:toast,save:values=>store.update(s=>{const e=SemuonProgress.event(s,values);(s.progressEvents||(s.progressEvents=[])).push(e)})})}
 
  function latest(id){return historyFor(id).at(-1)}
  let uncertaintyKey='',uncertaintyValue;function uncertainNotes(){const key=store.revision+'|'+R.day(Date.now());if(uncertaintyKey!==key){uncertaintyValue=C.uncertainties(snapshot());uncertaintyKey=key}return uncertaintyValue}
