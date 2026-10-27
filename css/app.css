@@ -61,3 +61,11 @@
 html:fullscreen,html:-webkit-full-screen{background:var(--canvas)}
 @media(max-width:760px){.app-topbar{gap:8px}.app-topbar .fullscreen-toggle{padding:10px}.app-topbar [data-fullscreen-label]{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}}
 @media print{.app-topbar .fullscreen-toggle{display:none}}
+/* 선택 가능한 단원 제목은 굵게, 세부 태그는 한 단계 들여쓴다. */
+.tag-picker-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-width:0;min-height:44px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);font-size:var(--font-ui);text-align:left}
+.tag-picker-trigger span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tag-picker-trigger svg{flex:none}.tag-picker-trigger[aria-expanded=true]{border-color:var(--primary);outline:2px solid var(--primary);outline-offset:1px}
+.tag-picker-popup{position:fixed;z-index:90;overflow:auto;overscroll-behavior:contain;scroll-padding:6px;padding:4px 0;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font-size:16px;line-height:1.5;text-align:left}
+.tag-picker-section{padding:9px 12px;font-size:14px;font-weight:700;color:var(--muted);background:var(--canvas)}
+.tag-picker-option{padding:8px 12px;cursor:pointer;overflow-wrap:anywhere}.tag-picker-parent{padding-left:12px;font-weight:800;margin-top:5px}.tag-picker-child{padding-left:30px;font-weight:400}
+.tag-picker-option[aria-selected=true]{background:var(--soft);color:var(--primary)}.tag-picker-option:hover,.tag-picker-option.is-active{background:#dfede7;outline:2px solid var(--primary);outline-offset:-2px}
+@media print{.tag-picker-popup{display:none}}
