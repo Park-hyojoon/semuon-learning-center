@@ -31,6 +31,7 @@
     assert(Array.isArray(list), '첨부 자료 목록을 확인해 주세요.');
     for(const f of list){text(f.name,'첨부 파일명');assert(/^data:(image\/(png|jpeg|webp)|application\/pdf|text\/plain);base64,[A-Za-z0-9+/=\r\n]+$/.test(f.data||''),'첨부 자료는 PNG/JPEG/WebP/PDF/TXT만 허용합니다.');assert(f.data.length<3000000,'첨부 한 파일은 약 2MB 이하로 넣어 주세요.');}
   }
+  function validateDisplayBlocks(blocks,depth=0){assert(depth<=4&&Array.isArray(blocks)&&blocks.length>0,'화면용 문제 자료를 확인해 주세요.');for(const b of blocks){if(typeof b==='string'){text(b,'화면용 본문');continue}assert(b&&Array.isArray(b.rows)&&b.rows.length>0&&b.rows.every(r=>Array.isArray(r)&&r.every(c=>c&&typeof c.text==='string'&&[c.colspan||1,c.rowspan||1].every(n=>Number.isInteger(n)&&n>=1&&n<=50))),'화면용 표의 행·열을 확인해 주세요.');assert(!b.headerRows||Number.isInteger(b.headerRows)&&b.headerRows>=0&&b.headerRows<=b.rows.length,'표 머리글을 확인해 주세요.');for(const c of b.rows.flat())if(c.blocks)validateDisplayBlocks(c.blocks,depth+1);}}
   function validateItem(raw){
     if(raw&&immutableItems.has(raw))return raw;
     assert(raw&&raw.examId===EXAM,'전산세무 2급 자료만 등록할 수 있습니다.');
@@ -38,6 +39,7 @@
     assert(SUBJECTS.includes(p.subject),'이론·일반전표·매입매출전표만 등록할 수 있습니다.');
     text(p.title,'제목');text(p.type,'복습 유형');text(p.prompt,'문제 원문');text(p.explanation,'해설 또는 정답 근거');
     if(p.displayPrompt!==undefined)text(p.displayPrompt,'화면용 문제 본문'); // Original remains verbatim in source.originalText/prompt.
+    if(p.displayBlocks!==undefined)validateDisplayBlocks(p.displayBlocks);
     assert(p.source&&p.source.verified===true,'원문·정답·증빙 확인을 마친 자료만 등록해 주세요.');
     text(p.source.name,'출처/자료명');text(p.source.questionNo,'문항 번호');text(p.source.originalText,'보관할 원문');text(p.source.answerText,'원본 정답');
     assert(p.source.originalText===p.prompt,'문제 화면의 원문과 보관 원문이 다릅니다. 동일하게 보존해 주세요.');
