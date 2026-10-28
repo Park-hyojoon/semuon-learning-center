@@ -95,6 +95,74 @@
   const old=resolve(legacyValue||'');if(old&&!rows.some(r=>r.value===old)){rows.push({section:'이전 검색 태그'},{value:old,label:old,child:true})}
   return{rows,resolve,matches(p,value){if(!value)return true;const c=classify(p);if(byId.has(value))return c.units.includes(value);if(courses.some(x=>x.name===value))return c.subject===value;return legacy.matches(p,value)},searchText:p=>classify(p).units.map(id=>{const u=byId.get(id);return u.course+' '+u.title}).join(' '),subjectFor:value=>byId.get(value)?.course||(courses.some(c=>c.name===value)?value:null)};
  }
- const api={courses,units,kind,classify,resolve,model,inSubject:(p,name)=>classify(p).subject===name};
+
+ // Practical outlines share stable IDs between entry filters and personal progress.
+ const practiceGroups=[
+  {id:'general',name:'일반전표',path:'general.html',titles:['현금·예금과 현금과부족','채권·채무와 어음','유가증권 취득·처분','재고자산 거래','유형·무형자산 취득·처분','차입금·사채·장기채무','자본·자기주식','급여·퇴직연금·경비·이자','세금 납부·부가세 정산','외화 거래','보증금·선급금·선수금','입력 오류 수정','기타 일반전표']},
+  {id:'voucher',name:'매입매출전표',path:'voucher.html',titles:['매출 · 과세 세금계산서 (11)','매출 · 영세율 세금계산서 (12)','매출 · 건별 (14)','매출 · 직수출 (16)','매출 · 현금영수증 과세 (22)','매입 · 과세 세금계산서 (51)','매입 · 영세율 (52)','매입 · 면세 계산서 (53)','매입 · 매입세액 불공제 (54)','매입 · 수입 세금계산서 (55)','매입 · 신용카드 과세 (57)','매입 · 현금영수증 과세 (61)','매입 · 현금영수증 면세 (62)','예정신고 누락·전표 추가 설정','기타 매입매출전표']},
+  {id:'vat',name:'부가가치세 신고 부속서류',path:'forms.html',titles:['부가가치세 신고서','공제받지 못할 매입세액·공통매입세액 정산','신용카드 매출전표 등 수령명세서','부동산 임대공급가액 명세서','영세율·수출실적 명세서','건물 등 감가상각자산 취득명세서','의제매입세액 공제신고서','대손세액 공제신고서','전자신고·마감','기타 부가가치세 부속서류']},
+  {id:'closing',name:'결산 정리',path:'general.html',titles:['수익·비용의 발생과 이연','감가상각·무형자산 상각','대손충당금 설정','유가증권·외화 평가','기말재고·제조원가 결산','유동성 대체·계정 재분류','법인세 등 결산','이익잉여금 처분','기타 결산 정리','부가가치세 정산','퇴직급여충당부채 설정','현금과부족 정리','유형자산 재평가']}
+ ];
+ const practiceUnits=practiceGroups.flatMap(g=>g.titles.map((title,i)=>({id:`practice:${g.id}:${String(i+1).padStart(2,'0')}`,group:g.id,course:g.name,number:i+1,title,label:`${String(i+1).padStart(2,'0')}. ${title}`}))),practiceById=new Map(practiceUnits.map(u=>[u.id,u])),practiceCache=new WeakMap();
+ function practiceGroup(p){
+  if(p.subject==='theory')return null;
+  const section=/^실무\s*([1-5])\s*-/.exec(p.source?.questionNo||'');
+  if(section)return({1:'general',2:'voucher',3:'vat',4:'closing'})[section[1]]||null;
+  if(['payroll','yearend','familyRegistration','withholding'].includes(p.form?.kind))return null;
+  if(['closing','inventoryClosing','appropriation','badDebt'].includes(p.form?.kind))return'closing';
+  if(p.voucher||p.subject==='voucher'&&!p.form)return'voucher';
+  if(p.form)return'vat';
+  return p.subject==='practical'?'general':null;
+ }
+ function practiceClassify(p){
+  if(practiceCache.has(p))return practiceCache.get(p);
+  const group=practiceGroup(p),metadata=clean([p.type,p.source?.subtopic,...(p.tags||[])].join(' ')),accounts=(p.answers||[]).map(r=>r.account||'').join(' '),text=clean(metadata+' '+accounts+' '+(p.prompt||'')),a=clean(accounts),ids=[];
+  const add=n=>ids.push(`practice:${group}:${String(n).padStart(2,'0')}`);
+  if(group==='voucher'){
+   const codes=['11','12','14','16','22','51','52','53','54','55','57','61','62'],index=codes.indexOf(String(p.voucher?.type||'').slice(0,2));
+   if(index>=0)add(index+1);
+   if(p.form?.kind==='statement'||/예정신고.*누락|누락.*예정신고/.test(text))add(14);
+   if(!ids.length)add(15);
+  }else if(group==='vat'){
+   const map={vatReturn:1,nondeductible:2,commonInputSettlement:2,cardStatement:3,rental:4,exportStatement:5,assetAcquisition:6,deemed:7,badDebtCredit:8,badDebt:8,efile:9};add(map[p.form?.kind]||10);
+  }else if(group==='closing'){
+   if(['closing','inventoryClosing'].includes(p.form?.kind))add(5);
+   else if(p.form?.kind==='appropriation')add(8);
+   else if(p.form?.kind==='badDebt'||/대손충당금/.test(a))add(3);
+   else if(/감가상각|무형자산상각|상각누계/.test(a)||/당기감가상각비/.test(text))add(2);
+   else if(/외화환산|단기매매증권|매도가능증권|만기보유증권/.test(a))add(4);
+   else if(/법인세등|법인세비용/.test(a))add(7);
+   else if(/유동성장기부채|유동성장기차입|유동성사채|장기차입금|단기차입금/.test(a))add(6);
+   else if(/부가세예수금|부가세대급금/.test(a))add(10);
+   else if(/퇴직급여충당부채/.test(a))add(11);
+   else if(/현금과부족/.test(a))add(12);
+   else if(/재평가차익|재평가손실/.test(a))add(13);
+   else if(/미수수익|선수수익|미지급비용|선급비용|보험료|임차료|이자수익|이자비용|소모품/.test(a))add(1);
+   else add(9);
+  }else if(group==='general'){
+   if(p.initialEntry||/오류.*수정|잘못.*(입력|처리)|수정분개/.test(metadata))add(12);
+   else if(/외화|외환/.test(metadata)||/외화환산|외환차/.test(a)||/환율/.test(text))add(10);
+   else if(/자본금|자기주식|주식발행|이익잉여금|주식배당/.test(a))add(7);
+   else if(/단기매매증권|매도가능증권|만기보유증권/.test(a))add(3);
+   else if(/토지|건물|기계장치|차량운반구|비품|투자부동산|건설중인자산|영업권|산업재산권|개발비|유형자산/.test(a))add(5);
+   else if(/차입금|사채|장기미지급금/.test(a))add(6);
+   else if(/퇴직연금|퇴직급여|급여|임금|상여금|잡급|복리후생|여비교통|접대비|기업업무추진비|교육훈련|보험료|수수료비용|광고선전|도서인쇄|소모품비|이자비용/.test(a))add(8);
+   else if(/부가세예수금|부가세대급금|미지급세금|선납세금|법인세등|세금과공과|예수금/.test(a))add(9);
+   else if(/보증금|선급금|선수금|가지급금|가수금/.test(a))add(11);
+   else if(/외상매출금|받을어음|외상매입금|지급어음|미수금|미지급금|대여금|대손/.test(a))add(2);
+   else if(/상품|제품|원재료|재공품/.test(a))add(4);
+   else if(/현금과부족|보통예금|당좌예금|정기예금|현금/.test(a))add(1);
+   else add(13);
+  }
+  const result={group,units:ids};practiceCache.set(p,result);return result;
+ }
+ function practiceModel(items,group,legacyValue,tagsOf,legacy){
+  const course=practiceGroups.find(g=>g.id===group),children=practiceUnits.filter(u=>u.group===group&&items.some(p=>practiceClassify(p).units.includes(u.id))),rows=[{value:'',label:'전체 실무 유형'},{value:'practice:'+group,label:course.name,parent:true},...children.map((u,i)=>({value:u.id,label:String(i+1).padStart(2,'0')+'. '+u.title,child:true}))];
+  const old=resolve(legacyValue||'');if(old&&!rows.some(r=>r.value===old))rows.push({section:'이전 검색 태그'},{value:old,label:old,child:true});
+  const theory=model(items,tagsOf,old,legacy);
+  return{rows,resolve,matches(p,value){if(!value)return true;const c=practiceClassify(p);if(practiceById.has(value))return c.units.includes(value);if(value==='practice:'+group)return c.group===group;return theory.matches(p,value)},searchText:p=>practiceClassify(p).units.map(id=>practiceById.get(id)?.title||'').join(' '),subjectFor:()=>null};
+ }
+ function practiceLink(unit){const g=practiceGroups.find(g=>g.id===unit.group);return'pages/'+g.path+'?practice='+g.id+'&tag='+encodeURIComponent(unit.id)}
+ const api={courses,units,kind,classify,resolve,model,practiceGroups,practiceUnits,practiceGroup,practiceClassify,practiceModel,practiceLink,inSubject:(p,name)=>classify(p).subject===name};
  if(typeof module==='object'&&module.exports)module.exports=api;else root.SemuonCurriculum=api;
 })(globalThis);

@@ -54,7 +54,7 @@
   for(const name of order){const children=groups.get(name);if(!children?.size)continue;rows.push({value:name,label:name,parent:true});for(const value of [...children].sort(compare))if(value!==name)rows.push({value,label:value,child:true})}
   return{rows,matches(p,value){const tags=tagsOf(p);return!value||tags.includes(value)||(groups.has(value)&&tags.some(t=>groups.get(value).has(t)))}};
  }
- function create(items,tagsOf,legacyValue){return root.SemuonCurriculum.model(items,tagsOf,legacyValue,createLegacy(items,tagsOf))}
+ function create(items,tagsOf,legacyValue,practiceGroup){const legacy=createLegacy(items,tagsOf);return practiceGroup?root.SemuonCurriculum.practiceModel(items,practiceGroup,legacyValue,tagsOf,legacy):root.SemuonCurriculum.model(items,tagsOf,legacyValue,legacy)}
  let previous=null;
  function mount({select,host,labelId,model}){
   previous?.dispose();const doc=select.ownerDocument,button=doc.createElement('button'),popup=doc.createElement('div'),value=doc.createElement('span');let opened=false,active=0,buffer='',typedAt=0;
