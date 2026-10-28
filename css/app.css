@@ -90,3 +90,5 @@ body.semuon{font-family:var(--font-ui-family);font-size:var(--font-ui)}
 /* Keep the three short filters compact while giving unit/search fields room. */
 .list-filters{display:flex;flex-wrap:wrap;gap:0 12px}.list-filters>.field{flex:1 1 170px;min-width:0;max-width:100%}.list-filters>.filter-round-compact{flex:0 0 6.5em}.list-filters>.filter-kind-compact{flex:0 0 9.5em}.list-filters>.filter-state-compact{flex:0 0 8em}
 .list-schedule-controls{gap:10px 18px;margin:2px 0 10px}.list-schedule-controls>label{display:flex;align-items:center;gap:7px;white-space:nowrap;cursor:pointer}.list-schedule-controls input{width:16px;height:16px;margin:0;accent-color:var(--primary)}.list-schedule-controls .help{margin:0}
+
+.list-overview{display:flex;align-items:flex-start;justify-content:space-between;gap:12px 20px;flex-wrap:wrap;margin:2px 0 14px}.list-summary{flex:1 1 280px;min-width:0}.list-overview #list-count{margin:0}.list-overview .list-schedule-controls{margin:0 0 8px}.list-overview #list-pagination{flex:none;justify-content:flex-end;gap:10px;margin:0 0 0 auto;padding:0}.list-overview #list-page{white-space:nowrap;margin:0}
