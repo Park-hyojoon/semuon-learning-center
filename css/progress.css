@@ -12,3 +12,5 @@
 @media(max-width:420px){.pr-layout-top>.pr-next-card{gap:12px;padding:12px}.pr-layout-top .pr-calendar{padding:6px;width:156px}.pr-layout-top .pr-next-copy .btn{font-size:calc(var(--font-ui)*.9)}.pr-columns .pr-course>summary{padding:13px 12px}}
 
 .pr-layout-top .pr-exam{flex-wrap:wrap;gap:4px}.pr-layout-top .pr-exam span{flex-basis:100%;text-align:left}.pr-practice-column>.row{min-height:calc(var(--font-ui)*1.2*1.6);margin-bottom:10px}
+
+.pr-book-reference{padding:4px 18px 10px;color:var(--muted);font-size:var(--font-ui)}

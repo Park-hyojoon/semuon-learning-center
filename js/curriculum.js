@@ -9,7 +9,7 @@
   {id:'cost',name:'원가회계',units:[
    ['원가회계의 기본개념과 분류',108],['원가의 흐름',114],['요소별 원가회계',120],['제조간접비 배부와 개별원가계산',126],['부문별 원가계산',135],['종합원가계산',140],['공손품·작업폐물·부산물의 구분과 회계처리',151]
   ]},
-  {id:'vat',name:'부가가치세',units:[
+  {id:'vat',bookPage:369,chapter:4,bookTitle:'부가가치세신고서의 작성 및 전자신고',name:'부가가치세',units:[
    ['부가가치세 총론',156],['과세거래',166],['영세율과 면세',176],['과세표준',184],['매입세액의 계산',191],['세금계산서',201],['신고와 납부',209],['간이과세자',220]
   ]},
   {id:'income',name:'소득세',units:[
@@ -98,17 +98,20 @@
 
  // Practical outlines share stable IDs between entry filters and personal progress.
  const practiceGroups=[
-  {id:'general',name:'일반전표',path:'general.html',titles:['현금·예금과 현금과부족','채권·채무와 어음','유가증권 취득·처분','재고자산 거래','유형·무형자산 취득·처분','차입금·사채·장기채무','자본·자기주식','급여·퇴직연금·경비·이자','세금 납부·부가세 정산','외화 거래','보증금·선급금·선수금','입력 오류 수정','기타 일반전표']},
-  {id:'voucher',name:'매입매출전표',path:'voucher.html',titles:['매출 · 과세 세금계산서 (11)','매출 · 영세율 세금계산서 (12)','매출 · 건별 (14)','매출 · 직수출 (16)','매출 · 현금영수증 과세 (22)','매입 · 과세 세금계산서 (51)','매입 · 영세율 (52)','매입 · 면세 계산서 (53)','매입 · 매입세액 불공제 (54)','매입 · 수입 세금계산서 (55)','매입 · 신용카드 과세 (57)','매입 · 현금영수증 과세 (61)','매입 · 현금영수증 면세 (62)','예정신고 누락·전표 추가 설정','기타 매입매출전표']},
-  {id:'vat',name:'부가가치세 신고 부속서류',path:'forms.html',titles:['부가가치세 신고서','공제받지 못할 매입세액·공통매입세액 정산','신용카드 매출전표 등 수령명세서','부동산 임대공급가액 명세서','영세율·수출실적 명세서','건물 등 감가상각자산 취득명세서','의제매입세액 공제신고서','대손세액 공제신고서','전자신고·마감','기타 부가가치세 부속서류']},
-  {id:'closing',name:'결산 정리',path:'general.html',titles:['수익·비용의 발생과 이연','감가상각·무형자산 상각','대손충당금 설정','유가증권·외화 평가','기말재고·제조원가 결산','유동성 대체·계정 재분류','법인세 등 결산','이익잉여금 처분','기타 결산 정리','부가가치세 정산','퇴직급여충당부채 설정','현금과부족 정리','유형자산 재평가']}
+  {id:'foundation',name:'설치·기초정보·장부 조회',path:null,bookTitle:'프로그램의 설치 및 기초정보관리',bookPage:312,chapter:1,always:true,titles:['프로그램 설치·회사등록','기초정보·거래처·계정 등록','장부·자료 조회']},
+  {id:'general',bookPage:316,chapter:2,bookTitle:'일반전표입력',name:'일반전표',path:'general.html',titles:['현금·예금과 현금과부족','채권·채무와 어음','유가증권 취득·처분','재고자산 거래','유형·무형자산 취득·처분','차입금·사채·장기채무','자본·자기주식','급여·퇴직연금·경비·이자','세금 납부·부가세 정산','외화 거래','보증금·선급금·선수금','입력 오류 수정','기타 일반전표']},
+  {id:'voucher',bookPage:333,chapter:3,bookTitle:'매입매출전표입력',name:'매입매출전표',path:'voucher.html',titles:['매출 · 과세 세금계산서 (11)','매출 · 영세율 세금계산서 (12)','매출 · 건별 (14)','매출 · 직수출 (16)','매출 · 현금영수증 과세 (22)','매입 · 과세 세금계산서 (51)','매입 · 영세율 (52)','매입 · 면세 계산서 (53)','매입 · 매입세액 불공제 (54)','매입 · 수입 세금계산서 (55)','매입 · 신용카드 과세 (57)','매입 · 현금영수증 과세 (61)','매입 · 현금영수증 면세 (62)','예정신고 누락·전표 추가 설정','기타 매입매출전표']},
+  {id:'vat',bookPage:369,chapter:4,bookTitle:'부가가치세신고서의 작성 및 전자신고',name:'부가가치세 신고 부속서류',path:'forms.html',titles:['부가가치세 신고서','공제받지 못할 매입세액·공통매입세액 정산','신용카드 매출전표 등 수령명세서','부동산 임대공급가액 명세서','영세율·수출실적 명세서','건물 등 감가상각자산 취득명세서','의제매입세액 공제신고서','대손세액 공제신고서','전자신고·마감','기타 부가가치세 부속서류']},
+  {id:'closing',bookPage:416,chapter:5,bookTitle:'고정자산등록 및 결산자료의 입력',name:'결산 정리',path:'general.html',titles:['수익·비용의 발생과 이연','감가상각·무형자산 상각','대손충당금 설정','유가증권·외화 평가','기말재고·제조원가 결산','유동성 대체·계정 재분류','법인세 등 결산','이익잉여금 처분','기타 결산 정리','부가가치세 정산','퇴직급여충당부채 설정','현금과부족 정리','유형자산 재평가','고정자산 등록']},
+  {id:'withholding',name:'급여·원천징수',path:'forms.html',bookTitle:'근로소득의 원천징수',bookPage:437,chapter:6,always:true,titles:['사원·부양가족 등록','급여자료·수당·공제 입력','원천징수이행상황신고서','원천징수 전자신고','급여·원천징수 자료 조회']},
+  {id:'yearend',name:'연말정산',path:'forms.html',bookTitle:'연말정산기초 및 전자신고',bookPage:451,chapter:7,always:true,titles:['기초자료·전근무지 소득','부양가족·소득공제','보험료·의료비·교육비','기부금·월세·세액공제','신용카드 등 사용액','정산 결과·전자신고','연말정산 종합']}
  ];
- const practiceUnits=practiceGroups.flatMap(g=>g.titles.map((title,i)=>({id:`practice:${g.id}:${String(i+1).padStart(2,'0')}`,group:g.id,course:g.name,number:i+1,title,label:`${String(i+1).padStart(2,'0')}. ${title}`}))),practiceById=new Map(practiceUnits.map(u=>[u.id,u])),practiceCache=new WeakMap();
+ const practiceUnits=practiceGroups.flatMap(g=>g.titles.map((title,i)=>({id:`practice:${g.id}:${String(i+1).padStart(2,'0')}`,group:g.id,course:g.name,number:i+1,title,label:`${String(i+1).padStart(2,'0')}. ${title}`,trackOnly:g.always||g.id==='closing'&&i===13}))),practiceById=new Map(practiceUnits.map(u=>[u.id,u])),practiceCache=new WeakMap();
  function practiceGroup(p){
   if(p.subject==='theory')return null;
   const section=/^실무\s*([1-5])\s*-/.exec(p.source?.questionNo||'');
-  if(section)return({1:'general',2:'voucher',3:'vat',4:'closing'})[section[1]]||null;
-  if(['payroll','yearend','familyRegistration','withholding'].includes(p.form?.kind))return null;
+  if(section){if(section[1]==='5'){if(p.form?.kind==='yearend')return'yearend';if(['payroll','familyRegistration','withholding'].includes(p.form?.kind))return'withholding';return /연말정산/.test(p.prompt)&&!/원천징수이행/.test(p.prompt)?'yearend':'withholding';}return({1:'general',2:'voucher',3:'vat',4:'closing'})[section[1]]||null;}
+  if(p.form?.kind==='yearend')return'yearend';if(['payroll','familyRegistration','withholding'].includes(p.form?.kind))return'withholding';
   if(['closing','inventoryClosing','appropriation','badDebt'].includes(p.form?.kind))return'closing';
   if(p.voucher||p.subject==='voucher'&&!p.form)return'voucher';
   if(p.form)return'vat';
@@ -125,6 +128,9 @@
    if(!ids.length)add(15);
   }else if(group==='vat'){
    const map={vatReturn:1,nondeductible:2,commonInputSettlement:2,cardStatement:3,rental:4,exportStatement:5,assetAcquisition:6,deemed:7,badDebtCredit:8,badDebt:8,efile:9};add(map[p.form?.kind]||10);
+  }else if(group==='withholding'){add(p.form?.kind==='familyRegistration'?1:p.form?.kind==='payroll'?2:p.form?.kind==='efile'?4:3);
+  }else if(group==='yearend'){
+   const t=clean(p.prompt||'');if(/전근무|전직장|소득명세/.test(t))add(1);if(/부양가족|기본공제|인적공제/.test(t))add(2);if(/보험료|의료비|교육비/.test(t))add(3);if(/기부금|월세/.test(t))add(4);if(/신용카드|카드등/.test(t))add(5);if(/전자신고/.test(t))add(6);add(7);
   }else if(group==='closing'){
    if(['closing','inventoryClosing'].includes(p.form?.kind))add(5);
    else if(p.form?.kind==='appropriation')add(8);
@@ -162,7 +168,7 @@
   const theory=model(items,tagsOf,old,legacy);
   return{rows,resolve,matches(p,value){if(!value)return true;const c=practiceClassify(p);if(practiceById.has(value))return c.units.includes(value);if(value==='practice:'+group)return c.group===group;return theory.matches(p,value)},searchText:p=>practiceClassify(p).units.map(id=>practiceById.get(id)?.title||'').join(' '),subjectFor:()=>null};
  }
- function practiceLink(unit){const g=practiceGroups.find(g=>g.id===unit.group);return'pages/'+g.path+'?practice='+g.id+'&tag='+encodeURIComponent(unit.id)}
+ function practiceLink(unit){const g=practiceGroups.find(g=>g.id===unit.group);if(!g.path)return'pages/journal.html?unit='+encodeURIComponent(unit.id);return'pages/'+g.path+'?practice='+g.id+'&tag='+encodeURIComponent(unit.id)}
  const api={courses,units,kind,classify,resolve,model,practiceGroups,practiceUnits,practiceGroup,practiceClassify,practiceModel,practiceLink,inSubject:(p,name)=>classify(p).subject===name};
  if(typeof module==='object'&&module.exports)module.exports=api;else root.SemuonCurriculum=api;
 })(globalThis);
