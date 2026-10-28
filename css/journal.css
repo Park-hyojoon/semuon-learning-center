@@ -4,3 +4,5 @@
 @media(max-width:430px){.jr-datebar .btn{padding:4px 6px}.jr-columns{gap:8px}.jr-entry strong,.jr-outcome,.jr-focus{font-size:calc(var(--font-ui)*.95)}.jr-fields{grid-template-columns:1fr}.jr-full{grid-column:auto}}
 
 .jr-complete-choice input{width:16px;min-height:16px;height:16px;vertical-align:middle;accent-color:var(--primary);margin-right:6px}.jr-auto{margin:0;padding:8px 14px;border-bottom:1px solid var(--line);font-size:var(--font-ui);color:var(--muted)}
+
+.jr-inline-editor{width:100%;max-height:none;border:0;border-radius:0;box-shadow:none;overflow:visible}.jr-inline-editor form{max-height:none}.jr-inline-editor header{display:none}.jr-inline-editor .jr-dialog-body{overflow:visible;padding:12px}.jr-inline-editor .jr-fields{grid-template-columns:1fr}.jr-inline-editor footer{padding:10px 12px;flex-wrap:wrap}.jr-inline-editor .jr-editor textarea{min-height:160px}.jr-inline-editor .jr-draft-status{flex-basis:100%}.jr-inline-editor .jr-editor-toolbar{padding:4px}.jr-entry-list{border-top:1px solid var(--line)}
