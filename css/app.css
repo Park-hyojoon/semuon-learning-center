@@ -33,13 +33,13 @@
 @media(max-width:560px){.prompt-grid{grid-template-columns:1fr}}
 /* 문제 글자 표시(드래그 → 오른쪽 클릭) */
 [data-question-mark-block]{user-select:text;-webkit-user-select:text}
-.question-mark-popup{position:fixed;z-index:10020;width:max-content;max-width:calc(100vw - 16px);color:var(--ink);font-size:16px;line-height:1.5}
-.question-mark-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.question-mark-popup button{display:inline-flex;align-items:center;justify-content:center;min-width:40px;min-height:40px;padding:5px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font-size:16px;white-space:nowrap}
-.question-mark-popup button:hover,.question-mark-popup button:focus-visible{background:var(--soft);border-color:var(--primary)}
-.question-mark-swatch{display:block;width:18px;height:18px;border-radius:4px}.qm-swatch-blue{background:#02b4ff}.qm-swatch-red{background:#c62828}.qm-swatch-green{background:#22b14c}
-.question-mark-status{max-width:300px;margin:6px 0 0;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-size:14px}
-.qm-blue{color:#02b4ff!important}.qm-red{color:#c62828!important}.qm-green{color:#22b14c!important}.qm-highlight{background:#fff200!important;box-decoration-break:clone;-webkit-box-decoration-break:clone}.qm-bold{font-weight:700!important}.qm-underline{text-decoration-line:underline;text-decoration-thickness:.12em;text-underline-offset:.18em}
+.question-mark-popup{position:fixed;z-index:10020;width:max-content;max-width:calc(100vw - 16px);padding:7px;background:#fff;border:1px solid #e5e7eb;border-radius:13px;box-shadow:0 5px 18px #21353d16,0 1px 4px #21353d0c;color:#33434b;font-family:var(--font-ui-family);font-size:14px;line-height:1.4;isolation:isolate}
+.question-mark-actions{display:flex;align-items:center;gap:2px;flex-wrap:wrap}.question-mark-divider{width:1px;height:20px;background:#edf0ee;margin:0 4px;flex:none}
+.question-mark-popup button{display:inline-flex;align-items:center;justify-content:center;min-width:30px;width:30px;min-height:32px;height:32px;padding:5px;border:0;border-radius:8px;background:#fff;color:#46515c;font-size:14px;white-space:nowrap;cursor:pointer;transition:background .12s,color .12s}
+.question-mark-popup button:hover{background:#f0f5f3;color:#155e59}.question-mark-popup button:focus-visible{outline:2px solid #308f88;outline-offset:-2px;background:#eff7f4}.question-mark-popup button[aria-pressed=true]{background:#e5f2ee;box-shadow:inset 0 0 0 1px #b8d9ce}.question-mark-popup button:disabled{opacity:.3;cursor:default}.question-mark-popup button:disabled:hover{background:#fff}
+.question-mark-swatch{display:block;width:17px;height:17px;border-radius:6px;box-shadow:inset 0 0 0 1px #0000000c}.qm-swatch-blue{background:#2585df}.qm-swatch-red{background:#e34d59}.qm-swatch-green{background:#269e72}.question-mark-pen{stroke:#e4b324;stroke-width:4}
+.question-mark-status{max-width:284px;margin:6px 0 0;padding:8px;border-top:1px solid #edf0ee;color:#a12c35;background:#fff;font-size:13px}
+.qm-blue{color:#1675c9!important}.qm-red{color:#c62828!important}.qm-green{color:#168557!important}.qm-highlight{background:#fff1a8!important;box-decoration-break:clone;-webkit-box-decoration-break:clone}.qm-bold{font-weight:700!important}.qm-underline{text-decoration-line:underline;text-decoration-thickness:.1em;text-underline-offset:.18em}.qm-strike{text-decoration-line:line-through;text-decoration-thickness:.1em}.qm-underline.qm-strike{text-decoration-line:underline line-through}
 @media print{.question-mark-popup{display:none!important}}
 /* 2026-10-14 사용자 지정: 문제마다 상자를 두르지 않고, 한 화면의 문제들을 큰 상자 하나에 담는다. 문제 사이에는 구분선 없이 여백만 둔다 */
 .semuon #questions:has(>:is(.question,.theory-slot)){padding:4px 24px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
