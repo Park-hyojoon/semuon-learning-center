@@ -14,3 +14,4 @@
 .pr-layout-top .pr-exam{flex-wrap:wrap;gap:4px}.pr-layout-top .pr-exam span{flex-basis:100%;text-align:left}.pr-practice-column>.row{min-height:calc(var(--font-ui)*1.2*1.6);margin-bottom:10px}
 
 .pr-book-reference{padding:4px 18px 10px;color:var(--muted);font-size:var(--font-ui)}
+.home-learning-top #home-calendar{flex:none;max-width:45%}.pr-progress-heading{margin-bottom:20px}.pr-progress-heading .page-head{margin-bottom:18px}
