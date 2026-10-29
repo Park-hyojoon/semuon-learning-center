@@ -15,3 +15,4 @@
 
 .pr-book-reference{padding:4px 18px 10px;color:var(--muted);font-size:var(--font-ui)}
 .home-learning-top #home-calendar{flex:none;max-width:45%}.pr-progress-heading{margin-bottom:20px}.pr-progress-heading .page-head{margin-bottom:18px}
+.pr-progress-heading .page-head>div{width:100%}.pr-progress-heading .page-head p:empty{display:none}.pr-heading-row{display:flex;align-items:center;justify-content:space-between;gap:12px 24px;flex-wrap:wrap}.pr-heading-row h1{flex:none}.pr-heading-row .pr-overview,.pr-heading-row .pr-top{margin:0;padding:0}.pr-heading-row .pr-top{justify-content:flex-end}.pr-heading-row .pr-completion-bar{width:110px}@media(max-width:680px){.pr-heading-row .pr-overview{max-width:100%}.pr-heading-row .pr-top{justify-content:flex-start}.pr-heading-row .pr-completion-bar{width:90px}}

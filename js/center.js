@@ -54,7 +54,7 @@
   $('#review-session-next').onclick=()=>act(next);$('#questions').addEventListener('click',e=>{if(e.target.closest('[data-dismiss-completed]'))act(next)});
   status();if(remaining.length)await mountList('topic',remaining,$('#questions'),$('#entry-host'),{rerender:()=>unitReviewPage().catch(fail),onUpdate:status});else $('#questions').innerHTML='<p class="notice">이번 복습 문제는 오늘 모두 확인했습니다.</p>';
  }
- function progressPage(){if(new URLSearchParams(location.search).has('unit')){unitReviewPage().catch(fail);return}content.innerHTML='<div id="progress-host"></div>';SemuonProgress.mount($('#progress-host'),snapshot,{href,heading:head('진도표','교재의 개념 학습·문제 시도·혼자 완료를 같은 범위로 확인하세요.'),weekSummary:(s,end)=>SemuonJournal.markdown(s,{end,weekly:true}),notify:toast,save:values=>store.update(s=>{const e=SemuonProgress.event(s,values);(s.progressEvents||(s.progressEvents=[])).push(e)})})}
+ function progressPage(){if(new URLSearchParams(location.search).has('unit')){unitReviewPage().catch(fail);return}content.innerHTML='<div id="progress-host"></div>';SemuonProgress.mount($('#progress-host'),snapshot,{href,heading:head('진도표',''),weekSummary:(s,end)=>SemuonJournal.markdown(s,{end,weekly:true}),notify:toast,save:values=>store.update(s=>{const e=SemuonProgress.event(s,values);(s.progressEvents||(s.progressEvents=[])).push(e)})})}
 
  function journalPage(){content.innerHTML=head('학습 기록','이론과 실무를 나란히 기록하고, 다음에 확인할 부분을 남기세요.')+'<div id="journal-host"></div>';SemuonJournal.mount($('#journal-host'),storedSnapshot,{href,save:fn=>store.update(fn),notify:toast})}
  function latest(id){return historyFor(id).at(-1)}
