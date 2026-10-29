@@ -36,6 +36,7 @@
  }
  function classify(p){
   if(cache.has(p))return cache.get(p);const subject=primary(p),course=courses.find(c=>c.name===subject),stem=clean((p.prompt||'').split(/[①②③④]/)[0].replace(/\[그림:[^\]]+\]/g,'')),metadata=clean([p.type,p.source.chapter,p.source.subtopic,...(p.tags||[])].join(' ')),s=stem+' '+metadata,found=new Set(),add=n=>found.add(`unit:${course.id}:${String(n).padStart(2,'0')}`);
+  if(p.source.verified&&Array.isArray(p.source.curriculumUnits)){const ids=[...new Set(p.source.curriculumUnits)].filter(id=>byId.get(id)?.course===subject);if(ids.length){const result={subject,units:ids};cache.set(p,result);return result}}
   if(reviewedUnits[p.id]){const result={subject,units:reviewedUnits[p.id]};cache.set(p,result);return result}
   if(subject==='재무회계'){
    const confirmed=financialChapters[clean(p.source.chapter)];if(confirmed)confirmed.forEach(add);
