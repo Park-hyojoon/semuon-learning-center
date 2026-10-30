@@ -14,6 +14,9 @@
   if(!root||root.nodeType!==1)return;
   const skip='script,style,textarea,input,select,option,svg,[contenteditable],.study-lane,[data-entry-host],#questions,.jr-note-read,.jr-md-preview,.jr-note-preview,.jr-entry-note';
   if(root.closest(skip))return;
+  const links=new Set([...(root.matches('a')?[root]:[]),...root.querySelectorAll('a'),...(root.closest('a')?[root.closest('a')]:[])]);
+  for(const link of links){if(!link.closest(skip)&&!link.closest('svg')&&!link.matches('.btn,.open-link')&&link.textContent.trim().length<100&&/[→←↗↘↑↓]/.test(link.textContent))link.classList.add('compact-action-link')}
+
   const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),nodes=[];let node;
   while(node=walker.nextNode())if(!node.parentElement.closest(skip)&&/(이론|실무)/.test(node.data))nodes.push(node);
   for(const text of nodes){if(text.parentElement.matches('h1,h2,h3,strong,summary,.eyebrow,.pill')&&/^[^이론실무]+\s+(이론|실무)$/.test(text.data))text.data=text.data.replace(/^(.+?)\s+(이론|실무)$/,'$2 $1');const fragment=document.createDocumentFragment(),re=/(이론|실무)/g;let last=0,m;while(m=re.exec(text.data)){fragment.append(text.data.slice(last,m.index));const span=document.createElement('strong');span.className='study-lane '+(m[1]==='이론'?'study-lane-theory':'study-lane-practice');span.textContent=m[1];fragment.append(span);last=re.lastIndex}fragment.append(text.data.slice(last));text.replaceWith(fragment)}
