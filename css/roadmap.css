@@ -43,3 +43,14 @@
 
 /* Shared daily guidance from the existing review queue and five-stage calendar. */
 .rm-day-flow{list-style:none;padding:0;margin:18px 0;display:grid;gap:10px}.rm-day-flow>li{padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}.rm-day-flow>li:nth-child(2){background:#edf4ef;border-color:#c3d9cf}.rm-day-flow strong,.rm-day-flow small,.rm-day-flow a{display:block}.rm-day-flow p{margin:6px 0;line-height:1.5}.rm-day-flow small{color:var(--muted);line-height:1.5}.rm-day-flow a{margin-top:7px;font-weight:700}.rm-day-flow .row{gap:16px;flex-wrap:wrap}.rm-day-note,.rm-review-context{font-size:.9em;color:var(--muted);line-height:1.6}
+
+/* Study-time slider: supplied neutral track and white circular handle. */
+.semuon #rm-time{width:100%;height:24px;margin:0 0 16px;padding:0;appearance:none;-webkit-appearance:none;background:#f0f0f0;border:none;border-radius:999px;cursor:pointer;display:block;box-sizing:border-box}
+.semuon #rm-time::-webkit-slider-runnable-track{height:24px;background:#f0f0f0;border-radius:999px;border:0}
+.semuon #rm-time::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:20px;height:20px;margin-top:2px;border-radius:50%;background:#fff;border:1px solid #e1e4e8;box-shadow:0 2px 6px rgba(0,0,0,.13);cursor:grab}
+.semuon #rm-time::-moz-range-track{height:24px;background:#f0f0f0;border:0;border-radius:999px}
+.semuon #rm-time::-moz-range-progress{background:transparent}
+.semuon #rm-time::-moz-range-thumb{box-sizing:border-box;width:20px;height:20px;border-radius:50%;background:#fff;border:1px solid #e1e4e8;box-shadow:0 2px 6px rgba(0,0,0,.13);cursor:grab}
+.semuon #rm-time:active::-webkit-slider-thumb{cursor:grabbing}
+.semuon #rm-time:active::-moz-range-thumb{cursor:grabbing}
+.semuon #rm-time:focus-visible{outline:2px solid #337fb0;outline-offset:4px}
