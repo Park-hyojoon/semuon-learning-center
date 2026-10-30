@@ -144,3 +144,67 @@ body.semuon{font-family:var(--font-ui-family);font-size:var(--font-ui)}
 
 /* Keep lane identity legible on filled buttons, selected tabs and menus. */
 .semuon :is(button,.btn,.app-nav a,.app-nav summary) .study-lane{background:#fff;padding:.08em .28em;border-radius:4px;box-decoration-break:clone;-webkit-box-decoration-break:clone;text-shadow:none}
+
+/* User-selectable design templates, based on the five supplied samples. */
+:root[data-design-theme="blue"]{--canvas:#f2f6f8;--surface:#fff;--ink:#263b49;--muted:#576b7b;--primary:#337fb0;--line:#bdcdd9;--soft:#e8f2f8;--theme-on-accent:#fff;--theme-sidebar:#e8f2f8;--theme-track:#bdcdd9;--theme-c1:#337fb0;--theme-c2:#73a6bd;--theme-c3:#a4a9b5;--theme-c4:#d0ad78;--accent:#d0ad78;--good:#337fb0;color-scheme:light;}
+:root[data-design-theme="linen"]{--canvas:#f8f3ec;--surface:#fffdfa;--ink:#493b31;--muted:#76675b;--primary:#956344;--line:#d7c5b4;--soft:#f3e7db;--theme-on-accent:#fff;--theme-sidebar:#f3e7db;--theme-track:#d7c5b4;--theme-c1:#a87250;--theme-c2:#cc9b77;--theme-c3:#aaa096;--theme-c4:#c69b57;--accent:#c69b57;--good:#956344;color-scheme:light;}
+:root[data-design-theme="sage"]{--canvas:#f2f5ee;--surface:#fffef9;--ink:#34473b;--muted:#637568;--primary:#51765c;--line:#bdcbbd;--soft:#e7eee4;--theme-on-accent:#fff;--theme-sidebar:#e7eee4;--theme-track:#bdcbbd;--theme-c1:#63876d;--theme-c2:#9db39b;--theme-c3:#a9ada5;--theme-c4:#c5a477;--accent:#c5a477;--good:#51765c;color-scheme:light;}
+:root[data-design-theme="slate"]{--canvas:#ebf1f5;--surface:#fff;--ink:#293d4f;--muted:#5c7182;--primary:#496783;--line:#b9cad6;--soft:#dfeaf1;--theme-on-accent:#fff;--theme-sidebar:#dfeaf1;--theme-track:#b9cad6;--theme-c1:#496783;--theme-c2:#7fa1b1;--theme-c3:#8d9aa8;--theme-c4:#bdab88;--accent:#bdab88;--good:#496783;color-scheme:light;}
+:root[data-design-theme="night"]{--canvas:#17232f;--surface:#233342;--ink:#ecf3f8;--muted:#bacbd7;--primary:#76b7dc;--line:#435b6d;--soft:#304658;--theme-on-accent:#142530;--theme-sidebar:#304658;--theme-track:#435b6d;--theme-c1:#76b7dc;--theme-c2:#79aeb5;--theme-c3:#93a2b5;--theme-c4:#d0ad78;--accent:#d0ad78;--good:#76b7dc;--study-theory:#8eacff;--study-practice:#ff929b;--danger:#ffaba3;color-scheme:dark;}
+
+:root{--theme-on-accent:#fff;--theme-sidebar:#efe9de;--theme-track:#e5e9e3;--theme-c1:#3988af;--theme-c2:#76a7ae;--theme-c3:#999eae;--theme-c4:#d2ac72}
+.theme-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.theme-option{display:grid;gap:7px;padding:12px;border:2px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);text-align:left;min-width:0}.theme-option:hover{border-color:var(--primary)}.theme-option[aria-pressed=true]{border-color:var(--primary);box-shadow:0 0 0 2px var(--soft)}.theme-option small{color:var(--muted)}.theme-selected{font-size:.85em;color:var(--primary);font-weight:700}.theme-preview{display:flex;height:80px;gap:10px;padding:12px;background:var(--preview-bg);border-radius:7px}.theme-preview>i{width:18%;background:var(--preview-accent);border-radius:4px}.theme-preview>span{flex:1;padding:10px;background:var(--preview-card);border-radius:5px}.theme-preview b{display:block;width:55%;height:6px;background:var(--preview-accent);border-radius:3px}.theme-preview em{display:flex;gap:2px;margin-top:13px;height:8px}.theme-preview em i{flex:1}
+@media(max-width:900px){.theme-options{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:480px){.theme-options{grid-template-columns:1fr}}
+html[data-design-theme]:not([data-design-theme=default]) .semuon .app-sidebar{background:var(--theme-sidebar)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon :is(.app-nav a,.app-nav summary){color:var(--ink)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon :is(.app-nav a:hover,.app-nav summary:hover){background:var(--soft);border-color:var(--line)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon :is(.app-nav a.active,.app-nav-group.is-active>summary,.btn:not(.secondary):not(.ghost):not(.danger),.open-link){background:var(--primary);color:var(--theme-on-accent)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon :is(.btn.secondary,.btn.ghost){color:var(--primary)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon :is(input,select,textarea){background:var(--surface);color:var(--ink);border-color:var(--line);accent-color:var(--primary)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon :is(th,.notice,.rm-task,.rm-study-planner,.rm-empty,.rm-day-flow>li:nth-child(2)){background:var(--soft);border-color:var(--line);color:var(--ink)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon :is(.lm-track,.ss-track,.db-bar,.progress,.rm-track){background:var(--theme-track)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon :is(.lm-track.unseen,.lm-track.empty){background:repeating-linear-gradient(135deg,var(--theme-track),var(--theme-track) 4px,var(--surface) 4px,var(--surface) 8px)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon :is(.lm-fill,.ss-track.attempt i){background:var(--theme-c4)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon :is(.ready>.lm-fill,.ss-track.solo i,.db-bar i){background:var(--primary)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon .ss-track:not(.attempt):not(.solo) i{background:var(--theme-c2)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon .rm-color-0{background:var(--theme-c1)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon .rm-color-1{background:var(--theme-c2)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon .rm-color-2{background:var(--theme-c3)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon .rm-color-3{background:var(--theme-c4)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon #rm-time{accent-color:var(--theme-c1)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon .rm-range-calendar td.in-range::before,html[data-design-theme]:not([data-design-theme=default]) .semuon .rm-calendar-key>span>i{background:var(--soft)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon .rm-range-calendar td.range-start time.range-edge{border-color:var(--primary);color:var(--primary);background:var(--surface)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon .rm-range-calendar td.range-end time.range-edge{border-color:var(--danger);background:var(--danger);color:var(--surface)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon .rm-range-calendar time.is-today{color:var(--primary)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon :is(.lm-radar-grid,.ss-radar-grid){stroke:var(--line)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon :is(.lm-radar-fill,.ss-radar-read){fill:var(--soft);stroke:var(--primary)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon :is(.ss-radar-attempt,.ss-radar-solo){stroke:var(--theme-c4)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon :is(.lm-radar-value,.lm-radar-value.ready){fill:var(--primary)}
+html[data-design-theme=night] .semuon :is(button,.btn,.app-nav a,.app-nav summary) .study-lane-theory{color:#244be0!important}
+html[data-design-theme=night] .semuon :is(button,.btn,.app-nav a,.app-nav summary) .study-lane-practice{color:#b7373e!important}
+html[data-design-theme=night] .semuon :is(.jr-lane[data-lane=theory],.jr-lane[data-lane=practice]){--lane-soft:#283d50;--lane-line:#5f7c96;--lane-color:#a7c6ff;background:var(--surface)}
+html[data-design-theme=night] .semuon .jr-lane[data-lane=practice]{--lane-color:#ffabb3}
+html[data-design-theme=night] .semuon :is(.question-mark-popup,.jr-dialog,.jr-toolbar-dialog,.tag-picker-option,.tag-picker-list){background:var(--surface);color:var(--ink)}
+html[data-design-theme=night] .semuon :is(.feedback,.notice.warning,.notice.error,.btn.danger){background:var(--soft);color:var(--ink);border-color:var(--line)}
+
+html[data-design-theme]:not([data-design-theme=default]) #app-nav>.app-nav-group>summary{color:var(--ink)}
+html[data-design-theme]:not([data-design-theme=default]) #app-nav>.app-nav-group>summary:hover{background:var(--soft)}
+html[data-design-theme]:not([data-design-theme=default]) #app-nav>.app-nav-group.is-active>summary{color:var(--theme-on-accent)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon :is(.rm-plan-content p,.rm-plan-side span){background:var(--soft);color:var(--ink)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon :is(.rm-plan-track,.rm-plan-side i){background:var(--theme-track)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon .rm-plan-track i{background:var(--primary)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon :is(.rm-plan-week-top b,.rm-plan-content p strong){color:var(--primary)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon .ss-scope-tabs button[aria-pressed=true]{background:var(--soft);color:var(--ink)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon .ss-scope-tabs button[data-map-scope=theory][aria-pressed=true]{border-color:var(--study-theory)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon .ss-scope-tabs button[data-map-scope=practice][aria-pressed=true]{border-color:var(--study-practice)}
+html[data-design-theme=night] .semuon :is(input,textarea)::placeholder{color:var(--muted);opacity:1}
+html[data-design-theme=night] .semuon :is(.menu-icon-panel,.tag-picker-popup,.menu-dialog){background:var(--surface);color:var(--ink)}
+html[data-design-theme=night] .semuon .rm-range-calendar td.range-end time.range-edge{color:#17232f}
+html[data-design-theme]:not([data-design-theme=default]) .semuon .rm-calendar-key .rm-start-key i{border-color:var(--primary);background:var(--surface)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon .rm-calendar-key .rm-end-key i{border-color:var(--danger);background:var(--danger)}
+
+html[data-design-theme]:not([data-design-theme=default]) .semuon :is(.tag-picker-trigger,.tag-picker-menu){background:var(--surface);color:var(--ink)}
+html[data-design-theme=night] .semuon .question :is(.prompt,.entry-toggle>summary,.answer-reveal>summary,.answer-reveal>div,.data-box,.balance-panel,.entry-wrap th,.entry-wrap td){background:var(--soft)!important;color:var(--ink)!important;border-color:var(--line)!important}
+html[data-design-theme=night] .semuon .question :is(.tag,.reset-one){color:var(--primary)!important;background:var(--surface)!important}
+html[data-design-theme=night] .semuon .question :is(.answer-reveal,.entry-wrap,.entry-toggle-body){background:var(--surface);color:var(--ink)}
+html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.notebook-wrong):not(.check-one){background:var(--surface);color:var(--primary);border-color:var(--line)}
