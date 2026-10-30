@@ -208,3 +208,5 @@ html[data-design-theme=night] .semuon .question :is(.prompt,.entry-toggle>summar
 html[data-design-theme=night] .semuon .question :is(.tag,.reset-one){color:var(--primary)!important;background:var(--surface)!important}
 html[data-design-theme=night] .semuon .question :is(.answer-reveal,.entry-wrap,.entry-toggle-body){background:var(--surface);color:var(--ink)}
 html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.notebook-wrong):not(.check-one){background:var(--surface);color:var(--primary);border-color:var(--line)}
+
+.settings-layout{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:20px;align-items:start;margin-bottom:20px}.settings-record-stack{display:grid;gap:20px;min-width:0}.settings-layout .card{margin-bottom:0}.settings-layout .font-settings-grid{grid-template-columns:1fr}.settings-layout>.card{min-width:0}@media(max-width:850px){.settings-layout{grid-template-columns:1fr}}
