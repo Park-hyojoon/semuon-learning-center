@@ -8,3 +8,17 @@
 @media(max-width:1000px){.rm-top{grid-template-columns:minmax(280px,.95fr) minmax(0,1.15fr);gap:16px}.rm-calendar-card,.rm-today{padding:20px}.rm-top #rm-config .rm-fields{grid-template-columns:1fr;gap:12px}.rm-today .rm-legend{grid-template-columns:1fr}.rm-today .rm-task{padding:14px}}
 @media(max-width:800px){.rm-top{grid-template-columns:1fr}.rm-top #rm-calendar{justify-self:stretch}.rm-top #rm-config .rm-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.rm-today .rm-legend{grid-template-columns:repeat(2,minmax(0,1fr))}.rm-balance{grid-template-columns:1fr}.rm-balance .ss-radar,.rm-balance>.help,.rm-balance .rm-group-bars{grid-column:1;grid-row:auto}.rm-range-calendar td{height:40px}}
 @media(max-width:430px){.rm-top #rm-config .rm-fields{grid-template-columns:1fr}.rm-today .rm-legend{grid-template-columns:1fr}.rm-calendar-card,.rm-today{padding:18px}.rm-study-planner{padding:14px}.rm-range-calendar time{width:30px;height:30px}.rm-calendar-key{gap:8px}}
+
+/* Keep timed-score entry beside its summary while leaving the detailed history below. */
+.rm-exam-entry{width:100%;min-width:0;margin:8px 0 0;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.rm-exam-entry summary{cursor:pointer;font-weight:700;color:var(--primary)}
+.rm-exam-entry[open] summary{padding-bottom:12px;border-bottom:1px solid var(--line)}
+.rm-exam-entry .rm-fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 10px;margin:16px 0}
+.rm-exam-entry .rm-fields .rm-exam-wide{grid-column:1/-1}
+.rm-exam-entry .rm-fields label{font-size:13px;min-width:0}
+.rm-exam-entry .rm-fields input{width:100%;min-width:0;min-height:40px;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:var(--surface);box-sizing:border-box}
+.rm-exam-entry .rm-checks{display:grid;gap:10px;margin:16px 0}
+.rm-exam-entry .rm-checks label{align-items:flex-start;line-height:1.45;font-size:13px}
+.rm-exam-entry .rm-checks input{flex:none;margin-top:3px}
+.rm-exam-entry .btn{width:100%;justify-content:center}
+.rm-evidence .rm-exam-card>a{margin-top:0}
