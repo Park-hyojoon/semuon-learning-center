@@ -136,8 +136,11 @@ body.semuon{font-family:var(--font-ui-family);font-size:var(--font-ui)}
 .menu-tree-item .menu-suborder-list{margin-left:4px}.menu-tree-item.menu-suborder-item{padding:6px 0 6px 4px;border-width:0 0 0 2px;border-radius:0}
 
 /* Consistent lane identity in system headings and guidance. */
-:root{--study-theory:#2463b4;--study-practice:#b7373e}.semuon .study-lane.study-lane-theory{color:var(--study-theory)!important;font-weight:800!important}.semuon .study-lane.study-lane-practice{color:var(--study-practice)!important;font-weight:800!important}
+:root{--study-theory:#244be0;--study-practice:#b7373e}.semuon .study-lane.study-lane-theory{color:var(--study-theory)!important;font-weight:800!important}.semuon .study-lane.study-lane-practice{color:var(--study-practice)!important;font-weight:800!important}
 .semuon .study-lane{display:inline!important}
 
 /* Measured evidence is separate from coverage-weighted indicators. */
 .lm-evidence-note{display:block;font-size:.85em;line-height:1.55;margin-top:6px;color:var(--muted,#52676b);font-weight:400}
+
+/* Keep lane identity legible on filled buttons, selected tabs and menus. */
+.semuon :is(button,.btn,.app-nav a,.app-nav summary) .study-lane{background:#fff;padding:.08em .28em;border-radius:4px;box-decoration-break:clone;-webkit-box-decoration-break:clone;text-shadow:none}
