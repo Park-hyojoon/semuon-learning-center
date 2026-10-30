@@ -106,3 +106,29 @@ body.semuon{font-family:var(--font-ui-family);font-size:var(--font-ui)}
 .menu-user-icon{flex:none;line-height:1.3}.app-nav a>span[aria-hidden],.app-nav summary>span[aria-hidden]{flex:none}
 .menu-settings{width:min(640px,calc(100vw - 24px))}.menu-settings[open]{display:flex;flex-direction:column}.menu-settings-head,.menu-settings-actions{flex:none}.menu-settings-body{overflow-y:auto;min-height:0}.menu-look-controls{border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:18px}.menu-look-controls h3{margin-top:0}.menu-look-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.menu-look-grid fieldset{margin:0;padding:12px;border:1px solid var(--line);border-radius:9px;min-width:0}.menu-look-grid legend{font-weight:700;padding:0 5px}.menu-look-grid label{display:flex;align-items:center;justify-content:space-between;gap:10px}.menu-look-grid input[type=number]{width:95px;max-width:65%;padding:5px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}.menu-look-grid .menu-bold-check{justify-content:flex-start;margin-top:10px}.menu-bold-check input{accent-color:var(--primary)}.menu-look-preview{background:#efe9de;display:grid;gap:4px;padding:12px;margin:12px 0;border-radius:8px;overflow-wrap:anywhere}.menu-preview-main{color:var(--primary)}.menu-preview-sub{padding-left:24px}.menu-order-label{min-width:0;overflow-wrap:anywhere}.menu-icon-select{display:block;width:100%;max-width:180px;min-width:0;padding:4px;border:1px solid var(--line);border-radius:5px;background:var(--surface);font-weight:400;margin-top:5px}.menu-sub-icon-list{display:grid;grid-template-columns:1fr 1fr;gap:14px}.menu-sub-icon-list label{font-weight:700;min-width:0}.menu-sub-icon-list .menu-icon-select{max-width:none}.menu-settings .menu-order-item{cursor:grab}.menu-settings select,.menu-settings input{cursor:auto}
 @media(max-width:460px){.menu-look-grid{grid-template-columns:1fr}.menu-sub-icon-list{grid-template-columns:1fr}.menu-settings-body{padding:12px}.menu-settings-head,.menu-settings-actions{padding:12px}.menu-order-item{gap:5px}.menu-order-item .btn{padding:5px 8px}}
+
+/* Menu names, inline icon buttons and nested submenu ordering. */
+.menu-settings .menu-order-item{display:block;padding:10px}
+.menu-main-row{display:grid;grid-template-columns:24px 40px minmax(0,1fr) 32px 32px auto;gap:6px;align-items:center}
+.menu-settings .menu-main-row>.menu-delete{grid-column:auto}
+.menu-settings .menu-main-row>.menu-move,.menu-settings .menu-sub-move{padding:4px;min-height:36px}
+.menu-name-input{width:100%;min-width:0;min-height:40px;padding:6px 8px;background:var(--surface);border:1px solid var(--line);border-radius:7px;font-size:var(--font-ui);font-weight:600}
+.menu-icon-button{display:grid;place-items:center;flex:none;width:40px;height:40px;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:8px;font-size:24px;line-height:1;cursor:pointer}
+.menu-icon-button:hover,.menu-icon-button[aria-expanded=true]{border-color:var(--primary);background:var(--soft)}
+.menu-suborder-list{display:grid;gap:8px;list-style:none;margin:12px 0 0 24px;padding:12px 0 0;border-top:1px solid var(--line)}
+.menu-suborder-item{display:grid;grid-template-columns:14px 36px minmax(0,1fr) 30px 30px;gap:6px;align-items:center;cursor:grab}
+.menu-suborder-item .menu-name-input{font-weight:400;font-size:14px;min-height:36px}
+.menu-suborder-item .menu-icon-button{width:36px;height:36px;font-size:22px}
+.menu-subnumber{color:var(--muted);text-align:center;user-select:none}
+.menu-suborder-item.dragging{opacity:.4}
+.menu-icon-panel{position:fixed;z-index:250;padding:12px;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:0 10px 35px #273b3729;max-height:min(480px,calc(100dvh - 32px));overflow:auto;color:var(--ink)}
+.menu-icon-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;font-size:15px}
+.menu-icon-panel-head .btn{min-height:30px;width:30px;padding:0;font-size:23px}
+.menu-icon-options{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px}
+.menu-icon-choice{display:grid;place-items:center;min-width:0;height:42px;padding:0;border:1px solid transparent;border-radius:8px;background:#fff;font-size:26px;line-height:1.2;cursor:pointer}
+.menu-icon-choice:hover{background:var(--soft)}
+.menu-icon-choice.selected{border-color:var(--primary);background:var(--soft)}
+.menu-icon-choice.icon-word{grid-column:span 3;font-size:14px;font-weight:700;height:34px;background:#f5f5f1}
+.semuon .menu-settings .menu-icon-button,.semuon .menu-settings .menu-icon-choice{font-family:"Segoe UI Emoji","Apple Color Emoji","Segoe UI Symbol",sans-serif!important;font-size:26px!important}
+.semuon .menu-settings .menu-icon-choice.icon-word{font-family:var(--font-ui-family)!important;font-size:14px!important}
+@media(max-width:600px){.menu-main-row{grid-template-columns:20px 36px minmax(0,1fr) 28px 28px;gap:5px}.menu-main-row>.menu-icon-button{width:36px;height:36px}.menu-settings .menu-main-row>.menu-delete{grid-column:3/-1;justify-self:end;min-height:30px}.menu-suborder-list{margin-left:15px}.menu-suborder-item{grid-template-columns:10px 32px minmax(0,1fr) 27px 27px;gap:4px}.menu-suborder-item .menu-icon-button{width:32px;height:34px}.menu-suborder-item .menu-name-input{padding-inline:5px}.menu-settings .menu-order-item{padding:8px}}
