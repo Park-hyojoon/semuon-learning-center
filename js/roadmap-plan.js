@@ -5,9 +5,9 @@ const TASKS=[
  {title:'원천징수·연말정산 기초 실무',tasks:['사원등록, 부양가족 정보 입력','급여자료입력, 비과세 급여 이해','기존 전표·결산 실무 유지'],goal:'원천징수 실무 처리 흐름을 설명하고 직접 입력하기',link:'pages/journal.html'},
  {title:'연말정산 실무 완성',tasks:['기본공제·추가공제 판단','소득공제·세액공제 자료 입력','부가가치세 신고 실무 병행'],goal:'연말정산 기초 실무를 한 바퀴 완료하기',link:'pages/journal.html'},
  {title:'부가가치세 실무 집중',tasks:['신고서 및 부속서류 작성','매입세액 불공제·안분계산·가산세','전체 실무 유형별 미니 테스트'],goal:'실무 전 영역 1회 학습 완료 및 약점 목록 만들기',link:'pages/journal.html'},
- {title:'기출문제 및 취약점 훈련',tasks:['90분 실전 기출 모의시험','영역별 점수와 오류 원인 분석','소득세·부가가치세 이론 보강'],goal:'전체 70점 이상, 약점별 재훈련',link:'pages/roadmap.html#rm-add'},
+ {title:'기출문제 및 취약점 훈련',tasks:['90분 실전 기출 모의시험','영역별 점수와 오류 원인 분석','소득세·부가가치세 이론 보강'],goal:'전체 70점 이상, 약점별 재훈련',link:'pages/journal.html#rm-add'},
  {title:'실전 점수 안정화',tasks:['90분 모의시험 반복','반복 오답과 시간 초과 문제 교정','새로운 범위보다 기존 약점 복습'],goal:'최근 모의시험 3회 평균 80점 이상',link:'pages/review.html'},
- {title:'최종 점검 및 시험',tasks:['전표 유형·공제 요건·실수 목록 확인','KcLep 사용 및 시험 준비물 점검','목표일 실전 응시'],goal:'새로운 학습 없이 정확도 유지',link:'pages/roadmap.html#rm-add'}
+ {title:'최종 점검 및 시험',tasks:['전표 유형·공제 요건·실수 목록 확인','KcLep 사용 및 시험 준비물 점검','목표일 실전 응시'],goal:'새로운 학습 없이 정확도 유지',link:'pages/journal.html#rm-add'}
 ];
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function schedule(config){const start=config?.startDate||'2026-10-30',end=config?.targetDate||'2026-12-05',days=Math.max(5,Math.round((Date.parse(end)-Date.parse(start))/86400000)+1),finalDays=days>=10?2:1,mainDays=days-finalDays;return TASKS.map((task,i)=>({...task,start:P.add(start,i<5?Math.floor(mainDays*i/5):mainDays),end:P.add(start,i<5?Math.max(0,Math.floor(mainDays*(i+1)/5)-1):days-1)}))}
