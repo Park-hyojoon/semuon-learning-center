@@ -10,3 +10,15 @@
 @media(max-width:760px){.jr-inline-editor .jr-fields{grid-template-columns:1fr}}
 .jr-book-picker{border:1px solid var(--line);border-radius:9px;padding:12px;margin:0 0 16px;min-width:0}.jr-book-picker legend{font-weight:700;color:var(--primary);padding:0 6px}.jr-book-picker label{display:block}.jr-book-picker select{width:100%}.jr-book-options{margin:10px 0}.jr-book-options>div{max-height:260px;overflow:auto;padding:8px}.jr-book-option{display:flex!important;gap:8px;padding:9px 4px;border-bottom:1px solid var(--line);align-items:flex-start}.jr-book-option input{flex:none;width:17px;height:17px;margin-top:4px;accent-color:var(--primary)}.jr-book-option small,.jr-book-record span,.jr-book-progress p span{display:block;color:var(--muted);font-size:var(--font-ui);line-height:1.6}.jr-book-progress{margin:14px 0}.jr-book-progress p{border-bottom:1px solid var(--line);padding-bottom:8px}.jr-book-picker .help{overflow-wrap:anywhere}.jr-book-record span{margin-top:6px}
 .jr-inline-editor .jr-fields>label,.jr-inline-editor .jr-book-picker>label{font-weight:700}.jr-inline-editor label :is(input,select,textarea){font-weight:400}
+
+/* Parallel theory/practice record panels retain their own visual identity. */
+.jr-lane[data-lane="theory"]{--lane-color:#2463b4;--lane-soft:#f0f6ff;--lane-line:#b9d0ee}
+.jr-lane[data-lane="practice"]{--lane-color:#b7373e;--lane-soft:#fff3f2;--lane-line:#edc0c2}
+.jr-lane[data-lane]{border:2px solid var(--lane-color);border-radius:12px;overflow:hidden}
+.jr-lane[data-lane] .jr-lane-head{background:var(--lane-soft);border-bottom:1px solid var(--lane-line)}
+.jr-lane[data-lane] .jr-lane-head h2,.jr-lane[data-lane] .jr-dialog h2,.jr-lane[data-lane] .jr-book-picker legend{color:var(--lane-color)}
+.jr-lane[data-lane] .jr-lane-head .btn{color:var(--lane-color);border-color:var(--lane-line)}
+.jr-lane[data-lane] .jr-book-picker,.jr-lane[data-lane] .jr-book-progress{border-color:var(--lane-line);background:var(--lane-soft)}
+.jr-lane[data-lane] .jr-dialog footer button[type="submit"]{background:var(--lane-color);border-color:var(--lane-color);color:#fff}
+.jr-lane[data-lane] :is(input,select,textarea):focus-visible{outline:2px solid var(--lane-color);outline-offset:2px}
+.jr-lane[data-lane] input[type="checkbox"]{accent-color:var(--lane-color)}
