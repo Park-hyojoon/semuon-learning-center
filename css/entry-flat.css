@@ -55,3 +55,12 @@
 .semuon [data-entry-host] .qhead>div{display:flex;align-items:center;gap:6px 12px;flex-wrap:wrap;min-width:0}
 .semuon [data-entry-host] .qhead>div>:is(h2,h3){margin:0!important}
 .semuon [data-entry-host] .qhead>div>.tag{flex:none}
+.semuon [data-entry-host] :is(.prompt,.choice,.answer-box,.answer-reveal) span,.semuon [data-entry-host] [data-question-mark-block] span{font-size:inherit!important}
+.semuon [data-entry-host] .prompt{font-family:var(--font-body-family)!important}
+.semuon [data-entry-host] .answer-columns{grid-template-columns:repeat(2,minmax(0,1fr))!important;align-items:start;gap:16px}
+.semuon [data-entry-host] :is(.answer-column,.answer-column-title,.answer-line){background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important}
+.semuon [data-entry-host] .answer-column{min-width:0;padding:0!important}
+.semuon [data-entry-host] .answer-column-title{padding:0 0 6px!important;font-weight:800}
+.semuon [data-entry-host] .answer-line{display:flex;flex-wrap:wrap;padding:4px 0!important;gap:4px 8px;overflow-wrap:anywhere}
+.semuon [data-entry-host] .answer-line .answer-side{display:none}
+.semuon [data-entry-host] .answer-line{font-size:var(--font-body)!important}
