@@ -13,6 +13,7 @@
   const needs=[...groups.values()].filter(g=>['reference','blocked'].includes(g.latest.outcome)).map(g=>({...g.latest,repeatDays:g.days.size,due:P.add(g.latest.date,1)})).sort((a,b)=>b.repeatDays-a.repeatDays||a.due.localeCompare(b.due));
   return{entries,daily,needs,today,dates:[...new Set([...entries.map(e=>e.date),...daily.keys()])].sort().reverse()};
  }
+ function problemNotesMarkdown(state,{start='0000-00-00',end='9999-12-31'}={}){const notes=[...Core.problemNotes(state).values()].filter(n=>n.text&&P.day(n.at)>=start&&P.day(n.at)<=end),lines=['# 세무온 문제별 취약점 메모','','아래 원문과 메모를 참고해 숫자·날짜·조건을 조금씩 바꾼 응용문제를 만들고, 정답과 해설을 따로 확인할 수 있게 준비해 주세요.',''];for(const n of notes){const p=state.items.find(p=>p.id===n.problemId);lines.push('## '+p.title,'- 문제 ID: '+p.id,'- 분류: '+(p.subject==='theory'?'이론':'실무')+' / '+p.type+' / '+(p.tags||[]).join(', '),'- 기록일: '+P.day(n.at),'','### 학습자 메모',n.text,'','### 원문',p.prompt,'','### 정답·해설',p.subject==='theory'?(p.acceptedAnswers||[p.answer]).map(i=>(i+1)+'번: '+p.choices[i]).join(' / '):JSON.stringify(p.answers||p.variants||p.form?.fields||[]),p.explanation,'')}return lines.join('\n')}
  function markdown(state,{end=P.day(Date.now()),weekly=false}={}){
   const a=analyze(state),start=weekly?P.add(end,-6):'0000-00-00',entries=a.entries.filter(e=>e.date>=start&&e.date<=end),dates=[...new Set([...entries.map(e=>e.date),...[...a.daily.keys()].filter(d=>d>=start&&d<=end)])].sort(),lines=['# 세무온 학습 기록',`기준일: ${end}${weekly?' · 최근 7일':''}`,'','학습 완료·자기평가 기록입니다. 실제 채점 결과와 구별해서 읽어 주세요.','진도·재확인 항목은 내보내는 시점의 현재 상태입니다.',''];
   const book=P.analyze(state),study=S.analyze(state);lines.push(`이전 목차 완료 체크: 이론 ${book.completed}/${book.units.length} 소단원 · 실무 ${book.practiceCompleted}/${book.practiceUnits.length} 유형`,'','## 교재 범위 누적 현황 — 현재 상태','');for(const b of study.books){lines.push('### '+(b.lane==='theory'?'이론':'실무'));for(const g of b.groups)lines.push(`- ${g.title}: 개념 읽음 ${g.read}/${g.concepts.length} · 문제 시도 ${g.attempted}/${g.exercises.length} · 혼자 완료(자기평가) ${g.independent} · 범위 미지정 기록 ${g.unmapped.length}건`);}lines.push('','범위 미지정 기록·풀이 확인만으로는 문제 시도를 늘리지 않습니다. 교재의 확보 분량과 개인 학습 분량, 실제 채점을 구별해 주세요.','');
@@ -23,6 +24,7 @@
   if(!a.needs.length)lines.push('현재 재확인 필요로 기록된 항목 없음. 미기록 범위를 숙달했다고 해석하지 마세요.');
   const reasons=Core.uncertaintyReasons(state).filter(n=>n.date>=start&&n.date<=end);if(reasons.length){lines.push('','## 문제별 헷갈림 이유 — 직접 기록','');for(const n of reasons){const p=state.items.find(p=>p.id===n.problemId);lines.push('- '+n.date+' · '+p.title+' / '+n.reason)}lines.push('','같은 문제·같은 날의 메모 수정은 한 학습일로 집계합니다.');}
   if(weekly)lines.push('','## 학습센터 자동 기록',P.weeklySummary(state,end),'','요청: 기록된 범위·첫 채점·외부 실습 자기평가를 구별하여, 다음 진도와 구체적인 복습 우선순위 3가지를 짧게 제안해 주세요.');
+  if([...Core.problemNotes(state).values()].some(n=>n.text&&P.day(n.at)>=start&&P.day(n.at)<=end))lines.push('',problemNotesMarkdown(state,{start,end}));
   return lines.join('\n');
  }
  // Escape first. Only the small Markdown/HTML subset offered by the toolbar is rendered.
@@ -100,5 +102,5 @@
   addEventListener('beforeunload',e=>{if(!flushDaily()||[...sessions.values()].some(s=>!s.flush())){e.preventDefault();e.returnValue=''}});render();const editEntry=a.entries.find(e=>e.entryId===params.get('entry'));if(editEntry)openEntry(editEntry.lane,editEntry);const bookRef=T.get(params.get('book'));if(bookRef)openEntry(bookRef.unitId.startsWith('unit:')?'theory':'practice',null,null,{unitId:bookRef.unitId,bookActivity:bookRef.kind==='concept'?'concept':'exercise',bookRefs:[bookRef.id]});const unit=byUnit.get(params.get('unit'));if(unit){openEntry(unit.id.startsWith('unit:')?'theory':'practice',null,null,{unitId:unit.id,focus:params.get('focus')||'',problemId:params.get('problem')||''});}
   return{refresh:render};
  }
- return{analyze,event,markdown,preview,mount,defaultTools};
+ return{analyze,event,problemNotesMarkdown,markdown,preview,mount,defaultTools};
 });

@@ -21,9 +21,9 @@ function merge(local,remote){
  }
  if(key==='settings'){const keep={...local.settings};commonSettings.forEach(k=>delete keep[k]);next.settings={...keep,...out}}else if(key==='studyDraft'){if(out.main)next.studyDraft=out.main;else delete next.studyDraft}else next[key]=out;
  }
- next.syncMeta=meta;for(const key of ['history','progressEvents','reviewNotes','studyLog','roadmapTaskEvents','mockExams','inbox'])if(Array.isArray(next[key]))next[key].sort((a,b)=>Date.parse(a.at)-Date.parse(b.at)||a.id.localeCompare(b.id));C.validateState(next);return next;
+ next.syncMeta=meta;for(const key of ['history','progressEvents','problemNotes','reviewNotes','studyLog','roadmapTaskEvents','mockExams','inbox'])if(Array.isArray(next[key]))next[key].sort((a,b)=>Date.parse(a.at)-Date.parse(b.at)||a.id.localeCompare(b.id));C.validateState(next);return next;
 }
-function project(raw){const keys=['schemaVersion','examId','revision','updatedAt','storageVersion','items','catalogIds','itemOrder','drafts','history','studyLog','progressEvents','reviewNotes','inbox','studyDraft','studyDrafts','roadmapTaskEvents','mockExams','syncMeta'];const state=Object.fromEntries(keys.filter(k=>own(raw,k)).map(k=>[k,clone(raw[k])]));state.settings={fontSize:18,reviewLimit:6,...group(raw,'settings')};return state}
+function project(raw){const keys=['schemaVersion','examId','revision','updatedAt','storageVersion','items','catalogIds','itemOrder','drafts','history','studyLog','progressEvents','problemNotes','reviewNotes','inbox','studyDraft','studyDrafts','roadmapTaskEvents','mockExams','syncMeta'];const state=Object.fromEntries(keys.filter(k=>own(raw,k)).map(k=>[k,clone(raw[k])]));state.settings={fontSize:18,reviewLimit:6,...group(raw,'settings')};return state}
 function envelope(raw,device,now=Date.now()){return{format:FORMAT,version:1,namespace:NAMESPACE,examId:'tax2',syncedAt:new Date(now).toISOString(),device:String(device).slice(0,80),state:project(raw)}}
 function unpack(payload,readBackup){C.assert(payload&&payload.format===FORMAT&&payload.version===1&&payload.namespace===NAMESPACE&&payload.examId==='tax2'&&payload.state?.examId==='tax2','세무온 전산세무 2급 동기화 자료가 아닙니다. 회계 기록과 합치지 않습니다.');validateMeta(payload.state);return readBackup(payload.state)}
 return{NAMESPACE,FORMAT,commonSettings,stamp,validateMeta,merge,project,envelope,unpack};
