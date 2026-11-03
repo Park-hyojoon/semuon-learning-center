@@ -230,3 +230,5 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
 .problem-progress-track{height:10px;background:var(--line);border-radius:8px;overflow:hidden;margin-top:8px}.problem-progress-track i{display:block;height:100%;background:var(--primary)}
 .problem-note{padding:16px;margin:0;border-top:1px solid var(--line);background:var(--soft);border-radius:0 0 10px 10px}.problem-note label{display:grid;gap:8px;font-weight:700}.problem-note textarea{width:100%;min-height:70px;resize:vertical;padding:10px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--ink);font:inherit;font-weight:400}.problem-note .row{margin-top:8px}
 @media(max-width:650px){.problem-list-head .problem-progress{order:3;flex-basis:100%;max-width:none}}
+
+.problem-note-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}.problem-note-heading label{margin:0}.problem-note-heading button{flex-shrink:0}
