@@ -275,7 +275,8 @@
   let collapsed=read(SIDEBAR_KEY)==='1';
   function setCollapsed(value,persist=false){if(persist){collapsed=value;write(SIDEBAR_KEY,value?'1':'0')}const hide=collapsed&&!media.matches;document.documentElement.classList.toggle('sidebar-collapsed',hide);const aside=$('.app-sidebar');aside.inert=hide;hide?aside.setAttribute('aria-hidden','true'):aside.removeAttribute('aria-hidden')}
   reopen.onclick=()=>{setCollapsed(false,true);$('#app-nav a:not([hidden])')?.focus()};
-  document.addEventListener('keydown',e=>{if(!e.ctrlKey||e.altKey||e.shiftKey||e.metaKey||e.key.toLowerCase()!=='b'||e.repeat||media.matches||dialog.open)return;if(e.target.closest?.('input,textarea,select,[contenteditable]'))return;e.preventDefault();setCollapsed(!collapsed,true)});
+  globalThis.SemuonScratchpad?.mount();
+ document.addEventListener('keydown',e=>{if(!e.ctrlKey||e.altKey||e.shiftKey||e.metaKey||e.key.toLowerCase()!=='b'||e.repeat||media.matches||dialog.open)return;if(e.target.closest?.('input,textarea,select,[contenteditable]'))return;e.preventDefault();setCollapsed(!collapsed,true)});
   window.addEventListener('storage',e=>{if(e.key===SIDEBAR_KEY){collapsed=e.newValue==='1';setCollapsed(collapsed)}if(e.key===MENU_KEY)apply(load())});
   media.addEventListener('change',()=>setCollapsed(collapsed));setCollapsed(collapsed);
  })();
