@@ -38,7 +38,12 @@
   for(const [id,b] of blocks){if(!b.root.isConnected||!b.root.getClientRects().length||!range.intersectsNode(b.root))continue;const start=b.root.contains(range.startContainer)?offsetIn(b.root,range.startContainer,range.startOffset):0,end=b.root.contains(range.endContainer)?offsetIn(b.root,range.endContainer,range.endOffset):b.text.length;if(end>start)found.push({id,start,end})}
   return found.sort((a,b)=>blocks.get(a.id).root.compareDocumentPosition(blocks.get(b.id).root)&Node.DOCUMENT_POSITION_FOLLOWING?-1:1)}
  function hide(restoreFocus=false){if(popup){const focused=popup.contains(document.activeElement);popup.hidden=true;pending=[];if(restoreFocus&&focused&&popup._anchor?.isConnected){if(!popup._anchor.hasAttribute('tabindex'))popup._anchor.tabIndex=-1;popup._anchor.focus({preventScroll:true})}}}
- function place(x,y){const r=popup.getBoundingClientRect();popup.style.left=Math.max(8,Math.min(x,innerWidth-r.width-8))+'px';popup.style.top=Math.max(8,Math.min(y,innerHeight-r.height-8))+'px'}
+ function placeSelection(){const sel=getSelection();if(!sel?.rangeCount)return;const touch=navigator.maxTouchPoints>0,r=sel.getRangeAt(0).getBoundingClientRect(),v=window.visualViewport,left=(v?.offsetLeft||0)+8,top=(v?.offsetTop||0)+8,right=left+(v?.width||innerWidth)-16,bottom=top+(v?.height||innerHeight)-16;
+  popup.style.maxWidth=Math.max(1,right-left)+'px';const box=popup.getBoundingClientRect(),gap=touch?40:24,rects=touch?pending.map(s=>blocks.get(s.id)?.root.getBoundingClientRect()).filter(Boolean):[],end=Math.max(r.bottom,...rects.map(b=>b.bottom)),start=Math.min(r.top,...rects.map(b=>b.top));
+  // Keep native selection handles clear; use the space above only when the lower edge is near the screen bottom.
+  const below=end+gap,above=start-gap-box.height,y=below+box.height<=bottom?below:above>=top?above:Math.max(top,bottom-box.height);
+  popup.style.left=Math.max(left,Math.min(r.left,right-box.width))+'px';popup.style.top=y+'px';
+ }
  function report(m){status.textContent=m;status.hidden=!m}
  function save(next){if(!readable){report('기존 표시를 읽지 못해 저장을 중지했습니다.');return false}try{if(!valid(next))throw Error('format');sessionStorage.setItem(DAYKEY,markDay);sessionStorage.setItem(KEY,JSON.stringify(withoutRetired(next)));marks=next;return true}catch(_){report('저장하지 못했습니다. 기존 표시는 그대로 유지됩니다.');return false}}
  function trim(spans,sel,kind){return spans.flatMap(s=>{if((kind!=='clear'&&(colors.includes(kind)?!colors.includes(s.kind):s.kind!==kind))||s.end<=sel.start||s.start>=sel.end)return[s];const kept=[];if(s.start<sel.start)kept.push({...s,end:sel.start});if(s.end>sel.end)kept.push({...s,start:sel.end});return kept})}
@@ -56,7 +61,8 @@
   document.addEventListener('contextmenu',e=>{if(checkDay())return;if(e.target.closest('input,textarea,select,button,a,[contenteditable]')){hide();return}
    const found=selected(),target=e.target.closest('[data-question-mark-block]')||(!e.clientX&&!e.clientY&&found.length?blocks.get(found[0].id).root:null);if(!found.length||!target||!found.some(f=>f.id===target.dataset.questionMarkBlock)){hide();return}
    e.preventDefault();syncShortcuts();pending=found;popup._anchor=target;popup.hidden=false;popup.querySelectorAll('[data-question-mark]').forEach(b=>{b.disabled=!readable;const kind=b.dataset.questionMark;if(kind!=='clear')b.setAttribute('aria-pressed',String(found.every(sel=>covered(sel,kind))))});report(readable?'':'기존 표시를 읽지 못해 저장을 중지했습니다.');
-   const r=getSelection().getRangeAt(0).getBoundingClientRect();place(e.clientX||r.left,e.clientY||r.bottom);if(!e.clientX&&!e.clientY)popup.querySelector('button:not(:disabled)')?.focus({preventScroll:true})});
+   placeSelection();if(!e.clientX&&!e.clientY)popup.querySelector('button:not(:disabled)')?.focus({preventScroll:true})});
+  let selectionFrame=0;document.addEventListener('selectionchange',()=>{if(popup.hidden||selectionFrame)return;selectionFrame=requestAnimationFrame(()=>{selectionFrame=0;if(popup.hidden)return;const found=selected();if(!found.length){hide();return}pending=found;placeSelection()})});
   popup.addEventListener('pointerdown',e=>{if(e.target.closest('button'))e.preventDefault()});
   popup.querySelectorAll('[data-question-mark]').forEach(b=>b.addEventListener('click',()=>apply(b.dataset.questionMark)));
   undoButton.addEventListener('click',()=>{if(checkDay()||!undo.length)return;const before=undo.at(-1),next={...marks};before.forEach((e,id)=>{if(e===undefined)delete next[id];else next[id]=copy(e)});if(!save(next))return;undo.pop();before.forEach((_,id)=>renderBlock(id));undoButton.disabled=!undo.length;getSelection()?.removeAllRanges();hide()});
