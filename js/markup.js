@@ -38,10 +38,15 @@
   for(const [id,b] of blocks){if(!b.root.isConnected||!b.root.getClientRects().length||!range.intersectsNode(b.root))continue;const start=b.root.contains(range.startContainer)?offsetIn(b.root,range.startContainer,range.startOffset):0,end=b.root.contains(range.endContainer)?offsetIn(b.root,range.endContainer,range.endOffset):b.text.length;if(end>start)found.push({id,start,end})}
   return found.sort((a,b)=>blocks.get(a.id).root.compareDocumentPosition(blocks.get(b.id).root)&Node.DOCUMENT_POSITION_FOLLOWING?-1:1)}
  function hide(restoreFocus=false){if(popup){const focused=popup.contains(document.activeElement);popup.hidden=true;pending=[];if(restoreFocus&&focused&&popup._anchor?.isConnected){if(!popup._anchor.hasAttribute('tabindex'))popup._anchor.tabIndex=-1;popup._anchor.focus({preventScroll:true})}}}
- function placeSelection(){const sel=getSelection();if(!sel?.rangeCount)return;const touch=navigator.maxTouchPoints>0,r=sel.getRangeAt(0).getBoundingClientRect(),v=window.visualViewport,left=(v?.offsetLeft||0)+8,top=(v?.offsetTop||0)+8,right=left+(v?.width||innerWidth)-16,bottom=top+(v?.height||innerHeight)-16;
-  popup.style.maxWidth=Math.max(1,right-left)+'px';const box=popup.getBoundingClientRect(),gap=touch?40:24,rects=touch?pending.map(s=>blocks.get(s.id)?.root.getBoundingClientRect()).filter(Boolean):[],end=Math.max(r.bottom,...rects.map(b=>b.bottom)),start=Math.min(r.top,...rects.map(b=>b.top));
-  // Keep native selection handles clear; use the space above only when the lower edge is near the screen bottom.
-  const below=end+gap,above=start-gap-box.height,y=below+box.height<=bottom?below:above>=top?above:Math.max(top,bottom-box.height);
+ function placeSelection(){const sel=getSelection();if(!sel?.rangeCount)return;const range=sel.getRangeAt(0),r=range.getBoundingClientRect(),v=window.visualViewport,left=(v?.offsetLeft||0)+8,top=(v?.offsetTop||0)+8,right=left+(v?.width||innerWidth)-16,bottom=top+(v?.height||innerHeight)-16;
+  let gap=24;
+  if(navigator.maxTouchPoints>0){
+   const start=range.startContainer;
+   const style=getComputedStyle(start.nodeType===Node.ELEMENT_NODE?start:start.parentElement);
+   gap=1.25*(parseFloat(style.lineHeight)||parseFloat(style.fontSize)*1.3);
+  }
+  popup.style.maxWidth=Math.max(1,right-left)+'px';const box=popup.getBoundingClientRect();
+  const below=r.bottom+gap,above=r.top-gap-box.height,y=below+box.height<=bottom?below:above>=top?above:Math.max(top,bottom-box.height);
   popup.style.left=Math.max(left,Math.min(r.left,right-box.width))+'px';popup.style.top=y+'px';
  }
  function report(m){status.textContent=m;status.hidden=!m}
