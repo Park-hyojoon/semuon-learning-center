@@ -9,10 +9,15 @@
  let snapshotRevision=-1,snapshotValue,storedValue;function storedSnapshot(){if(snapshotRevision!==store.revision){storedValue=store.get();const items=storedValue.items.filter(available),ids=new Set(items.map(p=>p.id));snapshotValue={...storedValue,items,history:storedValue.history.filter(e=>ids.has(e.problemId))};snapshotRevision=store.revision}return storedValue}function snapshot(){storedSnapshot();return snapshotValue}
  let editor=null,lastUndo=null;const nav=[['home','⌂','학습 홈','index.html'],['theory','▤','이론 학습','pages/theory.html'],['practical','≡','일반전표 입력','pages/general.html'],['voucher','▦','매입매출전표 입력','pages/voucher.html'],['forms','▧','신고서 · 급여','pages/forms.html'],['status','◇','학습 현황',null],['review','↺','오늘 복습','pages/review.html'],['settings','⚙','설정 · 백업','pages/settings.html'],['guide','▤','디자인 가이드','pages/guide.html']];
  const conceptGuide=$('#concept-guide-template')?.content;
+ const conceptSubjects=[['fa','재무회계'],['vat','부가가치세법'],['cost','원가회계'],['income','소득세법']];
+ const conceptArticles=conceptGuide?[...conceptGuide.querySelectorAll('[data-concept-subject]')]:[];
+ const requestedConcept=conceptGuide&&new URLSearchParams(location.search).get('subject');
+ const selectedConcept=conceptArticles.find(article=>article.dataset.conceptSubject===requestedConcept)||conceptArticles[0];
  function theoryNavigation(icon,label,path){
+  const links=conceptSubjects.map(([id,name])=>`<a data-sub-menu-id="sub:concepts:${id}" href="${href('pages/concepts.html?subject='+id)}" ${selectedConcept?.dataset.conceptSubject===id?'class="active" aria-current="page"':''}>${name}</a>`);
   return `<details class="app-nav-group" data-menu-id="theory" open>
     <summary><span aria-hidden="true">${icon}</span><a class="menu-parent-link" href="${href(path)}" ${page==='theory'?'aria-current="page"':''}>${label}</a></summary>
-    <div class="app-subnav"><a href="${href('pages/concepts.html')}" ${page==='concepts'?'class="active" aria-current="page"':''}>개념 한눈에</a></div>
+    <div class="app-subnav">${links.join('')}</div>
   </details>`;
  }
  document.body.classList.add('semuon');document.body.innerHTML=`<aside class="app-sidebar"><a class="app-brand" href="${href('index.html')}"><img src="${href('assets/favicon.svg')}" alt=""><span>세무온<small>전산세무 2급 학습센터</small></span></a><button class="btn secondary mobile-menu" aria-expanded="false" aria-controls="app-nav" type="button">☰<span class="sr-only">메뉴 열기</span></button><nav id="app-nav" class="app-nav" aria-label="주 메뉴">${nav.map(([key,icon,label,path])=>key==='theory'?theoryNavigation(icon,label,path):key==='settings'?`<details class="app-nav-group ${['settings','database'].includes(page)?'is-active':''}" data-menu-id="settings" open><summary><span>⚙</span><span>설정 · 백업</span></summary><div class="app-subnav"><a href="${href('pages/settings.html')}" ${page==='settings'?'class="active"':''}>설정 · 백업</a><a href="${href('pages/database.html')}" ${page==='database'?'class="active" aria-current="page"':''}>데이터베이스 현황</a></div></details>`:key==='status'?`<details class="app-nav-group ${['progress','map','journal','roadmap'].includes(page)?'is-active':''}" data-menu-id="status" open><summary><span aria-hidden="true">${icon}</span><span>${label}</span></summary><div class="app-subnav"><a href="${href('pages/learning-map.html')}" ${page==='map'?'class="active" aria-current="page"':''}>나의 학습 지도</a><a href="${href('pages/journal.html')}" ${page==='journal'?'class="active" aria-current="page"':''}>학습 기록</a></div></details>`:`<a data-menu-id="${key}" href="${href(path)}" ${key===page?'class="active" aria-current="page"':''}><span aria-hidden="true">${icon}</span><span>${label}</span></a>`).join('')}</nav></aside><main class="app-main"><header class="app-topbar"><p class="app-date">${new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',dateStyle:'full'}).format(new Date())}</p>${SemuonFullscreen.button()}</header><div id="save-status" class="notice error" role="alert" hidden></div><div id="content"></div><footer class="app-footer">세무온 · 전산세무 2급 전용 · <a href="${href('pages/settings.html')}">백업 · 설정</a></footer></main><div class="toast" role="status" hidden></div>`;
@@ -268,7 +273,7 @@
   const label=id=>nav.find(n=>n[0]===id)?.[2]||id;
   const iconChoices=[['default','기본 아이콘'],['none','아이콘 없음'],['⌂','집'],['▤','책'],['▦','표'],['≡','목록'],['◇','마름모'],['↺','복습'],['⚙','설정'],['✎','연필'],['✓','체크'],['★','별'],['◎','목표'],['◷','시계'],['▣','카드'],['☷','목차'],['↗','성장'],['☑','완료'],['⚑','깃발'],['✦','반짝임'],['●','원'],['◆','다이아'],['☀','해'],['☕','컵'],['📚','책 묶음'],['📝','메모'],['📅','달력'],['📊','그래프'],['🎯','과녁'],['🌱','새싹'],['🏠','홈'],['📖','읽기'],['📒','노트'],['📌','핀'],['🔖','책갈피'],['💡','아이디어'],['🧩','퍼즐'],['🔍','찾기'],['⏰','알람'],['✅','완료 표시'],['🎓','학습'],['💻','컴퓨터'],['🗂️','자료함'],['📁','폴더'],['🧮','계산기'],['💰','돈'],['🧾','영수증'],['📈','성장 그래프'],['🛠️','도구'],['🔔','알림'],['🗓️','일정'],['🚀','시작'],['🌟','별빛'],['🍀','행운']];
   const iconIds=new Set(iconChoices.map(c=>c[0])),descriptors=links.map(el=>{const row=el.matches('details')?el.querySelector('summary'):el;return{id:el.dataset.menuId,label:label(el.dataset.menuId),el,icon:row.children[0],name:row.children[1],original:nav.find(n=>n[0]===el.dataset.menuId)?.[1]||''}});
-  for(const el of navBox.querySelectorAll('.app-subnav a')){const icon=document.createElement('span'),name=document.createElement('span'),originalName=el.textContent;icon.className='menu-user-icon';icon.setAttribute('aria-hidden','true');name.className='menu-user-label';name.textContent=originalName;el.replaceChildren(icon,name);descriptors.push({id:'sub:'+new URL(el.href).pathname.split('/').pop(),label:originalName,el,icon,name,original:'',parent:el.closest('[data-menu-id]').dataset.menuId})}
+  for(const el of navBox.querySelectorAll('.app-subnav a')){const icon=document.createElement('span'),name=document.createElement('span'),originalName=el.textContent;icon.className='menu-user-icon';icon.setAttribute('aria-hidden','true');name.className='menu-user-label';name.textContent=originalName;el.replaceChildren(icon,name);descriptors.push({id:el.dataset.subMenuId||'sub:'+new URL(el.href).pathname.split('/').pop(),label:originalName,el,icon,name,original:'',parent:el.closest('[data-menu-id]').dataset.menuId})}
   const byId=new Map(descriptors.map(d=>[d.id,d])),subDefaults=Object.fromEntries(links.filter(el=>el.matches('details')).map(el=>[el.dataset.menuId,descriptors.filter(d=>d.parent===el.dataset.menuId).map(d=>d.id)]));
   for(const d of descriptors)d.route=d.el.matches('a')?d.el.href:d.name.matches('a')?d.name.href:null;
   const activeNode=descriptors.find(d=>d.route&&(d.el.classList.contains('active')||d.name.getAttribute('aria-current')==='page'))?.id||activeMenu;
@@ -347,11 +352,8 @@
  applyFont();applyTheme();if(store.error){fail(Error('학습자료를 읽지 못해 저장을 중지하고 원본을 보존했습니다. 설정에서 저장 원본을 내보내 주세요.'));if(page!=='settings'){content.innerHTML=`<div class="empty"><h2>저장 자료를 확인해 주세요.</h2><a class="btn" href="${href('pages/settings.html')}">저장 원본 · 백업 확인</a></div>`;return}}
  SemuonSync.install({store,href,notify:toast});
  if(page==='concepts'&&conceptGuide){
-  const articles=[...conceptGuide.querySelectorAll('[data-concept-subject]')];
-  const subject=new URLSearchParams(location.search).get('subject');
-  const selected=articles.find(article=>article.dataset.conceptSubject===subject)||articles[0];
-  for(const article of articles)if(article!==selected)article.remove();
-  const tab=[...conceptGuide.querySelectorAll('[data-concept-tab]')].find(a=>a.dataset.conceptTab===selected.dataset.conceptSubject);
+  for(const article of conceptArticles)if(article!==selectedConcept)article.remove();
+  const tab=conceptGuide.querySelector(`[data-concept-tab="${selectedConcept?.dataset.conceptSubject}"]`);
   tab?.setAttribute('aria-current','page');
   content.append(conceptGuide);
   return;
