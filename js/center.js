@@ -31,7 +31,6 @@
  const laneObserver=new MutationObserver(changes=>{const roots=new Set();for(const change of changes){if(change.type==='characterData'){if(change.target.parentElement&&!change.target.parentElement.closest('.study-lane'))roots.add(change.target.parentElement)}else for(const node of change.addedNodes){if(node.nodeType===1&&!node.matches('.study-lane'))roots.add(node);else if(node.nodeType===3&&node.parentElement&&!node.parentElement.closest('.study-lane'))roots.add(node.parentElement)}}for(const root of roots)if(root.isConnected)paintStudyLanes(root)});
  laneObserver.observe(document.body,{childList:true,subtree:true,characterData:true});paintStudyLanes(document.body);
 
- document.addEventListener('click',e=>{const button=e.target.closest('.evidence-open');if(!button)return;const original=button.closest('figure').querySelector('img'),dialog=document.createElement('dialog');dialog.className='evidence-dialog';dialog.innerHTML='<div class="evidence-tools"><strong>증빙 원본</strong><button type="button" class="btn secondary evidence-size">원본 크기</button><button type="button" class="btn evidence-close">닫기</button></div><div class="evidence-viewport"></div>';const img=original.cloneNode();img.removeAttribute('class');dialog.querySelector('.evidence-viewport').append(img);document.body.append(dialog);dialog.querySelector('.evidence-close').onclick=()=>dialog.close();dialog.querySelector('.evidence-size').onclick=ev=>{const full=dialog.classList.toggle('original-size');ev.currentTarget.textContent=full?'화면에 맞추기':'원본 크기'};dialog.addEventListener('close',()=>{dialog.remove();button.focus()},{once:true});dialog.showModal()});
  function toast(message,undo){const box=$('.toast');box.replaceChildren(document.createTextNode(message));if(undo){const b=document.createElement('button');b.type='button';b.className='toast-undo';b.textContent='되돌리기';b.onclick=()=>{box.hidden=true;undo()};box.append(' ',b)}box.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>box.hidden=true,undo?1000:5000)}
  SemuonFullscreen.install({notify:message=>toast(message)});
  // 학습 센터의 ‘✓ 알고 있어요 · 통과 / ↻ 틀렸어요 · 다시 연습’. 답안 없이 직접 표시 기록(semuon-self)을 남기며 채점 취소와 같은 방식으로 되돌린다.
@@ -61,7 +60,19 @@
  function flowingText(value){return String(value).replace(/하[ \t]*\r?\n\s*(?=여(?:\s|[,.]))/g,'하').replace(/[ \t]*\r?\n(?:[ \t]*\r?\n)*[ \t]*/g,' ').trim()}
  function problemHtml(p){const flowing=p.subject==='voucher'||p.subject==='practical'&&SemuonCurriculum.practiceGroup(p)==='general';return p.displayBlocks?.length?materialBlocks(flowing?p.displayBlocks.map(b=>typeof b==='string'?flowingText(b):b):p.displayBlocks):flowing?esc(flowingText(displayText(p))):promptHtml(displayText(p))}
  function exhibits(p,hideTable=false){const html=globalThis.SemuonExhibits?.[p.id];return(hideTable||p.displayHideExhibit||p.exhibitRenderer==='registry'&&html?'':table(p.exhibit))+(html||evidence(p))}
- function evidence(p){return(p.source.evidence||[]).map(f=>/^data:image\//.test(f.data)?`<figure><img class="evidence-image" loading="lazy" decoding="async" src="${f.data}" alt="${esc(f.name)}"><figcaption>${esc(f.name)}</figcaption><button type="button" class="btn secondary evidence-open">증빙 크게 보기</button></figure>`:`<p><a href="${f.data}" download="${esc(f.name)}">${esc(f.name)} 원본 저장</a></p>`).join('')}
+ function evidence(p){
+  const files=p.source.evidence||[];
+  const images=files.filter(f=>/^data:image\//.test(f.data));
+  const downloads=files.filter(f=>!/^data:image\//.test(f.data));
+  const preview=images.length?`<details class="evidence-preview" open>
+    <summary>증빙 미리보기${images.length>1?' · '+images.length+'장':''}</summary>
+    <div class="evidence-tiles">${images.map((f,i)=>`<div class="evidence-tile">
+      <div class="evidence-viewport" tabindex="0" aria-label="증빙 ${i+1} 확대 영역">
+        <img class="evidence-image" loading="lazy" decoding="async" draggable="false" src="${f.data}" alt="증빙 ${i+1}">
+      </div></div>`).join('')}</div>
+   </details>`:'';
+  return preview+downloads.map(f=>`<p><a href="${f.data}" download="${esc(f.name)}">${esc(f.name)} 원본 저장</a></p>`).join('');
+ }
  function sourceBox(p){const original=globalThis.SemuonExhibits?.[p.id]&&(p.source.evidence||[]).length?`<details><summary>첨부 증빙 원본 이미지</summary><div>${evidence(p)}</div></details>`:'';return original+`<p class="topic-source">${esc(p.source.name)}${p.source.round?' · '+esc(p.source.round)+'회':''} · 문항 ${esc(p.source.questionNo)}</p><details><summary>원문 · 정답 확인 자료</summary><div><p>정답 확인: ${esc(p.source.answerReference)}</p><pre class="original-text">${esc(p.source.originalText)}</pre><details><summary>원본 정답</summary><div class="original-text">${esc(p.source.answerText)}</div></details>${p.source.originalDocument?`<details><summary>접수 TXT 전체 원문</summary><div class="original-text">${esc(p.source.originalDocument)}</div></details>`:''}${p.source.originalFile?.data?`<a href="${p.source.originalFile.data}" download="${esc(p.source.originalFile.name)}">원본 파일 저장</a>`:''}</div></details>`}
  function statsCards(){const s=snapshot(),v=C.stats({...s,history:s.history.filter(e=>e.source==='semuon-grade')});return`<section class="stat-grid"><div class="stat"><span>등록 문제</span><strong>${v.registered}</strong></div><div class="stat"><span>채점한 문제</span><strong>${v.solved}</strong></div><div class="stat"><span>현재 오답 문제</span><strong>${v.wrong}</strong></div><div class="stat"><span title="문제마다 한국 날짜별 첫 실제 채점 결과">첫 채점 정답률</span><strong>${v.firstRate===null?'—':v.firstRate+'%'}</strong></div></section>`}
  function home(){const s=snapshot(),book=SemuonProgress.analyze(s),gs=groups(),queue=V.select(gs,{limit:s.settings.reviewLimit||6}),done=gs.filter(g=>g.practicedToday).length,map=SemuonLearningMap.analyze(s,{scope:'theory'}),entryIds=new Map(C.SUBJECTS.map(subject=>[subject,new Set(s.items.filter(p=>subject==='theory'?p.subject==='theory':SemuonCurriculum.practiceGroup(p)===(subject==='practical'?'general':'voucher')).map(p=>p.id))]));
@@ -181,6 +192,12 @@
   if(memo)memo.before(note);else reveal.append(note);
  }
  async function markup(container,isCurrent=()=>true){
+  if(container.querySelector('.evidence-preview')){
+   try{
+    await script(new URL('js/evidence.js?v=1',rootURL));
+    if(isCurrent())SemuonEvidence.mount(container);
+   }catch(error){if(isCurrent())toast(error.message)}
+  }
   if(isCurrent())for(const card of container.querySelectorAll('[data-problem-id]')){
    attachBookReading(card,snapshot().items.find(p=>p.id===card.dataset.problemId));
   }
