@@ -10,11 +10,87 @@ function location(e){const [a,b]=e.bookPages;return '교재 '+a+(b!==a?'~'+b:'')
 function label(e){return(e.section?e.section+' · ':'')+(e.number?e.number+'번 · ':'')+e.title}
 function refs(e){return(e.bookRefs||[]).map(get).filter(Boolean)}
 function recordUnits(e){return [...new Set([e.unitId,...refs(e).map(r=>r.unitId)])]}
+const conceptsByUnit=new Map();
+for(const e of catalogs.flatMap(book=>book.entries).filter(e=>e.kind==='concept')){
+ if(!conceptsByUnit.has(e.unitId))conceptsByUnit.set(e.unitId,[]);
+ conceptsByUnit.get(e.unitId).push(e);
+}
+const exactExercises=new Map(catalogs.flatMap(book=>book.entries).filter(e=>e.problemId).map(e=>[e.problemId,e]));
+
+function recommendedReading(problem,curriculum){
+ const theory=problem.subject==='theory';
+ const practice=theory?null:curriculum.practiceClassify(problem);
+ const classification=curriculum.classify(problem);
+ const text=[problem.type,problem.prompt,...(problem.answers||[]).map(row=>row.account)].join(' ').replace(/\s+/g,'');
+ const theoryUnits=new Set(classification.units);
+ const practicalRefs=[];
+ const practicalConcept=(id,title)=>{const entry=get('selpa2:'+id);if(entry)practicalRefs.push({entry,title})};
+ const inPracticeUnit=(n)=>practice.units.includes('practice:'+practice.group+':'+n);
+
+ if(practice?.group==='general'){
+  if(inPracticeUnit('04'))theoryUnits.add('unit:fa:06');
+  if(inPracticeUnit('06'))theoryUnits.add('unit:fa:10');
+  if(inPracticeUnit('07'))theoryUnits.add('unit:fa:11');
+  if(/대손/.test(text))practicalConcept('general:concept:bad-debt');
+  if(/확정급여|퇴직급여충당/.test(text))practicalConcept('general:concept:retirement');
+  if(/매도가능증권/.test(text))practicalConcept('general:concept:securities');
+  if(/주식발행|발행제비용|신주발행/.test(text))practicalConcept('general:concept:issue');
+  if(/자기주식.*처분|자기주식처분/.test(text))practicalConcept('general:concept:treasury');
+ }else if(practice?.group==='voucher'){
+  practicalConcept(inPracticeUnit('09')?'voucher:concept:noncredit':'voucher:concept:tax-type');
+ }else if(practice?.group==='closing'){
+  const entries=practice.units.flatMap(id=>conceptsByUnit.get(id)||[]);
+  if(entries.length)practicalRefs.push({entry:entries[0],title:'결산 정리 요점'});
+  if(inPracticeUnit('01'))theoryUnits.add('unit:fa:12');
+  if(inPracticeUnit('02')&&/감가상각/.test(text))theoryUnits.add('unit:fa:08');
+  if(inPracticeUnit('03'))theoryUnits.add('unit:fa:05');
+  if(inPracticeUnit('05')&&/제조원가|원재료|재공품|제품/.test(text))theoryUnits.add('unit:cost:02');
+ }else if(practice?.group==='vat'){
+  for(const id of practice.units){
+   if(id==='practice:vat:10')continue;
+   for(const entry of conceptsByUnit.get(id)||[])practicalRefs.push({entry});
+  }
+ }else if(practice?.group==='withholding'){
+  if(inPracticeUnit('01'))practicalConcept('withholding:concept:family');
+  if(/원천징수이행사항신고서|원천징수이행상황신고서/.test(text))practicalConcept('withholding:exercise:return','원천징수이행상황신고서 실습');
+  if(inPracticeUnit('02')&&/급여자료입력|수당공제/.test(text))practicalConcept('withholding:concept:payroll');
+ }else if(practice?.group==='yearend'){
+  practicalConcept('withholding:concept:judgment','연말정산 공제 항목');
+ }
+
+ const theoryRefs=[];
+ const preferredUnits=practice?.group==='yearend'?new Set(['unit:income:04','unit:income:05',...theoryUnits]):theoryUnits;
+ for(const id of preferredUnits){
+  const matchedUnit=id==='unit:cost:07'&&/공손|물량흐름/.test(text)?'unit:cost:06':id;
+  const entries=conceptsByUnit.get(matchedUnit)||[];
+  if(!entries.length)continue;
+  // Use the section range where a unit spans multiple concepts.
+  theoryRefs.push({entry:entries[0],end:entries.at(-1),title:entries.length>1?curriculum.units.find(u=>u.id===id)?.title:undefined});
+ }
+ if(classification.subject==='소득세'&&/원천징수|원천세|간이세액/.test(text)){
+  theoryRefs.unshift({entry:get('selpa2-theory:income:concept:intro'),title:'원천징수의 뜻과 과세 방식'});
+ }
+ if(classification.subject==='소득세'&&/결손금/.test(text)){
+  theoryRefs.unshift({entry:get('selpa2-theory:income:concept:intro'),title:'소득금액과 결손금'});
+ }
+ const exact=exactExercises.get(problem.id);
+ const practicalLimit=practice?.group==='withholding'?2:1;
+ const selected=[...practicalRefs.slice(0,practicalLimit),...theoryRefs.slice(0,practicalRefs.length?1:2)];
+ if(exact)selected.push({entry:exact,title:'교재 수록 문항'});
+ const pages=new Map();
+ for(const {entry,end=entry,title} of selected){
+  const lane=theoryCatalog.entries.includes(entry)?'이론':'실무';
+  const first=entry.bookPages[0],last=Math.max(...end.bookPages),key=lane+':'+first+':'+last;
+  if(!pages.has(key))pages.set(key,{lane,pages:first===last?String(first):first+'~'+last,title:title||entry.title});
+  else if(entry===exact)pages.get(key).title+=' · 교재 수록 문항';
+ }
+ return [...pages.values()];
+}
 function validateRecord(e){if(e.bookId===undefined&&e.bookActivity===undefined&&e.bookRefs===undefined)return;const fail=m=>{throw Error(m)};const book=catalogs.find(b=>b.id===e.bookId);if(!book||!activities[e.bookActivity]||!Array.isArray(e.bookRefs)||!e.bookRefs.length||e.bookRefs.length>100||new Set(e.bookRefs).size!==e.bookRefs.length)fail('교재 학습 범위를 확인해 주세요.');if(e.lane!==book.lane)fail('교재와 이론·실무 기록 영역이 일치하지 않습니다.');for(const id of e.bookRefs){const r=get(id);if(!r||!book.entries.includes(r)||(e.bookActivity==='concept'?r.kind!=='concept':r.kind!=='exercise')||e.bookActivity==='solution'&&!r.solutionPages.length)fail('교재 항목과 학습 종류가 일치하지 않습니다.')}const groups=new Set(refs(e).map(r=>r.group));if(groups.size!==1||!refs(e).some(r=>r.unitId===e.unitId))fail('교재와 연결된 실무 단원을 확인해 주세요.')}
 function progress(entries,today='9999-99-99',bookId=catalog.id){
  const book=catalogs.find(b=>b.id===bookId)||catalog;
  const latest=new Map(),needStates=new Map();for(const e of entries.filter(e=>e.date<=today&&e.bookId===book.id).slice().sort((a,b)=>a.date.localeCompare(b.date)||a.at.localeCompare(b.at))){for(const r of refs(e)){const key=e.bookActivity+'|'+r.id;latest.set(key,e);if(e.outcome!=='learned'||!needStates.has(key))needStates.set(key,e)}}
  return book.groups.map(g=>{const concepts=book.entries.filter(e=>e.group===g.id&&e.kind==='concept'),exercises=book.entries.filter(e=>e.group===g.id&&e.kind==='exercise'),studied=concepts.filter(r=>latest.has('concept|'+r.id)),attempted=exercises.filter(r=>latest.has('exercise|'+r.id)),independent=attempted.filter(r=>latest.get('exercise|'+r.id).outcome==='independent'),needs=[...needStates].filter(([key,e])=>['reference','blocked'].includes(e.outcome)&&get(key.split('|')[1])?.group===g.id);return{...g,concepts,exercises,studied:studied.length,attempted:attempted.length,independent:independent.length,needs:needs.length,latest}})
 }
-const api={catalog,theoryCatalog,catalogs,forLane,activities,get,location,label,refs,recordUnits,validateRecord,progress};if(typeof module==='object'&&module.exports)module.exports=api;else root.SemuonTextbook=api;
+const api={catalog,theoryCatalog,catalogs,forLane,activities,get,location,label,refs,recordUnits,recommendedReading,validateRecord,progress};if(typeof module==='object'&&module.exports)module.exports=api;else root.SemuonTextbook=api;
 })(globalThis);

@@ -14,6 +14,9 @@
 }
 
 .concept-guide .concept-heading { margin-bottom: 16px; }
+.concept-subjects { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.concept-subjects .btn { min-height: 38px; padding: 6px 12px; }
+.concept-subjects .btn[aria-current="page"] { background: var(--soft); border-color: var(--primary); }
 .concept-blue { --concept-accent: var(--concept-blue); }
 .concept-green, .concept-route { --concept-accent: var(--concept-green); }
 
@@ -120,6 +123,7 @@
   .concept-fork::after { left: calc(25% - 4.5px); right: calc(25% - 4.5px); top: 11px; border-top: 1px solid var(--concept-accent); }
   .concept-fork .concept-arrow:nth-child(2) { display: block; }
   .concept-route { margin-left: calc(50% + 9px); }
+  .concept-route-wide { margin-left: 0; }
 }
 
 @container concept-guide (min-width: 55rem) {

@@ -11,14 +11,14 @@
   <link rel="manifest" href="../manifest.webmanifest">
   <link rel="apple-touch-icon" sizes="180x180" href="../assets/apple-touch-icon.png">
   <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
-  <link rel="stylesheet" href="../css/app.css?v=1c4e52750ca0">
-  <link rel="stylesheet" href="../css/concepts.css?v=a3edb0e3e623">
+  <link rel="stylesheet" href="../css/app.css?v=2175bef592a4">
+  <link rel="stylesheet" href="../css/concepts.css?v=7093bee54fa3">
   <link rel="stylesheet" href="../css/scratchpad.css?v=d323556165fb">
   <script defer src="../shared/entry/grading.js"></script>
   <script defer src="../shared/review-engine.js"></script>
   <script defer src="../data/runtime/bank.js?v=bank-49bf523308c0"></script><script defer src="../data/runtime/index.js?v=e19b87fc723d"></script>
   <script defer src="../js/tax-forms.js?v=56ff1499901d"></script>
-  <script defer src="../js/textbook.js?v=cdf8ad3d3e6e"></script>
+  <script defer src="../js/textbook.js?v=d36baa67a11f"></script>
   <script defer src="../js/core.js?v=0b387aa29445"></script>
   <script defer src="../js/store.js?v=20daed4e234e"></script>
   <script defer src="../shared/combo-review.js?v=1"></script>
@@ -28,13 +28,19 @@
   <script defer src="../js/sync-model.js?v=48dd344bc590"></script>
   <script defer src="../js/sync.js?v=1007d7b8d99b"></script>
   <script defer src="../js/scratchpad.js?v=8f756b4b90c8"></script>
-  <script defer src="../js/center.js?v=4935264a8582"></script>
+  <script defer src="../js/center.js?v=4d313aa5e967"></script>
 </head>
 <body class="semuon" data-page="concepts">
   <p>세무온을 불러오는 중입니다.</p>
   <noscript>학습센터를 사용하려면 JavaScript를 허용해 주세요.</noscript>
   <template id="concept-guide-template">
-    <article class="concept-guide" aria-labelledby="concept-guide-title">
+    <nav class="concept-subjects" aria-label="개념 한눈에 과목">
+      <a class="btn secondary" data-concept-tab="fa" href="?subject=fa">재무회계</a>
+      <a class="btn secondary" data-concept-tab="vat" href="?subject=vat">부가가치세법</a>
+      <a class="btn secondary" data-concept-tab="cost" href="?subject=cost">원가회계</a>
+      <a class="btn secondary" data-concept-tab="income" href="?subject=income">소득세법</a>
+    </nav>
+    <article class="concept-guide" data-concept-subject="income" aria-labelledby="concept-guide-title">
       <header class="page-head concept-heading">
         <div>
           <p class="eyebrow">이론 학습 · 개념 한눈에</p>
@@ -208,6 +214,234 @@
           </div>
         </div>
       </details>
+    </article>
+    <article class="concept-guide" data-concept-subject="fa" aria-labelledby="concept-title-fa">
+      <header class="page-head concept-heading"><div>
+        <p class="eyebrow">이론 학습 · 개념 한눈에 · 재무회계</p>
+        <h1 id="concept-title-fa">거래에서 결산과 재무제표까지</h1>
+        <p>거래를 어떻게 분개하는지 보고, 결산에서 무엇을 보완하는지 확인하세요.</p>
+      </div></header>
+      <div class="concept-flow" role="group" aria-label="재무회계 학습 흐름">
+        <details class="concept-node concept-foundation">
+      <summary><span class="concept-step">01 · 공통 기초</span><span class="concept-title">재무제표의 역할</span><span class="concept-lead">재무상태표는 특정 시점의 상태를, 손익계산서는 일정 기간의 성과를 보여줍니다.</span></summary>
+      <div class="concept-body">
+        <p>재무상태표에서는 자산에서 부채를 빼면 자본이 됩니다. 손익계산서에서는 수익과 비용을 비교해 기간 손익을 계산합니다.</p>
+        <div class="concept-actions"><a class="btn secondary" href="theory.html?tag=unit:fa:02&amp;scope=all">재무제표 문제</a> <span class="concept-reference">셀파 이론 5~6쪽</span></div>
+      </div>
+    </details>
+        <div class="concept-fork" aria-hidden="true"><span class="concept-arrow"></span><span class="concept-arrow"></span></div>
+        <div class="concept-branches">
+          <details class="concept-node concept-blue">
+      <summary><span class="concept-step">02 A · 핵심 개념</span><span class="concept-title">자산과 채권</span><span class="concept-lead">현금·채권·재고·유형자산은 취득, 보유, 처분 때 확인할 항목이 다릅니다.</span></summary>
+      <div class="concept-body">
+        <p>현금과부족은 실제 현금과 장부 잔액의 차이부터 확인합니다. 매출채권은 회수 가능성을, 재고는 수량·단가·귀속을, 유형자산은 취득원가·감가상각·처분을 봅니다. 유가증권은 분류에 따라 평가와 처분을 구분합니다.</p>
+        <div class="concept-actions"><a class="btn secondary" href="theory.html?tag=unit:fa:05&amp;scope=all">채권·대손 문제</a> <a class="btn secondary" href="theory.html?tag=unit:fa:06&amp;scope=all">재고 문제</a> <a class="btn secondary" href="theory.html?tag=unit:fa:08&amp;scope=all">유형자산 문제</a> <span class="concept-reference">셀파 이론 7~16쪽</span></div>
+      </div>
+    </details>
+          <details class="concept-node concept-green">
+      <summary><span class="concept-step">02 B · 핵심 개념</span><span class="concept-title">부채·자본과 손익</span><span class="concept-lead">받은 돈과 지급한 돈을 거래 성격과 귀속 기간에 따라 구분합니다.</span></summary>
+      <div class="concept-body">
+        <p>차입금은 상환할 의무가 있는 부채, 주식 발행으로 납입된 금액은 자본입니다. 같은 현금 유입이라도 서비스 제공 전 받은 돈은 선수금, 제공해서 번 돈은 수익으로 구분합니다.</p>
+        <div class="concept-actions"><a class="btn secondary" href="theory.html?tag=unit:fa:10&amp;scope=all">부채 문제</a> <a class="btn secondary" href="theory.html?tag=unit:fa:11&amp;scope=all">자본 문제</a> <a class="btn secondary" href="theory.html?tag=unit:fa:12&amp;scope=all">수익·비용 문제</a> <span class="concept-reference">셀파 이론 17~25쪽</span></div>
+      </div>
+    </details>
+        </div>
+        <div class="concept-route concept-route-wide"><span>거래를 기록하고, 기말에 장부를 점검합니다.</span><span class="concept-arrow" aria-hidden="true"></span></div>
+        <section class="concept-practice concept-green" aria-labelledby="concept-practice-fa">
+          <header class="concept-section-head"><span class="concept-step">03 · 실무 적용</span><h2 id="concept-practice-fa">일반전표와 결산 정리</h2></header>
+          <ol class="concept-practice-steps" role="list">
+            <li><details class="concept-node">
+      <summary><span class="concept-step">1단계</span><span class="concept-title">거래 판단</span><span class="concept-lead">무엇이 늘거나 줄었는지 먼저 확인합니다.</span></summary>
+      <div class="concept-body">
+        <p>외상으로 상품을 매입했다면 상품과 매입채무가 함께 늘어납니다. 거래 발생과 대금 지급을 구분해 계정을 고릅니다.</p>
+        <div class="concept-actions"><a class="btn secondary" href="general.html?practice=general&amp;tag=practice:general:02&amp;scope=all">채권·채무 분개</a> <span class="concept-reference">셀파 이론 8~11쪽</span></div>
+      </div>
+    </details></li>
+            <li><details class="concept-node">
+      <summary><span class="concept-step">2단계</span><span class="concept-title">일반전표 입력</span><span class="concept-lead">계정과목과 차변·대변을 정해 기록합니다.</span></summary>
+      <div class="concept-body">
+        <p>업무용 비품을 취득하고 계좌에서 지급했다면, 비품 증가와 보통예금 감소를 같은 분개에 기록합니다.</p>
+        <div class="concept-actions"><a class="btn secondary" href="general.html?practice=general&amp;tag=practice:general:05&amp;scope=all">자산 취득·처분 분개</a> <span class="concept-reference">셀파 이론 13~14쪽</span></div>
+      </div>
+    </details></li>
+            <li><details class="concept-node">
+      <summary><span class="concept-step">3단계</span><span class="concept-title">결산 조정</span><span class="concept-lead">당기 몫의 비용과 수익, 자산의 장부금액을 맞춥니다.</span></summary>
+      <div class="concept-body">
+        <p>선급 보험료는 당기분과 다음 기간 몫을 나눕니다. 감가상각은 당기에 사용한 유형자산의 원가를 비용으로 배분합니다.</p>
+        <div class="concept-actions"><a class="btn secondary" href="general.html?practice=closing&amp;tag=practice:closing:01&amp;scope=all">발생·이연 결산</a> <a class="btn secondary" href="general.html?practice=closing&amp;tag=practice:closing:02&amp;scope=all">감가상각 결산</a> <span class="concept-reference">셀파 실무 117쪽</span></div>
+      </div>
+    </details></li>
+            <li><details class="concept-node">
+      <summary><span class="concept-step">4단계</span><span class="concept-title">재무제표로 확인</span><span class="concept-lead">조정된 잔액을 재무상태와 기간 손익으로 연결합니다.</span></summary>
+      <div class="concept-body">
+        <p>예를 들어 감가상각을 반영하면 손익계산서에 비용이 잡히고 재무상태표에는 감가상각누계액이 자산 장부금액에 반영됩니다. 오류가 있으면 발생 시점과 성격을 확인합니다.</p>
+        <div class="concept-actions"><a class="btn secondary" href="theory.html?tag=unit:fa:13&amp;scope=all">회계변경·오류수정 문제</a> <span class="concept-reference">셀파 이론 5~6쪽, 26쪽</span></div>
+      </div>
+    </details></li>
+          </ol>
+        </section>
+        <div class="concept-arrow concept-next" aria-hidden="true"></div>
+        <section class="concept-check" aria-labelledby="concept-check-fa">
+          <header class="concept-section-head"><span class="concept-step">04 · 문제로 확인</span><h2 id="concept-check-fa">관련 문제 풀기</h2></header>
+          <div class="concept-branches">
+            <div class="concept-check-lane concept-blue"><h3>이론 문제</h3><div class="concept-actions"><a class="btn secondary" href="theory.html?tag=재무회계&amp;scope=all">재무회계 문제</a></div></div>
+            <div class="concept-check-lane concept-green"><h3>실무 연습</h3><div class="concept-actions"><a class="btn secondary" href="general.html?scope=all">일반전표</a> <a class="btn secondary" href="general.html?practice=closing&amp;scope=all">결산 정리</a></div></div>
+          </div>
+        </section>
+      </div>
+    </article>
+
+    <article class="concept-guide" data-concept-subject="vat" aria-labelledby="concept-title-vat">
+      <header class="page-head concept-heading"><div>
+        <p class="eyebrow">이론 학습 · 개념 한눈에 · 부가가치세법</p>
+        <h1 id="concept-title-vat">거래와 증빙에서 부가가치세 신고까지</h1>
+        <p>과세 구분과 매입세액 판단이 전표 유형과 신고서에 어떻게 이어지는지 살펴보세요.</p>
+      </div></header>
+      <div class="concept-flow" role="group" aria-label="부가가치세법 학습 흐름">
+        <details class="concept-node concept-foundation">
+      <summary><span class="concept-step">01 · 공통 기초</span><span class="concept-title">부가가치세의 기본</span><span class="concept-lead">사업자 유형, 과세기간, 공급시기를 확인합니다.</span></summary>
+      <div class="concept-body">
+        <p>신고 범위를 잡으려면 거래가 어느 과세기간에 속하는지부터 판단합니다. 사업자등록과 일반·간이과세자 구분은 적용되는 신고·계산 방식을 이해하는 출발점입니다.</p>
+        <div class="concept-actions"><a class="btn secondary" href="theory.html?tag=unit:vat:01&amp;scope=all">과세기간·등록 문제</a> <a class="btn secondary" href="theory.html?tag=unit:vat:02&amp;scope=all">공급시기 문제</a> <a class="btn secondary" href="theory.html?tag=unit:vat:08&amp;scope=all">간이과세 문제</a> <span class="concept-reference">셀파 이론 35~41쪽, 50쪽</span></div>
+      </div>
+    </details>
+        <div class="concept-fork" aria-hidden="true"><span class="concept-arrow"></span><span class="concept-arrow"></span></div>
+        <div class="concept-branches">
+          <details class="concept-node concept-blue">
+      <summary><span class="concept-step">02 A · 핵심 개념</span><span class="concept-title">매출과 매출세액</span><span class="concept-lead">과세·영세율·면세를 구분하고, 공급가액과 증빙을 확인합니다.</span></summary>
+      <div class="concept-body">
+        <p>영세율은 과세 거래에 0% 세율을 적용하는 구분이고, 면세는 법에서 정한 공급에 세금을 면제하는 구분입니다. 둘 다 거래 단계에서 매출세액이 0으로 보일 수 있으므로 거래 성격과 증빙으로 유형을 판단합니다.</p>
+        <div class="concept-actions"><a class="btn secondary" href="theory.html?tag=unit:vat:03&amp;scope=all">영세율·면세 문제</a> <a class="btn secondary" href="theory.html?tag=unit:vat:04&amp;scope=all">과세표준 문제</a> <a class="btn secondary" href="theory.html?tag=unit:vat:06&amp;scope=all">세금계산서 문제</a> <span class="concept-reference">셀파 이론 42~44쪽, 47~48쪽</span></div>
+      </div>
+    </details>
+          <details class="concept-node concept-green">
+      <summary><span class="concept-step">02 B · 핵심 개념</span><span class="concept-title">매입과 매입세액</span><span class="concept-lead">세액이 적혀 있어도 공제 요건과 불공제 사유를 확인합니다.</span></summary>
+      <div class="concept-body">
+        <p>공제 가능한 증빙인지 살피고, 과세사업에 사용했는지 판단합니다. 과세·면세에 공통으로 쓰고 귀속을 구분하기 어려운 매입은 공통매입세액 안분을 검토합니다.</p>
+        <div class="concept-actions"><a class="btn secondary" href="theory.html?tag=unit:vat:05&amp;scope=all">매입세액 문제</a> <span class="concept-reference">셀파 이론 45~47쪽</span></div>
+      </div>
+    </details>
+        </div>
+        <div class="concept-route concept-route-wide"><span>같은 거래의 전표, 부속서류, 신고서가 서로 이어집니다.</span><span class="concept-arrow" aria-hidden="true"></span></div>
+        <section class="concept-practice concept-green" aria-labelledby="concept-practice-vat">
+          <header class="concept-section-head"><span class="concept-step">03 · 실무 적용</span><h2 id="concept-practice-vat">매입매출전표와 신고서</h2></header>
+          <ol class="concept-practice-steps" role="list">
+            <li><details class="concept-node">
+      <summary><span class="concept-step">1단계</span><span class="concept-title">증빙 읽기</span><span class="concept-lead">세금계산서·카드전표·현금영수증에서 거래와 금액을 확인합니다.</span></summary>
+      <div class="concept-body">
+        <p>공급가액과 부가가치세가 나뉘어 있다면 두 금액을 각각 읽습니다. 세액이 포함된 공급대가를 공급가액으로 착각하기 쉬우니 문제의 표시를 확인합니다.</p>
+        <div class="concept-actions"><a class="btn secondary" href="voucher.html?tag=practice:voucher:01&amp;scope=all">과세 매출 전표</a> <span class="concept-reference">셀파 실무 95쪽</span></div>
+      </div>
+    </details></li>
+            <li><details class="concept-node">
+      <summary><span class="concept-step">2단계</span><span class="concept-title">전표 입력</span><span class="concept-lead">매출·매입 방향과 과세·면세·불공제 유형을 고릅니다.</span></summary>
+      <div class="concept-body">
+        <p>매입세액 불공제라면 공제 가능한 매입과 같은 유형으로 입력하지 않습니다. 거래의 사용 목적과 증빙을 다시 확인합니다.</p>
+        <div class="concept-actions"><a class="btn secondary" href="voucher.html?tag=practice:voucher:06&amp;scope=all">과세 매입 전표</a> <a class="btn secondary" href="voucher.html?tag=practice:voucher:09&amp;scope=all">불공제 매입 전표</a> <span class="concept-reference">셀파 실무 95쪽</span></div>
+      </div>
+    </details></li>
+            <li><details class="concept-node">
+      <summary><span class="concept-step">3단계</span><span class="concept-title">부속서류 정리</span><span class="concept-lead">카드 수령분이나 공통매입처럼 별도 명세가 필요한 자료를 정리합니다.</span></summary>
+      <div class="concept-body">
+        <p>카드 매입은 수령명세서 반영 대상인지, 공통매입은 불공제분을 구분했는지 확인합니다.</p>
+        <div class="concept-actions"><a class="btn secondary" href="forms.html?practice=vat&amp;tag=practice:vat:03&amp;scope=all">카드 수령명세서</a> <a class="btn secondary" href="forms.html?practice=vat&amp;tag=practice:vat:02&amp;scope=all">공통매입세액</a> <span class="concept-reference">셀파 실무 103쪽, 111~112쪽</span></div>
+      </div>
+    </details></li>
+            <li><details class="concept-node">
+      <summary><span class="concept-step">4단계</span><span class="concept-title">신고서 확인</span><span class="concept-lead">일반과세자의 세액계산은 매출세액에서 공제 가능한 매입세액을 빼는 데서 시작합니다.</span></summary>
+      <div class="concept-body">
+        <p>문제에서 주어진 예정신고 누락, 가산세, 공제 등 추가 조건을 신고서의 해당 항목에 반영하고 최종 납부·환급 금액을 확인합니다.</p>
+        <div class="concept-actions"><a class="btn secondary" href="forms.html?practice=vat&amp;tag=practice:vat:01&amp;scope=all">부가가치세 신고서</a> <span class="concept-reference">셀파 이론 49쪽 · 실무 113~115쪽</span></div>
+      </div>
+    </details></li>
+          </ol>
+        </section>
+        <div class="concept-arrow concept-next" aria-hidden="true"></div>
+        <section class="concept-check" aria-labelledby="concept-check-vat">
+          <header class="concept-section-head"><span class="concept-step">04 · 문제로 확인</span><h2 id="concept-check-vat">관련 문제 풀기</h2></header>
+          <div class="concept-branches">
+            <div class="concept-check-lane concept-blue"><h3>이론 문제</h3><div class="concept-actions"><a class="btn secondary" href="theory.html?tag=부가가치세&amp;scope=all">부가가치세 문제</a></div></div>
+            <div class="concept-check-lane concept-green"><h3>실무 연습</h3><div class="concept-actions"><a class="btn secondary" href="voucher.html?scope=all">매입매출전표</a> <a class="btn secondary" href="forms.html?practice=vat&amp;scope=all">신고서·부속서류</a></div></div>
+          </div>
+        </section>
+      </div>
+      <details class="concept-sources"><summary>참고 자료</summary><div><a href="https://i.nts.go.kr/nts/cm/cntnts/cntntsView.do?cntntsId=238928&amp;mi=2403" target="_blank" rel="noopener">국세청 부가가치세 세액계산 흐름도</a></div></details>
+    </article>
+
+    <article class="concept-guide" data-concept-subject="cost" aria-labelledby="concept-title-cost">
+      <header class="page-head concept-heading"><div>
+        <p class="eyebrow">이론 학습 · 개념 한눈에 · 원가회계</p>
+        <h1 id="concept-title-cost">제조원가에서 재고와 매출원가까지</h1>
+        <p>생산에 들어간 원가가 재공품, 제품, 매출원가로 옮겨가는 흐름을 살펴보세요.</p>
+      </div></header>
+      <div class="concept-flow" role="group" aria-label="원가회계 학습 흐름">
+        <details class="concept-node concept-foundation">
+      <summary><span class="concept-step">01 · 공통 기초</span><span class="concept-title">원가의 분류</span><span class="concept-lead">직접재료비·직접노무비·제조간접비로 제조원가를 나눕니다.</span></summary>
+      <div class="concept-body">
+        <p>한 제품에 직접 추적할 수 있는 재료나 작업자 임금은 직접원가로 봅니다. 여러 제품을 만드는 데 공통으로 든 공장 비용은 기준을 정해 배부합니다. 직접·간접과 고정·변동은 서로 다른 분류 기준입니다.</p>
+        <div class="concept-actions"><a class="btn secondary" href="theory.html?tag=unit:cost:01&amp;scope=all">원가 분류 문제</a> <a class="btn secondary" href="theory.html?tag=unit:cost:03&amp;scope=all">요소별 원가 문제</a> <span class="concept-reference">셀파 이론 57~59쪽</span></div>
+      </div>
+    </details>
+        <div class="concept-fork" aria-hidden="true"><span class="concept-arrow"></span><span class="concept-arrow"></span></div>
+        <div class="concept-branches">
+          <details class="concept-node concept-blue">
+      <summary><span class="concept-step">02 A · 핵심 개념</span><span class="concept-title">개별·부문별 원가계산</span><span class="concept-lead">주문이나 작업별로 원가를 모으고, 공통 비용은 정해진 기준으로 배부합니다.</span></summary>
+      <div class="concept-body">
+        <p>작업별 직접재료비·직접노무비는 추적하고, 제조간접비는 기계시간이나 직접노무시간 등 문제의 기준을 적용합니다. 보조부문 비용은 지정된 방법에 따라 제조부문에 배부합니다.</p>
+        <div class="concept-actions"><a class="btn secondary" href="theory.html?tag=unit:cost:05&amp;scope=all">부문별 배부 문제</a> <a class="btn secondary" href="theory.html?tag=unit:cost:04&amp;scope=all">개별원가·간접비 문제</a> <span class="concept-reference">셀파 이론 63~64쪽</span></div>
+      </div>
+    </details>
+          <details class="concept-node concept-green">
+      <summary><span class="concept-step">02 B · 핵심 개념</span><span class="concept-title">종합원가계산</span><span class="concept-lead">공정별 원가를 모아 완성품과 기말재공품에 나눕니다.</span></summary>
+      <div class="concept-body">
+        <p>완성도가 다른 재공품을 완성품에 해당하는 수량으로 바꾼 것이 완성품환산량입니다. 재료비와 가공비의 투입 시점, 평균법·선입선출법, 공손 조건을 따로 확인합니다.</p>
+        <div class="concept-actions"><a class="btn secondary" href="theory.html?tag=unit:cost:06&amp;scope=all">종합원가 문제</a> <a class="btn secondary" href="theory.html?tag=unit:cost:07&amp;scope=all">공손 문제</a> <span class="concept-reference">셀파 이론 65~66쪽</span></div>
+      </div>
+    </details>
+        </div>
+        <div class="concept-route concept-route-wide"><span>계산한 금액을 재고와 결산 항목에 연결합니다.</span><span class="concept-arrow" aria-hidden="true"></span></div>
+        <section class="concept-practice concept-green" aria-labelledby="concept-practice-cost">
+          <header class="concept-section-head"><span class="concept-step">03 · 실무 적용</span><h2 id="concept-practice-cost">원가의 이동과 제조업 결산</h2></header>
+          <ol class="concept-practice-steps" role="list">
+            <li><details class="concept-node">
+      <summary><span class="concept-step">1단계</span><span class="concept-title">원재료</span><span class="concept-lead">창고에서 생산으로 투입된 재료의 원가를 계산합니다.</span></summary>
+      <div class="concept-body">
+        <p>단순한 문제에서는 기초 원재료에 당기 매입을 더하고 기말 원재료를 빼면 사용액을 구할 수 있습니다. 문제에 별도 감모나 기타 출고가 있으면 구분합니다.</p>
+        <div class="concept-actions"><a class="btn secondary" href="theory.html?tag=unit:cost:02&amp;scope=all">원가 흐름 문제</a> <span class="concept-reference">셀파 이론 60~62쪽</span></div>
+      </div>
+    </details></li>
+            <li><details class="concept-node">
+      <summary><span class="concept-step">2단계</span><span class="concept-title">재공품</span><span class="concept-lead">아직 완성되지 않은 생산물에 제조원가를 모읍니다.</span></summary>
+      <div class="concept-body">
+        <p>당기 제조원가를 기초 재공품에 더하고 기말 재공품을 빼면, 단순한 사례에서 당기에 완성된 제품의 제조원가가 됩니다.</p>
+        <div class="concept-actions"><a class="btn secondary" href="theory.html?tag=unit:cost:02&amp;scope=all">제조원가명세서 문제</a> <span class="concept-reference">셀파 이론 60~62쪽</span></div>
+      </div>
+    </details></li>
+            <li><details class="concept-node">
+      <summary><span class="concept-step">3단계</span><span class="concept-title">제품</span><span class="concept-lead">생산이 끝난 원가는 제품으로 옮깁니다.</span></summary>
+      <div class="concept-body">
+        <p>완성되어 창고에 남은 제품의 원가는 기말 제품 재고입니다. 제조가 끝났다는 사실과 판매됐다는 사실을 구분합니다.</p>
+        <div class="concept-actions"><a class="btn secondary" href="theory.html?tag=unit:fa:06&amp;scope=all">재고자산 문제</a> <span class="concept-reference">셀파 이론 60~62쪽</span></div>
+      </div>
+    </details></li>
+            <li><details class="concept-node">
+      <summary><span class="concept-step">4단계</span><span class="concept-title">매출원가·결산</span><span class="concept-lead">판매된 제품의 원가는 매출원가로 옮기고, 남은 재고는 기말에 확인합니다.</span></summary>
+      <div class="concept-body">
+        <p>결산 문제에서는 원재료·재공품·제품의 기말액을 각각 확인합니다. 제조원가명세서에서 완성된 원가와 판매된 원가가 어디서 갈라지는지 따라가 보세요.</p>
+        <div class="concept-actions"><a class="btn secondary" href="general.html?practice=closing&amp;tag=practice:closing:05&amp;scope=all">기말재고·제조원가 결산</a> <span class="concept-reference">셀파 이론 60~62쪽 · 실무 117쪽</span></div>
+      </div>
+    </details></li>
+          </ol>
+        </section>
+        <div class="concept-arrow concept-next" aria-hidden="true"></div>
+        <section class="concept-check" aria-labelledby="concept-check-cost">
+          <header class="concept-section-head"><span class="concept-step">04 · 문제로 확인</span><h2 id="concept-check-cost">관련 문제 풀기</h2></header>
+          <div class="concept-branches">
+            <div class="concept-check-lane concept-blue"><h3>이론 문제</h3><div class="concept-actions"><a class="btn secondary" href="theory.html?tag=원가회계&amp;scope=all">원가회계 문제</a></div></div>
+            <div class="concept-check-lane concept-green"><h3>실무 연습</h3><div class="concept-actions"><a class="btn secondary" href="general.html?practice=closing&amp;tag=practice:closing:05&amp;scope=all">기말재고·제조원가 결산</a></div></div>
+          </div>
+        </section>
+      </div>
     </article>
   </template>
 </body>

@@ -237,3 +237,7 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
 .problem-head-actions{display:flex;align-items:center;gap:8px;flex:none}.problem-filter-toggle{position:relative;width:44px;min-width:44px;padding:8px}.filter-active-dot{position:absolute;right:5px;top:5px;width:7px;height:7px;border-radius:50%;background:var(--accent);border:1px solid var(--surface)}.problem-filter-toggle[aria-expanded=true]{background:var(--soft);border-color:var(--primary)}
 .problem-filter-panel{padding:16px;border:1px solid var(--line);border-radius:10px;background:var(--surface);margin-bottom:18px;min-width:0}.problem-filter-panel .list-filters{margin-bottom:0}.problem-filter-panel .list-schedule-controls{margin:4px 0 0}.problem-filter-panel #weak-band{margin:12px 0 0}
 @media(max-width:650px){.problem-list-head{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:8px;row-gap:12px}.problem-list-head>div:first-child{grid-column:1;grid-row:1;min-width:0}.problem-list-head .problem-head-actions{grid-column:2;grid-row:1;gap:6px}.problem-head-actions .btn:not(.problem-filter-toggle){padding-inline:10px}.problem-list-head .problem-progress{grid-column:1/-1;grid-row:2;order:initial;min-width:0;width:100%}}
+
+.semuon .answer-book-reading{margin:12px 0 0;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--soft);color:var(--ink);overflow-wrap:anywhere}
+.semuon .answer-book-reading ul{margin:4px 0 0;padding-left:1.3em}
+.semuon .answer-book-reading p{margin:4px 0 0;color:var(--muted)}
