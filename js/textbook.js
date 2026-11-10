@@ -17,6 +17,36 @@ for(const e of catalogs.flatMap(book=>book.entries).filter(e=>e.kind==='concept'
 }
 const exactExercises=new Map(catalogs.flatMap(book=>book.entries).filter(e=>e.problemId).map(e=>[e.problemId,e]));
 
+const parkIncomeReading=[
+ [/이월결손금|추계결정|공동사업/, '262~264', '소득금액 계산의 특례'],
+ [/비과세근로소득|비과세급여|보육수당|자가운전보조금|연장근로/, '240~242', '근로소득과 비과세'],
+ [/일용근로|간이세액표/, '243~244', '근로소득 원천징수'],
+ [/원천징수이행상황|원천징수이행사항|원천징수세율|원천징수의무/, '297~298, 300', '원천징수와 납부'],
+ [/기본공제|추가공제|부양가족|인적공제/, '269~271', '기본공제와 추가공제'],
+ [/신용카드.*공제|특별소득공제|주택자금/, '271~274', '특별소득공제와 신용카드 소득공제'],
+ [/의료비.*공제|교육비.*공제|보험료.*공제/, '286~288', '보험료·의료비·교육비 세액공제'],
+ [/자녀세액공제|출산.*입양/, '285~286', '자녀세액공제'],
+ [/기부금.*공제|월세.*공제/, '288~291', '기부금·월세 세액공제'],
+ [/이자소득|배당소득|금융소득/, '229~233', '이자·배당소득과 금융소득 종합과세'],
+ [/연금소득/, '245~247', '연금소득'],
+ [/기타소득/, '248~250', '기타소득'],
+ [/근로소득|급여자료입력/, '240~244', '근로소득과 원천징수'],
+ [/이행상황신고서|원천징수|지급명세서/, '297~300', '원천징수와 신고'],
+ [/확정신고|중간예납|납부절차/, '296~300', '종합소득세 신고와 납부'],
+ [/연말정산/, '268~269', '연말정산 계산 흐름']
+];
+function extraReading(problem,classification,practice){
+ const ref=problem.source.bookReading;
+ if(ref&&typeof ref.book==='string'&&typeof ref.pages==='string'&&typeof ref.title==='string')return ref;
+ if(classification.subject!=='소득세'&&!['withholding','yearend'].includes(practice?.group))return null;
+ const stem=(problem.displayPrompt||problem.prompt).split(/[①②③④]/)[0];
+ for(const part of [stem,problem.type]){
+  const match=parkIncomeReading.find(([pattern])=>pattern.test(String(part).replace(/\s+/g,'')));
+  if(match)return{book:'박문각 교재',pages:match[1],title:match[2]};
+ }
+ return null;
+}
+
 function recommendedReading(problem,curriculum){
  const theory=problem.subject==='theory';
  const practice=theory?null:curriculum.practiceClassify(problem);
@@ -84,7 +114,8 @@ function recommendedReading(problem,curriculum){
   if(!pages.has(key))pages.set(key,{lane,pages:first===last?String(first):first+'~'+last,title:title||entry.title});
   else if(entry===exact)pages.get(key).title+=' · 교재 수록 문항';
  }
- return [...pages.values()];
+ const extra=extraReading(problem,classification,practice);
+ return extra?[...pages.values(),extra]:[...pages.values()];
 }
 function validateRecord(e){if(e.bookId===undefined&&e.bookActivity===undefined&&e.bookRefs===undefined)return;const fail=m=>{throw Error(m)};const book=catalogs.find(b=>b.id===e.bookId);if(!book||!activities[e.bookActivity]||!Array.isArray(e.bookRefs)||!e.bookRefs.length||e.bookRefs.length>100||new Set(e.bookRefs).size!==e.bookRefs.length)fail('교재 학습 범위를 확인해 주세요.');if(e.lane!==book.lane)fail('교재와 이론·실무 기록 영역이 일치하지 않습니다.');for(const id of e.bookRefs){const r=get(id);if(!r||!book.entries.includes(r)||(e.bookActivity==='concept'?r.kind!=='concept':r.kind!=='exercise')||e.bookActivity==='solution'&&!r.solutionPages.length)fail('교재 항목과 학습 종류가 일치하지 않습니다.')}const groups=new Set(refs(e).map(r=>r.group));if(groups.size!==1||!refs(e).some(r=>r.unitId===e.unitId))fail('교재와 연결된 실무 단원을 확인해 주세요.')}
 function progress(entries,today='9999-99-99',bookId=catalog.id){

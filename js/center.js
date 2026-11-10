@@ -191,7 +191,7 @@
   const note=document.createElement('aside');
   note.className='answer-book-reading';
   note.innerHTML='<strong>교재에서 다시 보기</strong>'+(reading.length
-   ? `<ul>${reading.map(({lane,pages,title})=>`<li><strong>셀파 ${esc(lane)} ${esc(pages)}쪽</strong> · ${esc(title)}</li>`).join('')}</ul>`
+   ? `<ul>${reading.map(({book,lane,pages,title})=>`<li><strong>${esc(book||'셀파 '+lane)} ${esc(pages)}쪽</strong> · ${esc(title)}</li>`).join('')}</ul>`
    : '<p>관련 개념의 교재 쪽수를 확인하지 못했습니다.</p>');
   const memo=reveal.querySelector('[data-problem-note]');
   if(memo)memo.before(note);else reveal.append(note);

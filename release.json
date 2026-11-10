@@ -1,7 +1,7 @@
 {
-  "date": "2026-11-09",
-  "questions": 1368,
-  "activeQuestions": 728,
+  "date": "2026-11-10",
+  "questions": 1442,
+  "activeQuestions": 802,
   "archivedQuestions": 640,
   "rounds": [
     127,
@@ -25,9 +25,9 @@
   ],
   "archivedThroughRound": 105,
   "runtime": {
-    "bankVersion": "bank-49bf523308c0",
+    "bankVersion": "bank-7e8c41d3afb9",
     "indexVersion": "e19b87fc723d",
-    "bankBytes": 29675488,
+    "bankBytes": 29846320,
     "exhibitGroups": 19
   },
   "storageVersion": 2,
