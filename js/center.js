@@ -69,13 +69,10 @@
   const files=p.source.evidence||[];
   const images=files.filter(f=>/^data:image\//.test(f.data));
   const downloads=files.filter(f=>!/^data:image\//.test(f.data));
-  const preview=images.length?`<details class="evidence-preview" open>
-    <summary>증빙 미리보기${images.length>1?' · '+images.length+'장':''}</summary>
-    <div class="evidence-tiles">${images.map((f,i)=>`<div class="evidence-tile">
-      <div class="evidence-viewport" tabindex="0" aria-label="증빙 ${i+1} 확대 영역">
-        <img class="evidence-image" loading="lazy" decoding="async" draggable="false" src="${f.data}" alt="증빙 ${i+1}">
-      </div></div>`).join('')}</div>
-   </details>`:'';
+  const preview=images.length?`<div class="evidence-preview">
+    <button type="button" class="btn secondary evidence-quick" aria-haspopup="dialog" aria-expanded="false">증빙 보기${images.length>1?' · '+images.length+'장':''}</button>
+    <template>${images.map((f,i)=>`<img src="${f.data}" alt="증빙 ${i+1}">`).join('')}</template>
+   </div>`:'';
   return preview+downloads.map(f=>`<p><a href="${f.data}" download="${esc(f.name)}">${esc(f.name)} 원본 저장</a></p>`).join('');
  }
  function sourceBox(p){const original=globalThis.SemuonExhibits?.[p.id]&&(p.source.evidence||[]).length?`<details><summary>첨부 증빙 원본 이미지</summary><div>${evidence(p)}</div></details>`:'';return original+`<p class="topic-source">${esc(p.source.name)}${p.source.round?' · '+esc(p.source.round)+'회':''} · 문항 ${esc(p.source.questionNo)}</p><details><summary>원문 · 정답 확인 자료</summary><div><p>정답 확인: ${esc(p.source.answerReference)}</p><pre class="original-text">${esc(p.source.originalText)}</pre><details><summary>원본 정답</summary><div class="original-text">${esc(p.source.answerText)}</div></details>${p.source.originalDocument?`<details><summary>접수 TXT 전체 원문</summary><div class="original-text">${esc(p.source.originalDocument)}</div></details>`:''}${p.source.originalFile?.data?`<a href="${p.source.originalFile.data}" download="${esc(p.source.originalFile.name)}">원본 파일 저장</a>`:''}</div></details>`}
@@ -146,6 +143,14 @@
   field('show-all-problems').addEventListener('change',filter);$('#questions').addEventListener('semuon-general-pass',e=>{e.stopPropagation();passedHere.add(e.detail.problemId);filter(true)});$('#questions').addEventListener('semuon-general-undo',e=>{passedHere.delete(e.detail.problemId);filter(true)});$('#questions').addEventListener('click',e=>{if(e.target.closest('[data-dismiss-completed]'))filter(true)});
  }
  const loaded=new Map();function script(url){const key=String(url);if(!loaded.has(key))loaded.set(key,new Promise((resolve,reject)=>{const el=document.createElement('script');el.src=key;el.onload=resolve;el.onerror=()=>{loaded.delete(key);el.remove();reject(Error('문제 입력 화면을 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.'))};document.head.append(el)}));return loaded.get(key)}
+ content.addEventListener('click',async event=>{
+  const trigger=event.target.closest('.evidence-quick');
+  if(!trigger)return;
+  try{
+   await script(new URL('js/evidence.js?v=2',rootURL));
+   if(trigger.isConnected)SemuonEvidence.toggle(trigger);
+  }catch(error){toast(error.message)}
+ });
  const loadedStyles=new Set([...document.querySelectorAll('link[rel=stylesheet]')].map(el=>el.href));function css(url){const key=String(url);if(loadedStyles.has(key))return;loadedStyles.add(key);const el=document.createElement('link');el.rel='stylesheet';el.href=String(url);document.head.append(el)}
  async function ensureExhibits(items){const files=[...new Set(items.map(p=>globalThis.SemuonExhibitFiles?.[p.id]).filter(Boolean))];await Promise.all(files.map(file=>script(new URL(file,rootURL))))}
  function displayText(p){let text=p.displayPrompt||p.prompt;if(p.form?.kind==='yearend')text=text.split('<부양가족 자료>')[0];if(globalThis.SemuonExhibits?.[p.id])text=text.replace(/\[그림:[^\]]+\]/g,'');return text.trim()}
@@ -197,12 +202,6 @@
   if(memo)memo.before(note);else reveal.append(note);
  }
  async function markup(container,isCurrent=()=>true){
-  if(container.querySelector('.evidence-preview')){
-   try{
-    await script(new URL('js/evidence.js?v=1',rootURL));
-    if(isCurrent())SemuonEvidence.mount(container);
-   }catch(error){if(isCurrent())toast(error.message)}
-  }
   if(isCurrent())for(const card of container.querySelectorAll('[data-problem-id]')){
    attachBookReading(card,snapshot().items.find(p=>p.id===card.dataset.problemId));
   }
