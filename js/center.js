@@ -64,13 +64,13 @@
  // Reflow PDF/OCR line wraps in general-journal prose; originals and structured evidence stay intact.
  function flowingText(value){return String(value).replace(/하[ \t]*\r?\n\s*(?=여(?:\s|[,.]))/g,'하').replace(/[ \t]*\r?\n(?:[ \t]*\r?\n)*[ \t]*/g,' ').trim()}
  function problemHtml(p){const flowing=p.subject==='voucher'||p.subject==='practical'&&SemuonCurriculum.practiceGroup(p)==='general';return p.displayBlocks?.length?materialBlocks(flowing?p.displayBlocks.map(b=>typeof b==='string'?flowingText(b):b):p.displayBlocks):flowing?esc(flowingText(displayText(p))):promptHtml(displayText(p))}
- function exhibits(p,hideTable=false){const html=globalThis.SemuonExhibits?.[p.id];return(hideTable||p.displayHideExhibit||p.exhibitRenderer==='registry'&&html?'':table(p.exhibit))+(html||evidence(p))}
- function evidence(p){
+ function exhibits(p,hideTable=false,inlineEvidence=false){const html=globalThis.SemuonExhibits?.[p.id];return(hideTable||p.displayHideExhibit||p.exhibitRenderer==='registry'&&html?'':table(p.exhibit))+(html||evidence(p,inlineEvidence))}
+ function evidence(p,inline=false){
   const files=p.source.evidence||[];
   const images=files.filter(f=>/^data:image\//.test(f.data));
   const downloads=files.filter(f=>!/^data:image\//.test(f.data));
-  const preview=images.length?`<div class="evidence-preview">
-    <button type="button" class="btn secondary evidence-quick" aria-haspopup="dialog" aria-expanded="false">증빙 보기${images.length>1?' · '+images.length+'장':''}</button>
+  const preview=images.length?`<div class="evidence-preview"${inline?' data-evidence-inline':''}>
+    ${inline?'':`<button type="button" class="btn secondary evidence-quick" aria-haspopup="dialog" aria-expanded="false">증빙 보기${images.length>1?' · '+images.length+'장':''}</button>`}
     <template>${images.map((f,i)=>`<img src="${f.data}" alt="증빙 ${i+1}">`).join('')}</template>
    </div>`:'';
   return preview+downloads.map(f=>`<p><a href="${f.data}" download="${esc(f.name)}">${esc(f.name)} 원본 저장</a></p>`).join('');
@@ -143,11 +143,12 @@
   field('show-all-problems').addEventListener('change',filter);$('#questions').addEventListener('semuon-general-pass',e=>{e.stopPropagation();passedHere.add(e.detail.problemId);filter(true)});$('#questions').addEventListener('semuon-general-undo',e=>{passedHere.delete(e.detail.problemId);filter(true)});$('#questions').addEventListener('click',e=>{if(e.target.closest('[data-dismiss-completed]'))filter(true)});
  }
  const loaded=new Map();function script(url){const key=String(url);if(!loaded.has(key))loaded.set(key,new Promise((resolve,reject)=>{const el=document.createElement('script');el.src=key;el.onload=resolve;el.onerror=()=>{loaded.delete(key);el.remove();reject(Error('문제 입력 화면을 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.'))};document.head.append(el)}));return loaded.get(key)}
+ const loadEvidence=()=>script(new URL('js/evidence.js?v=3',rootURL));
  content.addEventListener('click',async event=>{
   const trigger=event.target.closest('.evidence-quick');
   if(!trigger)return;
   try{
-   await script(new URL('js/evidence.js?v=2',rootURL));
+   await loadEvidence();
    if(trigger.isConnected)SemuonEvidence.toggle(trigger);
   }catch(error){toast(error.message)}
  });
@@ -162,7 +163,7 @@
    if(!names.some(n=>t.includes(n))||!/\d/.test(t))return true;let rest=t.replace(/\(차\)|\(대\)/g,'');for(const name of [...names,...p.answers.map(a=>a.partner).filter(Boolean)].sort((a,b)=>b.length-a.length))rest=rest.split(name).join('');return rest.replace(/[\d,.\s원()\/\-]/g,'').length>0;
   }).join('\n').replace(/\n{3,}/g,'\n\n').trim();
  }
- function compile(p){const q=C.clone(p);q.title=esc(p.title);q.type=esc(p.type);q.prompt=problemHtml(p);q.explanation=nl(answerExplanation(p));q.exhibit=exhibits(p,p.initialEntry&&/수정\s+전|삭제\s*(대상|할)|기존\s*(입력|전표)/.test(p.exhibit?.caption||''));q.before=nl(p.before||'');q.item=esc(p.item||'');delete q.variantOf;
+ function compile(p){const q=C.clone(p);q.title=esc(p.title);q.type=esc(p.type);q.prompt=problemHtml(p);q.explanation=nl(answerExplanation(p));q.exhibit=exhibits(p,p.initialEntry&&/수정\s+전|삭제\s*(대상|할)|기존\s*(입력|전표)/.test(p.exhibit?.caption||''),p.subject==='voucher');q.before=nl(p.before||'');q.item=esc(p.item||'');delete q.variantOf;
   if(p.subject==='practical'){q.accountSelect=true;q.accountOptions=[...new Set([...EntryAccounts,...[p.answers,...(p.alternateAnswers||[])].flat().flatMap(r=>r.account.split('/').map(a=>(r.accountCode||p.requiredAccountCodes?.[a])?(r.accountCode||p.requiredAccountCodes[a])+'|'+a:a))])];q.partnerOptions=[...new Set([p.answers,...(p.alternateAnswers||[])].flat().map(r=>r.partner).filter(Boolean))]}
   else{q.suppliers=[...new Set([p.voucher.supplier,...(p.suppliers||[])].filter(Boolean))];q.accounts=[...new Set([...EntryAccounts,...p.variants.flatMap(a=>a.rows).map(r=>p.requiredAccountCodes?.[r.account]?p.requiredAccountCodes[r.account]+'|'+r.account:r.account)])]}return q;
  }
@@ -202,6 +203,12 @@
   if(memo)memo.before(note);else reveal.append(note);
  }
  async function markup(container,isCurrent=()=>true){
+  if(container.querySelector('[data-evidence-inline]')){
+   try{
+    await loadEvidence();
+    if(isCurrent())SemuonEvidence.mountInline(container);
+   }catch(error){if(isCurrent())toast(error.message)}
+  }
   if(isCurrent())for(const card of container.querySelectorAll('[data-problem-id]')){
    attachBookReading(card,snapshot().items.find(p=>p.id===card.dataset.problemId));
   }

@@ -11,7 +11,7 @@
  const icon=name=>`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]}</svg>`;
  const clamp=(value,min,max)=>Math.max(min,Math.min(value,max));
  const preferences={docked:false,floating:null,dockHeight:null,transparency:0};
- let current=null;
+ let floating=null,manual=null,sequence=0;
 
  function mountZoom(viewport,img,signal){
   const pointers=new Map();
@@ -109,25 +109,25 @@
    bottom:top+Math.max(1,(view?.height||root.innerHeight)-16)};
  }
 
- function toggle(trigger){
-  if(current?.trigger===trigger){current.close();return}
-  const preview=trigger.parentElement;
+ function open(preview,trigger){
+  const inline=!trigger;
   const images=[...preview.querySelector('template').content.querySelectorAll('img')];
   if(!images.length)return;
-  current?.close(false);
   const lifetime=new AbortController(),{signal}=lifetime;
+  let docked=inline||preferences.docked,dockHeight=null;
   const panel=document.createElement('section');
-  panel.id='evidence-window';
+  panel.id='evidence-window-'+(++sequence);
+  const transparencyId=panel.id+'-transparency';
   panel.className='evidence-window';
   panel.setAttribute('role','dialog');
   panel.setAttribute('aria-label','증빙 미리보기');
   panel.innerHTML=`<header class="evidence-bar">
     <strong class="evidence-handle">증빙 미리보기</strong>
     <button type="button" class="evidence-mode"></button>
-    <button type="button" class="evidence-transparency-toggle" aria-label="증빙 투명도 조절" title="증빙 투명도 조절" aria-controls="evidence-transparency" aria-expanded="false">${icon('transparency')}</button>
+    <button type="button" class="evidence-transparency-toggle" aria-label="증빙 투명도 조절" title="증빙 투명도 조절" aria-controls="${transparencyId}" aria-expanded="false">${icon('transparency')}</button>
     <button type="button" class="evidence-close" aria-label="증빙 창 닫기" title="증빙 창 닫기">${icon('close')}</button>
     <button type="button" class="evidence-fit" aria-label="이미지 맞춤" title="이미지 맞춤">${icon('fit')}</button>
-    <label id="evidence-transparency" class="evidence-transparency" hidden>투명도 <input type="range" min="0" max="65" step="5"><output></output></label>
+    <label id="${transparencyId}" class="evidence-transparency" hidden>투명도 <input type="range" min="0" max="65" step="5"><output></output></label>
    </header>
    <label class="evidence-picker" hidden><span class="sr-only">증빙 선택</span><select></select></label>
    <div class="evidence-viewport" tabindex="0" aria-label="증빙 이미지"></div>
@@ -138,9 +138,11 @@
   const get=selector=>panel.querySelector(selector);
   const viewport=get('.evidence-viewport'),handle=get('.evidence-handle'),mode=get('.evidence-mode');
   const picker=get('select'),corner=get('.evidence-corner');
+  const closeButton=get('.evidence-close');
   const transparency=get('.evidence-transparency'),slider=transparency.querySelector('input'),opacityButton=get('.evidence-transparency-toggle');
   const img=document.createElement('img');
   img.draggable=false;
+  if(inline)img.loading='lazy';
   viewport.append(img);
   const reset=mountZoom(viewport,img,signal);
   images.forEach((image,index)=>picker.add(new Option(image.alt,String(index))));
@@ -170,8 +172,16 @@
 
   function frame(){
    const bounds=screenBounds(),maxWidth=bounds.right-bounds.left,maxHeight=bounds.bottom-bounds.top;
-   if(preferences.docked){
-    const height=clamp(preferences.dockHeight??380,Math.min(180,maxHeight),maxHeight);
+   if(docked){
+    let desired=preferences.dockHeight??380;
+    if(inline){
+     const narrow=root.matchMedia('(max-width:1100px)').matches;
+     const limit=Math.min(narrow?380:540,maxHeight*(narrow?0.53:0.68));
+     const chrome=panel.offsetHeight-viewport.offsetHeight;
+     const fitted=img.naturalWidth?chrome+preview.clientWidth*img.naturalHeight/img.naturalWidth:limit;
+     desired=dockHeight??Math.min(limit,fitted);
+    }
+    const height=clamp(desired,Math.min(180,maxHeight),maxHeight);
     Object.assign(panel.style,{left:'',top:'',width:'',height:height+'px'});
     return;
    }
@@ -183,31 +193,39 @@
    Object.assign(panel.style,{left:clamp(rect.left,bounds.left,bounds.right-width)+'px',
     top:clamp(rect.top,bounds.top,bounds.bottom-height)+'px',width:width+'px',height:height+'px'});
   }
-  function place(){
-   const docked=preferences.docked;
+  function place(reveal=false){
+   if(docked){
+    if(floating===viewer)floating=null;
+   }else{
+    if(floating!==viewer)floating?.dismiss(false);
+    floating=viewer;
+   }
    (docked?preview:document.body).append(panel);
    panel.classList.toggle('evidence-floating',!docked);
    preview.classList.toggle('evidence-docked',docked);
-   trigger.hidden=docked;
+   if(trigger)trigger.hidden=docked;
+   closeButton.hidden=inline&&docked;
    corner.hidden=docked;
    mode.textContent=docked?'이동':'고정';
    mode.title=docked?'움직이는 증빙 창으로 전환':'문제에 증빙 고정';
    handle.tabIndex=docked?-1:0;
    handle.title=docked?'':'제목을 끌거나 방향키로 창 이동';
    frame();
-   if(docked)panel.scrollIntoView({block:'nearest',inline:'nearest'});
+   if(docked&&reveal)panel.scrollIntoView({block:'nearest',inline:'nearest'});
   }
   mode.onclick=()=>{
-   preferences.docked=!preferences.docked;
-   place();
+   docked=!docked;
+   if(!inline)preferences.docked=docked;
+   place(true);
    mode.focus({preventScroll:true});
   };
 
   let drag=null;
   function adjust(action,rect,dx,dy){
    const bounds=screenBounds();
-   if(preferences.docked){
-    preferences.dockHeight=rect.height+dy;
+   if(docked){
+    if(inline)dockHeight=rect.height+dy;
+    else preferences.dockHeight=rect.height+dy;
    }else if(action==='move'){
     preferences.floating={left:rect.left+dx,top:rect.top+dy,width:rect.width,height:rect.height};
    }else{
@@ -220,7 +238,7 @@
   }
   function bindGrip(grip,action){
    grip.addEventListener('pointerdown',event=>{
-    if(event.button!==0||drag||action==='move'&&preferences.docked)return;
+    if(event.button!==0||drag||action==='move'&&docked)return;
     event.preventDefault();
     showTransparency(false);
     drag={grip,id:event.pointerId,x:event.clientX,y:event.clientY,rect:panel.getBoundingClientRect()};
@@ -234,7 +252,7 @@
    });
    grip.addEventListener('keydown',event=>{
     const delta={ArrowLeft:[-16,0],ArrowRight:[16,0],ArrowUp:[0,-16],ArrowDown:[0,16]}[event.key];
-    if(!delta||action==='height'&&delta[0]||action==='move'&&preferences.docked)return;
+    if(!delta||action==='height'&&delta[0]||action==='move'&&docked)return;
     event.preventDefault();
     adjust(action,panel.getBoundingClientRect(),...delta);
    });
@@ -243,38 +261,61 @@
   bindGrip(get('.evidence-height'),'height');
   bindGrip(corner,'corner');
 
-  function close(restoreFocus=true){
+  function destroy(restoreFocus=true){
    lifetime.abort();
    observer.disconnect();
    panel.remove();
    preview.classList.remove('evidence-docked');
+   if(floating===viewer)floating=null;
+   if(manual===viewer)manual=null;
+   if(!trigger)return;
    trigger.hidden=false;
    trigger.setAttribute('aria-expanded','false');
    trigger.removeAttribute('aria-controls');
-   current=null;
    if(restoreFocus&&trigger.isConnected)trigger.focus({preventScroll:true});
   }
-  const observer=new MutationObserver(()=>{if(!trigger.isConnected)close(false)});
-  observer.observe(trigger.closest('#content')||document.body,{childList:true,subtree:true});
+  function dismiss(restoreFocus=true){
+   if(!inline){destroy(restoreFocus);return}
+   docked=true;
+   place();
+   if(restoreFocus)mode.focus({preventScroll:true});
+  }
+  const viewer={preview,dismiss};
+  const observer=new MutationObserver(()=>{if(!preview.isConnected)destroy(false)});
+  observer.observe(preview.closest('#content')||document.body,{childList:true,subtree:true});
+  if(inline)img.addEventListener('load',()=>{if(docked)frame()});
   root.addEventListener('resize',frame,{signal});
   root.visualViewport?.addEventListener('resize',frame,{signal});
   root.visualViewport?.addEventListener('scroll',frame,{signal});
   document.addEventListener('pointerdown',event=>{
-   if(!transparency.contains(event.target)&&!opacityButton.contains(event.target))showTransparency(false);
+   if(!transparency.hidden&&!transparency.contains(event.target)&&!opacityButton.contains(event.target))showTransparency(false);
   },{signal});
   panel.addEventListener('keydown',event=>{
    if(event.key!=='Escape')return;
    event.stopPropagation();
-   if(transparency.hidden)close();
+   if(transparency.hidden){if(!inline||!docked)dismiss()}
    else{showTransparency(false);opacityButton.focus({preventScroll:true})}
   });
   get('.evidence-fit').onclick=reset;
-  get('.evidence-close').onclick=()=>close();
-  current={trigger,close};
-  trigger.setAttribute('aria-expanded','true');
-  trigger.setAttribute('aria-controls',panel.id);
-  place();
-  viewport.focus({preventScroll:true});
+  closeButton.onclick=()=>dismiss();
+  if(trigger){
+   manual=viewer;
+   trigger.setAttribute('aria-expanded','true');
+   trigger.setAttribute('aria-controls',panel.id);
+  }
+  place(!inline);
+  if(trigger)viewport.focus({preventScroll:true});
  }
- root.SemuonEvidence={toggle};
+ function toggle(trigger){
+  const preview=trigger.parentElement;
+  if(manual?.preview===preview){manual.dismiss();return}
+  manual?.dismiss(false);
+  open(preview,trigger);
+ }
+ function mountInline(container){
+  for(const preview of container.querySelectorAll('[data-evidence-inline]')){
+   if(!preview.classList.contains('evidence-docked')&&floating?.preview!==preview)open(preview);
+  }
+ }
+ root.SemuonEvidence={toggle,mountInline};
 })(globalThis);

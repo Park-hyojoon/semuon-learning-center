@@ -248,6 +248,10 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
 .semuon [data-entry-host] .exhibit-layout:has(>.prompt+.evidence-preview:last-child:not(.evidence-docked)){
  grid-template-columns:minmax(0,1fr) auto;gap:10px
 }
+.semuon [data-entry-host] .exhibit-layout:has(>.prompt+.evidence-preview[data-evidence-inline]:last-child:not(.evidence-docked)){
+ grid-template-columns:minmax(0,1fr)
+}
+.evidence-preview[data-evidence-inline]:not(.evidence-docked){display:none}
 .evidence-window{
  display:flex;flex-direction:column;min-width:0;margin:0;overflow:hidden;isolation:isolate;
  border:1px solid var(--line);border-radius:12px;color:var(--ink);font:var(--font-ui)/1.4 var(--font-ui-family)
