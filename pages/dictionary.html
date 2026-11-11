@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>교재 사전 · 세무온</title>
+  <meta name="theme-color" content="#155e59">
+  <meta name="robots" content="noindex">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <link rel="stylesheet" href="../css/app.css?v=a4cf7ec6a016">
+  <link rel="stylesheet" href="../css/dictionary.css?v=0df19e38bc51">
+  <script defer src="../js/dictionary-income.js?v=bbf79be1bfcb"></script>
+  <script defer src="../js/dictionary.js?v=ae732605c989"></script>
+</head>
+<body class="semuon">
+  <main class="dictionary">
+    <header class="dictionary-heading">
+      <img src="../assets/favicon.svg" width="40" height="40" alt="">
+      <div>
+        <p class="eyebrow">세무온 · 소득세법</p>
+        <h1>교재 사전</h1>
+      </div>
+    </header>
+    <form class="dictionary-form" role="search" action="dictionary.html">
+      <label class="sr-only" for="dictionary-query">교재에서 찾을 개념이나 공식</label>
+      <input id="dictionary-query" type="search" name="q" required maxlength="160" autocomplete="off" placeholder="개념이나 계산식으로 검색">
+      <button class="btn" type="submit">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+        검색
+      </button>
+    </form>
+    <nav class="dictionary-examples" aria-label="추천 검색">
+      <a href="?q=비과세%20소득">비과세 소득</a>
+      <a href="?q=근로소득금액%20공식">근로소득금액 공식</a>
+      <a href="?q=소득공제와%20세액공제%20차이">소득공제와 세액공제</a>
+      <a href="?q=원천징수">원천징수</a>
+    </nav>
+    <div id="dictionary-results"></div>
+    <noscript><p>교재 사전을 사용하려면 JavaScript를 허용해 주세요.</p></noscript>
+  </main>
+</body>
+</html>

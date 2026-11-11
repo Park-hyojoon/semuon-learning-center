@@ -356,7 +356,40 @@
  document.addEventListener('keydown',e=>{if(page==='journal'||page==='concepts')return;if(e.ctrlKey&&!e.altKey&&e.key.toLowerCase()==='z'&&!e.target.closest('input,textarea,select,[contenteditable]')){e.preventDefault();act(()=>{if(e.shiftKey&&lastUndo){store.restore(lastUndo);lastUndo=null;toast('취소한 채점을 복구했습니다.')}else{const event=C.active(snapshot()).at(-1);if(event){store.cancel(event.id);lastUndo=event.id;toast('마지막 채점을 취소했습니다.')}}if(page==='review')review();if(page==='home')home();if(page==='map')learningMap();if(page==='settings')renderHistory();const p=snapshot().items.find(p=>p.id===new URLSearchParams(location.search).get('id'));if(p)solve(p)})}});
  if(page==='home'||page==='map'||page==='progress'||page==='roadmap'){window.addEventListener('storage',e=>{if(e.key===C.KEY&&!SemuonFullscreen.hosting())location.reload()});window.addEventListener('pageshow',e=>{if(e.persisted)location.reload()})}
  applyFont();applyTheme();if(store.error){fail(Error('학습자료를 읽지 못해 저장을 중지하고 원본을 보존했습니다. 설정에서 저장 원본을 내보내 주세요.'));if(page!=='settings'){content.innerHTML=`<div class="empty"><h2>저장 자료를 확인해 주세요.</h2><a class="btn" href="${href('pages/settings.html')}">저장 원본 · 백업 확인</a></div>`;return}}
+ function installDictionarySearch(){
+  const syncButton=$('.app-topbar .sync-top-button');
+  if(!syncButton)return;
+  const form=document.createElement('form');
+  form.className='topbar-dictionary';
+  form.action=href('pages/dictionary.html');
+  form.target='_blank';
+  form.rel='noopener';
+  form.setAttribute('role','search');
+  form.innerHTML=`<label class="sr-only" for="topbar-dictionary-query">교재 사전 검색</label>
+   <input id="topbar-dictionary-query" name="q" type="search" required maxlength="160" autocomplete="off" placeholder="교재 사전 검색">
+   <input type="hidden" name="theme">
+   <button type="submit" class="btn secondary" aria-label="교재 사전 검색 결과 새 창 열기" title="교재 사전 검색 · 새 창">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+   </button>`;
+  syncButton.before(form);
+  form.addEventListener('submit',event=>{
+   const input=form.elements.q;
+   input.value=input.value.trim();
+   if(!input.value){event.preventDefault();input.reportValidity();return}
+   const theme=document.documentElement.dataset.designTheme||'';
+   form.elements.theme.value=theme;
+   const url=new URL(form.action);
+   url.searchParams.set('q',input.value);
+   if(theme)url.searchParams.set('theme',theme);
+   const popup=window.open('about:blank','_blank','popup,width=880,height=760');
+   if(!popup)return;
+   event.preventDefault();
+   popup.opener=null;
+   popup.location.replace(url.href);
+  });
+ }
  SemuonSync.install({store,href,notify:toast});
+ installDictionarySearch();
  if(page==='concepts'&&conceptGuide){
   for(const article of conceptArticles)if(article!==selectedConcept)article.remove();
   const tab=conceptGuide.querySelector(`[data-concept-tab="${selectedConcept?.dataset.conceptSubject}"]`);

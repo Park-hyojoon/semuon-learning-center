@@ -1,0 +1,27 @@
+.dictionary{max-width:920px;margin:0 auto;padding:clamp(18px,4vw,42px);font-family:var(--font-body-family);overflow-wrap:anywhere}
+.dictionary-heading{display:flex;align-items:center;gap:13px;margin-bottom:20px}
+.dictionary-heading :is(.eyebrow,h1){margin:0}
+.dictionary-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+.dictionary-form input{min-width:0;padding:8px 12px;border:1px solid var(--line);border-radius:9px;background:var(--surface)}
+.dictionary-form .btn{white-space:nowrap}
+.dictionary-examples,.dictionary-related{display:flex;flex-wrap:wrap;gap:8px}
+.dictionary-examples{margin:12px 0 24px}
+.dictionary :is(.dictionary-examples,.dictionary-related) a{display:inline-block;border:1px solid var(--line);border-radius:8px;padding:4px 10px;background:var(--surface);color:var(--primary);text-decoration:none;font-size:var(--font-ui);font-weight:650}
+.dictionary :is(.dictionary-examples,.dictionary-related) a:hover{background:var(--soft);border-color:var(--primary)}
+.dictionary-result h2{margin:0 0 6px}
+.dictionary-result>p{margin:0 0 16px}
+.dictionary-result>.dictionary-subject{margin:0 0 4px;font-size:var(--font-ui);color:var(--primary);font-weight:700}
+.dictionary-formula{padding:10px 13px;border-inline-start:3px solid var(--primary);border-radius:6px;background:var(--soft);font-weight:700;white-space:pre-line}
+.dictionary-result h3{margin:16px 0 7px;font-size:1em}
+.dictionary-books{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,235px),1fr));gap:10px}
+.dictionary-book{padding:12px 14px;border:1px solid var(--line);border-radius:9px;background:var(--canvas)}
+.dictionary-book h4{margin:0;color:var(--primary);font-size:1em}
+.dictionary-book ul{list-style:none;margin:8px 0 0;padding:0}
+.dictionary-book li{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 8px}
+.dictionary-book li+li{margin-top:8px}
+.dictionary-book small{color:var(--muted)}
+.dictionary-book .dictionary-ref-title{width:100%;font-size:var(--font-ui)}
+.dictionary-other{margin:0 0 12px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface)}
+.dictionary-other summary{padding:11px 15px;font-weight:700;cursor:pointer}
+.dictionary-other .dictionary-result{padding:0 15px 15px}
+@media(max-width:520px){.dictionary-result.card{padding:16px}}
