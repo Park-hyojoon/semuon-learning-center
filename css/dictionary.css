@@ -1,8 +1,8 @@
 .dictionary{max-width:920px;margin:0 auto;padding:clamp(18px,4vw,42px);font-family:var(--font-body-family);overflow-wrap:anywhere}
 .dictionary-heading{display:flex;align-items:center;gap:13px;margin-bottom:20px}
 .dictionary-heading :is(.eyebrow,h1){margin:0}
-.dictionary-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
-.dictionary-form input{min-width:0;padding:8px 12px;border:1px solid var(--line);border-radius:9px;background:var(--surface)}
+.dictionary-form{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px}
+.dictionary-form :is(input,select){min-width:0;padding:8px 12px;border:1px solid var(--line);border-radius:9px;background:var(--surface)}
 .dictionary-form .btn{white-space:nowrap}
 .dictionary-examples,.dictionary-related{display:flex;flex-wrap:wrap;gap:8px}
 .dictionary-examples{margin:12px 0 24px}
@@ -24,4 +24,8 @@
 .dictionary-other{margin:0 0 12px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface)}
 .dictionary-other summary{padding:11px 15px;font-weight:700;cursor:pointer}
 .dictionary-other .dictionary-result{padding:0 15px 15px}
-@media(max-width:520px){.dictionary-result.card{padding:16px}}
+@media(max-width:520px){
+ .dictionary-result.card{padding:16px}
+ .dictionary-form{grid-template-columns:minmax(0,1fr) auto}
+ .dictionary-form select{grid-column:1/-1;justify-self:start}
+}

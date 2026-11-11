@@ -190,14 +190,45 @@
  document.addEventListener('semuon-before-sync',e=>{try{content.querySelectorAll('[data-problem-note]').forEach(saveProblemNote);content.querySelectorAll('[data-problem-note] textarea,[data-problem-note] button').forEach(el=>el.disabled=true)}catch(error){e.preventDefault();toast(error.message)}});
  document.addEventListener('semuon-sync-finished',e=>{if(!e.detail.succeeded)content.querySelectorAll('[data-problem-note] textarea,[data-problem-note] button').forEach(el=>el.disabled=false)});
  window.addEventListener('beforeunload',()=>{content.querySelectorAll('[data-problem-note]').forEach(form=>{try{saveProblemNote(form)}catch(_){}})});
- function attachBookReading(card,problem){
+ let bookDictionary;
+ async function loadBookDictionary(){
+  if(bookDictionary)return bookDictionary;
+  const assets=['dictionary-income.js','dictionary-subjects.js','dictionary.js'];
+  await Promise.all(assets.map(file=>script(new URL('js/'+file+'?v=20261111-reading',rootURL))));
+  const api=window.SemuonDictionarySearch;
+  bookDictionary={api,index:api.createIndex(window.SemuonDictionaryCatalogs||[])};
+  return bookDictionary;
+ }
+ function bookReadingLink(reading,problem,dictionary){
+  if(!reading.file||!reading.pdfPages?.length||!dictionary)return '';
+  const {api,index}=dictionary;
+  const match=api.readingMatch(index,reading,problem);
+  if(location.protocol==='file:'){
+   return api.pdfURL(rootURL,{file:reading.file,pdfPage:match?.pdfPage||reading.pdfPages[0],phrase:match?.phrase});
+  }
+  if(!match)return '';
+  const target=new URL('pages/dictionary.html',rootURL);
+  target.searchParams.set('q',match.topic);
+  const scope=Object.keys(api.subjects).find(key=>api.subjects[key]===match.subject);
+  if(scope)target.searchParams.set('subject',scope);
+  const theme=document.documentElement.dataset.designTheme;
+  if(theme)target.searchParams.set('theme',theme);
+  return target.href;
+ }
+ function attachBookReading(card,problem,dictionary){
   const reveal=card.querySelector('.answer-reveal,.answer-box');
   if(!reveal||!problem||reveal.querySelector('.answer-book-reading'))return;
   const reading=SemuonTextbook.recommendedReading(problem,SemuonCurriculum);
   const note=document.createElement('aside');
   note.className='answer-book-reading';
   note.innerHTML='<strong>교재에서 다시 보기</strong>'+(reading.length
-   ? `<ul>${reading.map(({book,lane,pages,title})=>`<li><strong>${esc(book||'셀파 '+lane)} ${esc(pages)}쪽</strong> · ${esc(title)}</li>`).join('')}</ul>`
+   ? `<ul>${reading.map(item=>{
+    const {book,lane,pages,title}=item;
+    const label=`${esc(book||'셀파 '+lane)} ${esc(pages)}쪽`;
+    const url=bookReadingLink(item,problem,dictionary);
+    const source=url?`<a href="${esc(url)}" target="_blank" rel="noopener">${label}</a>`:label;
+    return `<li><strong>${source}</strong> · ${esc(title)}</li>`;
+   }).join('')}</ul>`
    : '<p>관련 개념의 교재 쪽수를 확인하지 못했습니다.</p>');
   const memo=reveal.querySelector('[data-problem-note]');
   if(memo)memo.before(note);else reveal.append(note);
@@ -209,8 +240,10 @@
     if(isCurrent())SemuonEvidence.mountInline(container);
    }catch(error){if(isCurrent())toast(error.message)}
   }
-  if(isCurrent())for(const card of container.querySelectorAll('[data-problem-id]')){
-   attachBookReading(card,snapshot().items.find(p=>p.id===card.dataset.problemId));
+  const cards=[...container.querySelectorAll('[data-problem-id]')];
+  const dictionary=cards.length?await loadBookDictionary().catch(()=>null):null;
+  if(isCurrent())for(const card of cards){
+   attachBookReading(card,snapshot().items.find(p=>p.id===card.dataset.problemId),dictionary);
   }
   try{await script(new URL('js/markup.js?v=20261109',rootURL));if(isCurrent()){SemuonMarkup.attach(container,{shortcuts:()=>C.markupShortcuts(snapshot().settings)});container.querySelectorAll('[data-problem-id]').forEach(card=>{attachProblemNote(card);if(card.querySelector('.journal-problem-link'))return;const p=snapshot().items.find(p=>p.id===card.dataset.problemId),unitId=p&&(p.subject==='theory'?SemuonCurriculum.classify(p).units[0]:SemuonCurriculum.practiceClassify(p).units[0]),actions=card.querySelector('.qactions');if(unitId&&actions&&!isGeneral(p)){const a=document.createElement('a');a.className='btn ghost journal-problem-link';a.textContent='학습 기록';a.href=href('pages/journal.html?unit='+encodeURIComponent(unitId)+'&problem='+encodeURIComponent(p.id));actions.append(a)}})}}catch(_){}}
  async function loadEntry(subject){await script(new URL('entry/accounts.js',legacyURL));await script(new URL('entry/correction.js?v=1',legacyURL));await script(new URL('entry/'+subject+'.js?v='+(subject==='voucher'?10:11),legacyURL));await script(new URL('account-search.js',legacyURL));css(new URL('entry/common.css',legacyURL));css(new URL('entry/'+subject+'.css',legacyURL));css(new URL('css/entry-flat.css?v=20261031-1',rootURL));css(new URL('entry/correction.css?v=1',legacyURL))}

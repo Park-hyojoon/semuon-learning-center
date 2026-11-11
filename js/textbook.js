@@ -47,6 +47,19 @@ function extraReading(problem,classification,practice){
  return null;
 }
 
+function incomeBookLocation(reading) {
+ if(reading.book!=='박문각 교재')return reading;
+ const pdfPages=[];
+ for(const part of reading.pages.split(',')){
+  const match=part.trim().match(/^(\d+)(?:\s*[~–-]\s*(\d+))?$/);
+  if(!match)return reading;
+  const first=Number(match[1]),last=Number(match[2]||match[1]);
+  if(first<221||last>309||last<first)return reading;
+  for(let page=first;page<=last;page++)pdfPages.push(page-220);
+ }
+ return {...reading,file:'01. 학습/04. 소득세/소득세_20261028_OCR.pdf',pdfPages};
+}
+
 function recommendedReading(problem,curriculum){
  const theory=problem.subject==='theory';
  const practice=theory?null:curriculum.practiceClassify(problem);
@@ -58,6 +71,10 @@ function recommendedReading(problem,curriculum){
  const inPracticeUnit=(n)=>practice.units.includes('practice:'+practice.group+':'+n);
 
  if(practice?.group==='general'){
+  if(/임차보증금/.test(text)){
+   theoryUnits.delete('unit:fa:07');
+   theoryUnits.add('unit:fa:09');
+  }
   if(inPracticeUnit('04'))theoryUnits.add('unit:fa:06');
   if(inPracticeUnit('06'))theoryUnits.add('unit:fa:10');
   if(inPracticeUnit('07'))theoryUnits.add('unit:fa:11');
@@ -109,13 +126,17 @@ function recommendedReading(problem,curriculum){
  if(exact)selected.push({entry:exact,title:'교재 수록 문항'});
  const pages=new Map();
  for(const {entry,end=entry,title} of selected){
-  const lane=theoryCatalog.entries.includes(entry)?'이론':'실무';
+  const book=theoryCatalog.entries.includes(entry)?theoryCatalog:catalog;
+  const lane=book===theoryCatalog?'이론':'실무';
   const first=entry.bookPages[0],last=Math.max(...end.bookPages),key=lane+':'+first+':'+last;
-  if(!pages.has(key))pages.set(key,{lane,pages:first===last?String(first):first+'~'+last,title:title||entry.title});
+  const startPdf=entry.pdfPages[0],endPdf=end.pdfPages.at(-1);
+  const pdfPages=Number.isInteger(startPdf)&&Number.isInteger(endPdf)&&endPdf>=startPdf
+   ? Array.from({length:endPdf-startPdf+1},(_,i)=>startPdf+i) : [];
+  if(!pages.has(key))pages.set(key,{lane,pages:first===last?String(first):first+'~'+last,title:title||entry.title,file:'01. 학습/'+book.sourceFile,pdfPages});
   else if(entry===exact)pages.get(key).title+=' · 교재 수록 문항';
  }
  const extra=extraReading(problem,classification,practice);
- return extra?[...pages.values(),extra]:[...pages.values()];
+ return extra?[...pages.values(),incomeBookLocation(extra)]:[...pages.values()];
 }
 function validateRecord(e){if(e.bookId===undefined&&e.bookActivity===undefined&&e.bookRefs===undefined)return;const fail=m=>{throw Error(m)};const book=catalogs.find(b=>b.id===e.bookId);if(!book||!activities[e.bookActivity]||!Array.isArray(e.bookRefs)||!e.bookRefs.length||e.bookRefs.length>100||new Set(e.bookRefs).size!==e.bookRefs.length)fail('교재 학습 범위를 확인해 주세요.');if(e.lane!==book.lane)fail('교재와 이론·실무 기록 영역이 일치하지 않습니다.');for(const id of e.bookRefs){const r=get(id);if(!r||!book.entries.includes(r)||(e.bookActivity==='concept'?r.kind!=='concept':r.kind!=='exercise')||e.bookActivity==='solution'&&!r.solutionPages.length)fail('교재 항목과 학습 종류가 일치하지 않습니다.')}const groups=new Set(refs(e).map(r=>r.group));if(groups.size!==1||!refs(e).some(r=>r.unitId===e.unitId))fail('교재와 연결된 실무 단원을 확인해 주세요.')}
 function progress(entries,today='9999-99-99',bookId=catalog.id){

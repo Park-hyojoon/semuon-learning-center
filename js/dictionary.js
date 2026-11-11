@@ -19,14 +19,27 @@
   })));
  }
 
- function search(index, value) {
+ const subjects = {
+  fa: '재무회계', cost: '원가회계', vat: '부가가치세법', income: '소득세법', practice: '실무'
+ };
+ const subjectTerms = {
+  fa: /재무회계/, cost: /원가회계/, vat: /부가가치세|부가세/, income: /소득세법|종합소득세/
+ };
+
+ function search(index, value, scope = '') {
   const query = normalize(value);
   if (query.length < 2) return [];
-  const otherSubject = /부가가치세|부가세|재무회계|원가회계/.test(query);
+  const mentioned = Object.entries(subjectTerms).filter(([, pattern]) => pattern.test(query));
+  const subject = subjects[scope] || (mentioned.length === 1 ? subjects[mentioned[0][0]] : '');
   const formula = /공식|계산식|산식|계산법|계산방법|어떻게계산|어떻게구/.test(query);
   const ranked = [];
   for (const entry of index) {
-   if (otherSubject && entry.subject === '소득세법' && !/소득세|원천징수|연말정산/.test(query)) continue;
+   if (scope === 'practice') {
+    const includesPractice = entry.refs.some(([book, first]) =>
+     book === 'practice' || book === 'payroll' || (book === 'vat' && first >= 369)
+    );
+    if (entry.subject !== subjects.practice && !includesPractice) continue;
+   } else if (subject && entry.subject !== subject) continue;
    const match = entry.terms.find(term => query.includes(term));
    const cues = entry.cues.filter(cue => query.includes(cue)).length;
    if (!match && cues < 2) continue;
@@ -42,16 +55,66 @@
   return ranked.filter(hit => hit.score >= best * 0.43).slice(0, 6).map(hit => hit.entry);
  }
 
- if (typeof module === 'object' && module.exports) {
-  module.exports = { createIndex, search };
-  return;
+ function referenceLocation(entry, ref, query = '') {
+  const [key, first, last, note, anchor, explicitFirst, explicitLast] = ref;
+  const book = entry.books[key];
+  const pdfFirst = explicitFirst ?? first + book.pdfOffset;
+  const pdfLast = explicitLast ?? last + book.pdfOffset;
+  const value = normalize(query);
+  const queryMark = entry.pdfQueryHighlights?.find(mark =>
+   mark.books[key] && mark.terms.some(term => value.includes(normalize(term)))
+  )?.books[key];
+  const mark = queryMark || anchor;
+  const [page, phrase] = Array.isArray(mark) ? mark : [null, mark];
+  const target = page == null ? pdfFirst : explicitFirst ? page : page + book.pdfOffset;
+  const validTarget = target >= pdfFirst && target <= pdfLast;
+  return {
+   book: book.name, file: book.file, first, last, pdfFirst, pdfLast,
+   pdfPage: validTarget ? target : pdfFirst, phrase: validTarget ? phrase : null, note
+  };
  }
 
+ function pdfURL(base, { file, pdfPage, phrase }) {
+  const url = new URL(file, base);
+  url.hash = 'page=' + pdfPage;
+  // PDF viewers without text fragment support still open the cited page.
+  if (phrase) url.hash += ':~:text=' + encodeURIComponent(phrase).replace(/-/g, '%2D');
+  return url.href;
+ }
+
+ function readingMatch(index, reading, problem) {
+  if (reading.title === '교재 수록 문항') return null;
+  const query = (problem.displayPrompt || problem.prompt || '').split(/[①②③④]/)[0];
+  const words = [query, problem.type, ...(problem.answers || []).map(row => row.account)].filter(Boolean).join(' ');
+  const same = (a, b) => normalize(a) === normalize(b);
+  const headingHits = reading.title === '결산 정리 요점' ? [] : search(index, reading.title);
+  for (const entry of [...new Set([...headingHits, ...search(index, words)])]) {
+   for (const ref of entry.refs) {
+    const location = referenceLocation(entry, ref, words);
+    if (same(location.file, reading.file) && reading.pdfPages.includes(location.pdfPage)) {
+     return { ...location, topic: entry.title, subject: entry.subject };
+    }
+   }
+  }
+  return null;
+ }
+
+ const api = { createIndex, search, referenceLocation, pdfURL, readingMatch, subjects };
+ if (typeof module === 'object' && module.exports) {
+  module.exports = api;
+  return;
+ }
+ root.SemuonDictionarySearch = api;
+
  const doc = root.document;
+ const queryInput = doc.querySelector('#dictionary-query');
+ if (!queryInput) return;
  const params = new URLSearchParams(root.location.search);
  const theme = params.get('theme');
  if (['blue', 'linen', 'sage', 'slate', 'night'].includes(theme)) doc.documentElement.dataset.designTheme = theme;
- const queryInput = doc.querySelector('#dictionary-query');
+ const subjectInput = doc.querySelector('#dictionary-subject');
+ const scope = Object.hasOwn(subjects, params.get('subject')) ? params.get('subject') : '';
+ subjectInput.value = scope;
  const query = (params.get('q') || '').trim().slice(0, queryInput.maxLength);
  const results = doc.querySelector('#dictionary-results');
  queryInput.value = query;
@@ -64,9 +127,10 @@
   return node;
  }
 
- function queryURL(value) {
+ function queryURL(value, subject = '') {
   const url = new URL('dictionary.html', root.location.href);
   url.searchParams.set('q', value);
+  if (subject) url.searchParams.set('subject', subject);
   if (theme) url.searchParams.set('theme', theme);
   return url.href;
  }
@@ -76,7 +140,8 @@
   Object.assign(hidden, { type: 'hidden', name: 'theme', value: theme });
   queryInput.form.append(hidden);
   for (const link of doc.querySelectorAll('.dictionary-examples a')) {
-   link.href = queryURL(new URL(link.href).searchParams.get('q'));
+   const example = new URL(link.href).searchParams;
+   link.href = queryURL(example.get('q'), example.get('subject'));
   }
  }
 
@@ -84,28 +149,14 @@
   return first + (last === first ? '' : '–' + last) + '쪽';
  }
 
- function pdfReferenceURL(entry, key, first, last, anchor) {
-  const book = entry.books[key];
-  const queryMark = entry.pdfQueryHighlights?.find(mark =>
-   mark.books[key] && mark.terms.some(term => normalize(query).includes(normalize(term)))
-  )?.books[key];
-  const mark = queryMark || anchor;
-  const [printedPage, phrase] = Array.isArray(mark) ? mark : [first, mark];
-  const target = printedPage >= first && printedPage <= last ? printedPage : first;
-  const url = new URL('../' + book.file, root.location.href);
-  // Readers that do not understand text directives can still open the cited page.
-  url.hash = 'page=' + (target + book.pdfOffset);
-  if (phrase && target === printedPage) {
-   url.hash += ':~:text=' + encodeURIComponent(phrase).replace(/-/g, '%2D');
-  }
-  return url.href;
- }
-
  function renderReferences(entry) {
   const grid = element('div', '', 'dictionary-books');
   const lists = new Map();
-  for (const [key, first, last, note, anchor] of entry.refs) {
+  for (const ref of entry.refs) {
+   const [key] = ref;
    const book = entry.books[key];
+   const location = referenceLocation(entry, ref, query);
+   const { first, last, pdfFirst, pdfLast, note } = location;
    if (!lists.has(key)) {
     const section = element('section', '', 'dictionary-book');
     const list = element('ul');
@@ -114,23 +165,21 @@
     lists.set(key, list);
    }
    const row = element('li');
-   const pdfFirst = first + book.pdfOffset;
-   const pdfLast = last + book.pdfOffset;
    const label = '교재 ' + pages(first, last);
    if (root.location.protocol === 'file:') {
     const link = element('a', label);
     Object.assign(link, {
-     href: pdfReferenceURL(entry, key, first, last, anchor),
+     href: pdfURL(new URL('../', root.location.href), location),
      target: '_blank',
      rel: 'noopener',
-     title: '교재에서 핵심 용어 보기'
+     title: location.phrase ? '교재에서 핵심 용어 보기' : '교재 해당 쪽 열기'
     });
     row.append(link);
    } else {
     row.append(element('strong', label));
    }
    row.append(element('small', 'PDF ' + pages(pdfFirst, pdfLast)));
-   row.append(element('span', note, 'dictionary-ref-title'));
+   if (note) row.append(element('span', note, 'dictionary-ref-title'));
    lists.get(key).append(row);
   }
   return grid;
@@ -148,7 +197,7 @@
    const links = element('div', '', 'dictionary-related');
    for (const topic of entry.related) {
     const link = element('a', topic);
-    link.href = queryURL(topic);
+    link.href = queryURL(topic, Object.keys(subjects).find(key => subjects[key] === entry.subject));
     links.append(link);
    }
    article.append(element('h3', '관련 개념'), links);
@@ -157,17 +206,17 @@
  }
 
  if (!query) return;
- const [best, ...others] = search(index, query);
+ const [best, ...others] = search(index, query, scope);
  if (!best) {
   const empty = element('section', '', 'empty');
-  empty.append(element('h2', '일치하는 항목을 찾지 못했습니다'), element('p', '소득세법 개념이나 공식 이름으로 검색해 보세요.'));
+  empty.append(element('h2', '일치하는 항목을 찾지 못했습니다'), element('p', '개념이나 공식 이름을 짧게 입력해 보세요.'));
   results.append(empty);
   return;
  }
  results.append(renderEntry(best, true));
  for (const entry of others) {
   const details = element('details', '', 'dictionary-other');
-  details.append(element('summary', entry.title), renderEntry(entry, false));
+  details.append(element('summary', entry.subject + ' · ' + entry.title), renderEntry(entry, false));
   results.append(details);
  }
 })(globalThis);
