@@ -55,6 +55,33 @@
   return ranked.filter(hit => hit.score >= best * 0.43).slice(0, 6).map(hit => hit.entry);
  }
 
+ function searchDictionary(index, catalogs, value, scope = '') {
+  const hits = search(index, value, scope);
+  const query = normalize(value);
+  if (query.length < 2 || hits.some(entry => entry.terms.includes(query))) return hits;
+  const selected = subjects[scope];
+  const headings = [];
+  for (const catalog of catalogs) {
+   const practice = catalog.lane === 'practice';
+   const groups = new Map(catalog.groups.map(group => [group.id, group.title]));
+   const books = { selpa: {
+    name: practice ? '셀파 실무 교재' : '셀파 이론서',
+    file: '01. 학습/' + catalog.sourceFile
+   } };
+   for (const entry of catalog.entries) {
+    if (entry.kind !== 'concept' || normalize(entry.title) !== query || !entry.pdfPages.length) continue;
+    const subject = practice ? subjects.practice : groups.get(entry.group);
+    if (selected && selected !== subject) continue;
+    const [first, last] = entry.bookPages;
+    headings.push({
+     title: entry.title, subject, books, summary: entry.summary,
+     refs: [['selpa', first, last, '', null, entry.pdfPages[0], entry.pdfPages.at(-1)]]
+    });
+   }
+  }
+  return [...headings, ...hits].slice(0, 6);
+ }
+
  function referenceLocation(entry, ref, query = '') {
   const [key, first, last, note, anchor, explicitFirst, explicitLast] = ref;
   const book = entry.books[key];
@@ -111,7 +138,7 @@
    pdfPages: [match.pdfPage], match };
  }
 
- const api = { createIndex, search, referenceLocation, pdfURL, readingMatch, additionalReading, subjects };
+ const api = { createIndex, search, searchDictionary, referenceLocation, pdfURL, readingMatch, additionalReading, subjects };
  if (typeof module === 'object' && module.exports) {
   module.exports = api;
   return;
@@ -202,7 +229,7 @@
   if (primary) {
    article.append(element('p', entry.subject, 'dictionary-subject'), element('h2', entry.title));
   }
-  article.append(element('p', entry.summary));
+  if (entry.summary) article.append(element('p', entry.summary));
   if (entry.formula) article.append(element('p', entry.formula, 'dictionary-formula'));
   article.append(element('h3', '교재에서 보기'), renderReferences(entry));
   if (entry.related?.length) {
@@ -218,7 +245,7 @@
  }
 
  if (!query) return;
- const [best, ...others] = search(index, query, scope);
+ const [best, ...others] = searchDictionary(index, root.SemuonTextbook?.catalogs || [], query, scope);
  if (!best) {
   const empty = element('section', '', 'empty');
   empty.append(element('h2', '일치하는 항목을 찾지 못했습니다'), element('p', '개념이나 공식 이름을 짧게 입력해 보세요.'));
