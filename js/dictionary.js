@@ -99,7 +99,19 @@
   return null;
  }
 
- const api = { createIndex, search, referenceLocation, pdfURL, readingMatch, subjects };
+ function additionalReading(index, problem) {
+  const stem = (problem.displayPrompt || problem.prompt || '').split(/[①②③④]/)[0];
+  const text = normalize([stem, problem.source?.subtopic, problem.type].filter(Boolean).join(' '));
+  const entry = search(index, text, 'fa').find(candidate =>
+   candidate.answerTerms?.some(term => text.includes(normalize(term)))
+  );
+  if (!entry) return null;
+  const match = { ...referenceLocation(entry, entry.refs[0], text), topic: entry.title, subject: entry.subject };
+  return { book: match.book, pages: String(match.first), title: entry.title, file: match.file,
+   pdfPages: [match.pdfPage], match };
+ }
+
+ const api = { createIndex, search, referenceLocation, pdfURL, readingMatch, additionalReading, subjects };
  if (typeof module === 'object' && module.exports) {
   module.exports = api;
   return;

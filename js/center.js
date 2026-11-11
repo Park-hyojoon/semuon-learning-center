@@ -194,7 +194,7 @@
  async function loadBookDictionary(){
   if(bookDictionary)return bookDictionary;
   const assets=['dictionary-income.js','dictionary-subjects.js','dictionary.js'];
-  await Promise.all(assets.map(file=>script(new URL('js/'+file+'?v=20261111-reading',rootURL))));
+  await Promise.all(assets.map(file=>script(new URL('js/'+file+'?v=20261111-reading-2',rootURL))));
   const api=window.SemuonDictionarySearch;
   bookDictionary={api,index:api.createIndex(window.SemuonDictionaryCatalogs||[])};
   return bookDictionary;
@@ -202,7 +202,7 @@
  function bookReadingLink(reading,problem,dictionary){
   if(!reading.file||!reading.pdfPages?.length||!dictionary)return '';
   const {api,index}=dictionary;
-  const match=api.readingMatch(index,reading,problem);
+  const match=reading.match||api.readingMatch(index,reading,problem);
   if(location.protocol==='file:'){
    return api.pdfURL(rootURL,{file:reading.file,pdfPage:match?.pdfPage||reading.pdfPages[0],phrase:match?.phrase});
   }
@@ -219,6 +219,8 @@
   const reveal=card.querySelector('.answer-reveal,.answer-box');
   if(!reveal||!problem||reveal.querySelector('.answer-book-reading'))return;
   const reading=SemuonTextbook.recommendedReading(problem,SemuonCurriculum);
+  const additional=dictionary?.api.additionalReading(dictionary.index,problem);
+  if(additional)reading.push(additional);
   const note=document.createElement('aside');
   note.className='answer-book-reading';
   note.innerHTML='<strong>교재에서 다시 보기</strong>'+(reading.length
