@@ -84,13 +84,28 @@
   return first + (last === first ? '' : '–' + last) + '쪽';
  }
 
+ function pdfReferenceURL(entry, key, first, last, anchor) {
+  const book = entry.books[key];
+  const queryMark = entry.pdfQueryHighlights?.find(mark =>
+   mark.books[key] && mark.terms.some(term => normalize(query).includes(normalize(term)))
+  )?.books[key];
+  const mark = queryMark || anchor;
+  const [printedPage, phrase] = Array.isArray(mark) ? mark : [first, mark];
+  const target = printedPage >= first && printedPage <= last ? printedPage : first;
+  const url = new URL('../' + book.file, root.location.href);
+  // Readers that do not understand text directives can still open the cited page.
+  url.hash = 'page=' + (target + book.pdfOffset);
+  if (phrase && target === printedPage) {
+   url.hash += ':~:text=' + encodeURIComponent(phrase).replace(/-/g, '%2D');
+  }
+  return url.href;
+ }
+
  function renderReferences(entry) {
   const grid = element('div', '', 'dictionary-books');
   const lists = new Map();
-  for (const [key, first, end, caption] of entry.refs) {
+  for (const [key, first, last, note, anchor] of entry.refs) {
    const book = entry.books[key];
-   const last = typeof end === 'number' ? end : first;
-   const note = caption || end;
    if (!lists.has(key)) {
     const section = element('section', '', 'dictionary-book');
     const list = element('ul');
@@ -103,10 +118,13 @@
    const pdfLast = last + book.pdfOffset;
    const label = '교재 ' + pages(first, last);
    if (root.location.protocol === 'file:') {
-    const url = new URL('../' + book.file, root.location.href);
-    url.hash = 'page=' + pdfFirst;
     const link = element('a', label);
-    Object.assign(link, { href: url.href, target: '_blank', rel: 'noopener' });
+    Object.assign(link, {
+     href: pdfReferenceURL(entry, key, first, last, anchor),
+     target: '_blank',
+     rel: 'noopener',
+     title: '교재에서 핵심 용어 보기'
+    });
     row.append(link);
    } else {
     row.append(element('strong', label));
