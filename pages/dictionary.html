@@ -8,11 +8,11 @@
   <meta name="robots" content="noindex">
   <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
   <link rel="stylesheet" href="../css/app.css?v=a4cf7ec6a016">
-  <link rel="stylesheet" href="../css/dictionary.css?v=104be4b44433">
-  <script defer src="../js/dictionary-income.js?v=4c0fce13517f"></script>
-  <script defer src="../js/dictionary-subjects.js?v=af68cf1855e1"></script>
+  <link rel="stylesheet" href="../css/dictionary.css?v=0938e3230b66">
+  <script defer src="../js/dictionary-income.js?v=e848db1d9dff"></script>
+  <script defer src="../js/dictionary-subjects.js?v=eb9f503d04cc"></script>
   <script defer src="../js/textbook.js?v=12a2a11d8b01"></script>
-  <script defer src="../js/dictionary.js?v=bf1f0fe74b35"></script>
+  <script defer src="../js/dictionary.js?v=7c4c3ebd71ba"></script>
 </head>
 <body class="semuon">
   <main class="dictionary">
@@ -33,14 +33,16 @@
         <option value="income">소득세법</option>
         <option value="practice">실무</option>
       </select>
-      <label class="sr-only" for="dictionary-query">교재에서 찾을 개념이나 공식</label>
-      <input id="dictionary-query" type="search" name="q" required maxlength="160" autocomplete="off" placeholder="개념이나 계산식으로 검색">
+      <label class="sr-only" for="dictionary-query">교재 검색어</label>
+      <input id="dictionary-query" type="search" name="q" required maxlength="160" autocomplete="off" placeholder="과목명, 개념 또는 질문으로 검색">
       <button class="btn" type="submit">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
         검색
       </button>
     </form>
     <nav class="dictionary-examples" aria-label="추천 검색">
+      <a href="?q=소득세">소득세</a>
+      <a href="?q=공제액">공제액</a>
       <a href="?q=감가상각비%20공식&amp;subject=fa">감가상각비 공식</a>
       <a href="?q=완성품환산량&amp;subject=cost">완성품환산량</a>
       <a href="?q=공통매입세액&amp;subject=vat">공통매입세액</a>

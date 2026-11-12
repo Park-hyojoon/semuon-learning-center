@@ -6,6 +6,7 @@
 .dictionary-form .btn{white-space:nowrap}
 .dictionary-examples,.dictionary-related{display:flex;flex-wrap:wrap;gap:8px}
 .dictionary-examples{margin:12px 0 24px}
+.dictionary-count{margin:0 0 8px;color:var(--muted);font-size:var(--font-ui)}
 .dictionary :is(.dictionary-examples,.dictionary-related) a{display:inline-block;border:1px solid var(--line);border-radius:8px;padding:4px 10px;background:var(--surface);color:var(--primary);text-decoration:none;font-size:var(--font-ui);font-weight:650}
 .dictionary :is(.dictionary-examples,.dictionary-related) a:hover{background:var(--soft);border-color:var(--primary)}
 .dictionary-result h2{margin:0 0 6px}
