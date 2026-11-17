@@ -50,6 +50,25 @@
   lines.push('## 재확인할 항목 — 사용자 기록 기준','',...a.needs.slice(0,10).map(e=>'- '+label(e.unitId)+(e.focus?' · '+e.focus:'')+' / '+Core.STUDY_RESULTS[e.outcome]+' / 어려움 기록 '+e.repeatDays+'일 / 다시 확인 '+e.due));
   if(!a.needs.length)lines.push('현재 재확인 필요로 기록된 항목 없음. 미기록 범위를 숙달했다고 해석하지 마세요.');
   const reasons=Core.uncertaintyReasons(state).filter(n=>n.date>=start&&n.date<=end);if(reasons.length){lines.push('','## 문제별 헷갈림 이유 — 직접 기록','');for(const n of reasons){const p=state.items.find(p=>p.id===n.problemId);lines.push('- '+n.date+' · '+p.title+' / '+n.reason)}lines.push('','같은 문제·같은 날의 메모 수정은 한 학습일로 집계합니다.');}
+  if(state.quizReviewEvents?.length){
+   const Q=typeof module==='object'&&module.exports?require('./quiz-review.js'):globalThis.SemuonQuizReview;
+   const bank=typeof module==='object'&&module.exports?require('./tax-quiz-bank.js'):globalThis.SemuonTaxQuiz;
+   const firsts=Q.recent(state.quizReviewEvents,start,end);
+   if(firsts.length){
+    lines.push('','## 핵심 퀴즈 · 날짜별 첫 채점','');
+    for(const [course,label] of Object.entries(Q.courses)){
+     const rows=firsts.filter(e=>e.course===course);
+     if(!rows.length)continue;
+     lines.push('- '+label+' · 정답 '+rows.filter(e=>e.correct).length+'/'+rows.length);
+     const topics=new Map(bank.questions(course).map(q=>[q.id,q.topic])),wrong=new Map();
+     for(const e of rows.filter(e=>!e.correct)){
+      const topic=topics.get(e.questionId)||e.questionId;
+      wrong.set(topic,(wrong.get(topic)||0)+1);
+     }
+     for(const [topic,count] of [...wrong].sort((a,b)=>b[1]-a[1]).slice(0,3))lines.push('  - '+topic+' · 오답 '+count+'회');
+    }
+   }
+  }
   if(weekly)lines.push('','## 학습센터 자동 기록',P.weeklySummary(state,end),'','요청: 기록된 범위·첫 채점·외부 실습 자기평가를 구별하여, 다음 진도와 구체적인 복습 우선순위 3가지를 짧게 제안해 주세요.');
   if([...Core.problemNotes(state).values()].some(n=>n.text&&P.day(n.at)>=start&&P.day(n.at)<=end))lines.push('',problemNotesMarkdown(state,{start,end}));
   return lines.join('\n');

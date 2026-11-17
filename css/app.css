@@ -336,6 +336,39 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
 }
 
 .withholding-quiz{max-width:760px}
+.quiz-title-row{gap:12px}
+.quiz-title-row .quiz-stats-button{min-height:34px;padding:4px 10px}
+.quiz-stats-dialog{
+ width:min(640px,calc(100% - 28px));max-height:calc(100dvh - 28px);
+ padding:20px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:12px
+}
+.quiz-stats-dialog::backdrop{background:#18282780}
+.quiz-stats-dialog h2,.quiz-due-card h2{margin:0}
+.quiz-stats-totals{margin:12px 0}
+.quiz-stats-grid{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);align-items:center;gap:18px}
+.quiz-stats-pie{
+ width:min(100%,210px);aspect-ratio:1;justify-self:center;
+ border-radius:50%;background:var(--quiz-pie,var(--soft))
+}
+.quiz-stats-dialog .quiz-stats-counts{min-width:0;font-variant-numeric:tabular-nums;line-height:1.4}
+.quiz-stats-counts :is(th,td){padding:6px 8px}
+.quiz-stats-counts td,.quiz-stats-counts thead th:not(:first-child){text-align:right}
+.quiz-stats-counts i{display:inline-block;width:.65em;height:.65em;border-radius:2px;margin-inline-end:6px;background:var(--quiz-color)}
+.quiz-stats-note{margin:12px 0 0}
+.quiz-review-rating{margin-top:12px}
+.quiz-review-rating p,.quiz-records ul{margin:0}
+.quiz-rating-buttons{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.quiz-rating-buttons .btn{display:grid;gap:2px;line-height:1.25;padding:7px 4px}
+.quiz-rating-buttons kbd{font:inherit;font-size:.75em;padding:1px 4px;border-radius:4px;background:var(--soft)}
+.quiz-rating-buttons small{font-size:.8em;color:var(--muted)}
+.quiz-due-card{display:flex;align-items:center;flex-wrap:wrap;gap:12px 20px;padding-block:14px}
+.quiz-due-heading{margin:0 0 8px}
+@media(max-width:520px){
+ .quiz-stats-grid{grid-template-columns:1fr;gap:12px}
+ .quiz-stats-pie{width:min(68%,145px)}
+ .quiz-stats-dialog{padding:14px}
+ .quiz-rating-buttons{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
 .quiz-ink-layout{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
 .quiz-ink-layout>.withholding-quiz{max-width:none;min-width:0}
 .quiz-heading-actions{justify-content:flex-end;gap:8px}

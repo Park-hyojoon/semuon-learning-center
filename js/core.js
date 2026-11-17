@@ -200,6 +200,22 @@
         seen.add(e.id);
       }
     }
+    if(s.quizReviewEvents!==undefined){
+      assert(Array.isArray(s.quizReviewEvents),'핵심 퀴즈 기록을 확인해 주세요.');
+      const events=new Map();
+      for(const e of s.quizReviewEvents){
+        assert(e&&typeof e.id==='string'&&e.id.length>0&&e.id.length<=100&&!events.has(e.id)&&
+          ['attempt','rating'].includes(e.kind)&&Number.isFinite(Date.parse(e.at)),'손상되거나 중복된 핵심 퀴즈 기록입니다.');
+        if(e.kind==='attempt')assert(/^taxquiz-\d{3,}$/.test(e.questionId)&&['income','withholding'].includes(e.course)&&typeof e.correct==='boolean','핵심 퀴즈의 문항과 채점 내용을 확인해 주세요.');
+        events.set(e.id,e);
+      }
+      for(const e of events.values()){
+        if(e.kind!=='rating')continue;
+        const attempt=events.get(e.attemptId);
+        assert(attempt?.kind==='attempt'&&Date.parse(e.at)>=Date.parse(attempt.at)&&['again','hard','good','easy'].includes(e.rating)&&
+          (attempt.correct||e.rating==='again'),'핵심 퀴즈 복습 평가를 확인해 주세요.');
+      }
+    }
     if(s.reviewNotes!==undefined){assert(Array.isArray(s.reviewNotes),'헷갈림 기록을 확인해 주세요.');const seenNotes=new Set();for(const e of s.reviewNotes){assert(e&&typeof e.id==='string'&&e.id&&!seenNotes.has(e.id)&&ids.has(e.problemId)&&['uncertain','clear'].includes(e.value)&&Number.isFinite(Date.parse(e.at)),'손상되거나 중복된 헷갈림 기록입니다.');assert((e.reason===undefined||typeof e.reason==='string'&&e.reason.length<=200)&&(e.markedAt===undefined||Number.isFinite(Date.parse(e.markedAt))&&Date.parse(e.markedAt)<=Date.parse(e.at)),'헷갈림 이유를 확인해 주세요.');seenNotes.add(e.id)}}
     if(s.studyLog!==undefined){assert(Array.isArray(s.studyLog),'학습 기록을 확인해 주세요.');const seen=new Set();for(const e of s.studyLog){validateStudyEvent(e,ids);assert(!seen.has(e.id),'학습 기록 ID가 중복됩니다.');seen.add(e.id)}}
     const validateDraft=d=>{assert(d&&validStudyDate(d.date)&&['theory','practice'].includes(d.lane)&&(d.entryId===null||typeof d.entryId==='string')&&d.values&&typeof d.values==='object'&&!Array.isArray(d.values)&&Object.entries(d.values).every(([k,v])=>['date','course','unitId','outcome','method','difficulty','focus','noteMd','pages','problemId','minutes','completeUnit','bookActivity','bookRefs'].includes(k)&&typeof v==='string'&&v.length<=12000),'작성 중인 학습 기록을 확인해 주세요.');};if(s.studyDraft!==undefined)validateDraft(s.studyDraft);if(s.studyDrafts!==undefined){assert(s.studyDrafts&&typeof s.studyDrafts==='object'&&!Array.isArray(s.studyDrafts),'작성 중인 학습 기록 목록을 확인해 주세요.');for(const[key,d]of Object.entries(s.studyDrafts)){assert(/^\d{4}-\d{2}-\d{2}:(theory|practice)$/.test(key),'학습 초안 날짜를 확인해 주세요.');validateDraft(d)}}
@@ -217,6 +233,15 @@
     if(incoming.progressEvents?.length){const progress=new Map((next.progressEvents||[]).map(e=>[e.id,e]));for(const e of incoming.progressEvents){const old=progress.get(e.id);if(old)assert(stable(old)===stable(e),'같은 진도 기록의 내용이 충돌합니다.');else progress.set(e.id,clone(e))}next.progressEvents=[...progress.values()]}
     if(incoming.roadmapTaskEvents?.length){const tasks=new Map((next.roadmapTaskEvents||[]).map(e=>[e.id,e]));for(const e of incoming.roadmapTaskEvents){const old=tasks.get(e.id);if(old)assert(stable(old)===stable(e),'같은 로드맵 과제 기록의 내용이 충돌합니다.');else tasks.set(e.id,clone(e))}next.roadmapTaskEvents=[...tasks.values()]}
     if(incoming.problemNotes?.length){const notes=new Map((next.problemNotes||[]).map(e=>[e.id,e]));for(const raw of incoming.problemNotes){const e={...clone(raw),problemId:remap.get(raw.problemId)},old=notes.get(e.id);if(old)assert(stable(old)===stable(e),'같은 문제 메모의 내용이 충돌합니다.');else notes.set(e.id,e)}next.problemNotes=[...notes.values()]}
+    if(incoming.quizReviewEvents?.length){
+      const events=new Map((next.quizReviewEvents||[]).map(e=>[e.id,e]));
+      for(const e of incoming.quizReviewEvents){
+        const old=events.get(e.id);
+        if(old)assert(stable(old)===stable(e),'같은 핵심 퀴즈 기록의 내용이 충돌합니다.');
+        else events.set(e.id,clone(e));
+      }
+      next.quizReviewEvents=[...events.values()];
+    }
     if(incoming.problemReports?.length){
       const reports=new Map((next.problemReports||[]).map(e=>[e.id,e]));
       for(const raw of incoming.problemReports){

@@ -209,7 +209,7 @@
   render();
   document.addEventListener("semuon-after-sync",render);
  }
- function journalPage(){content.innerHTML=head('학습 기록','이론과 실무를 나란히 기록하고, 다음에 확인할 부분을 남기세요.')+'<div id="journal-host"></div><div id="journal-exams"></div>';SemuonJournal.mount($('#journal-host'),storedSnapshot,{href,save:fn=>store.update(fn),notify:toast});SemuonRoadmap.mount($('#journal-exams'),{getState:storedSnapshot,save:fn=>store.update(fn),href,notify:toast,mode:'exams'});content.insertAdjacentHTML('beforeend','<section id="problem-reports" class="card"></section>'+problemNotesHTML()+repeatedFieldsHTML()+`<section class="card"><h2>최근 채점기록</h2><p class="help">학습 대상 문제의 최근 30개를 표시합니다. 보관한 기출문제의 기존 기록도 전체 백업에 포함됩니다. 취소한 기록은 보존하고 통계·복습에서 제외합니다.</p><div id="history-list"></div></section>`);renderHistory();mountProblemReports($('#problem-reports'));const notesExport=$('#export-problem-notes');if(notesExport)notesExport.onclick=()=>download('세무온_취약점메모.md',SemuonJournal.problemNotesMarkdown(storedSnapshot()),'text/markdown')}
+ function journalPage(){content.innerHTML=head('학습 기록','이론과 실무를 나란히 기록하고, 다음에 확인할 부분을 남기세요.')+'<div id="journal-host"></div><div id="journal-exams"></div>';SemuonJournal.mount($('#journal-host'),storedSnapshot,{href,save:fn=>store.update(fn),notify:toast});SemuonRoadmap.mount($('#journal-exams'),{getState:storedSnapshot,save:fn=>store.update(fn),href,notify:toast,mode:'exams'});content.insertAdjacentHTML('beforeend',quizRecordSection()+'<section id="problem-reports" class="card"></section>'+problemNotesHTML()+repeatedFieldsHTML()+`<section class="card"><h2>최근 채점기록</h2><p class="help">학습 대상 문제의 최근 30개를 표시합니다. 보관한 기출문제의 기존 기록도 전체 백업에 포함됩니다. 취소한 기록은 보존하고 통계·복습에서 제외합니다.</p><div id="history-list"></div></section>`);renderHistory();mountProblemReports($('#problem-reports'));const notesExport=$('#export-problem-notes');if(notesExport)notesExport.onclick=()=>download('세무온_취약점메모.md',SemuonJournal.problemNotesMarkdown(storedSnapshot()),'text/markdown')}
  function latest(id){return historyFor(id).at(-1)}
  let uncertaintyKey='',uncertaintyValue;function uncertainNotes(){const key=store.revision+'|'+R.day(Date.now());if(uncertaintyKey!==key){uncertaintyValue=C.uncertainties(snapshot());uncertaintyKey=key}return uncertaintyValue}
  let scheduleKey='',scheduleValue;function schedules(){const key=store.revision+'|'+R.day(Date.now());if(scheduleKey!==key){scheduleValue=C.questionSchedules(snapshot());scheduleKey=key}return scheduleValue}
@@ -509,13 +509,28 @@
   comboUI=TrainingComboReview.install({key:comboKey,subject:page,sources:comboSources,returnURL:href('pages/review.html'),history:(subject,id)=>historyFor(id).filter(e=>e.subject===subject)});
   if(!items.length)target.innerHTML='<p>이 분야의 복습 문제가 없습니다. 위 버튼에서 다른 분야를 선택해 주세요.</p>';
  }
+ const quizPage=(course,review=false)=>href('pages/quiz.html?course='+course+(review?'&review=due':''));
+ function quizRecordSection(){
+  const Q=SemuonQuizReview,events=storedSnapshot().quizReviewEvents||[];
+  const today=SemuonProgress.day(Date.now()),recent=Q.recent(events,SemuonProgress.add(today,-6),today);
+  const bank=new Map(Object.keys(Q.courses).flatMap(course=>SemuonTaxQuiz.questions(course).map(q=>[q.id,q])));
+  const ratings=new Map(Q.ratings.map(([id,label])=>[id,label]));
+  const selected=new Map(events.filter(e=>e.kind==='rating').slice().sort((a,b)=>a.at.localeCompare(b.at)||a.id.localeCompare(b.id)).reverse().map(e=>[e.attemptId,e.rating]));
+  return `<details class="card quiz-records"><summary>핵심 퀴즈 · 최근 7일 첫 풀이 ${recent.length}건</summary><div>
+   ${recent.length?`<ul>${recent.slice(0,12).map(e=>`<li><time>${esc(SemuonProgress.day(e.at))}</time> · ${esc(Q.courses[e.course])} ·
+    ${esc(bank.get(e.questionId)?.topic||e.questionId)} · ${e.correct?'정답':'오답'}${selected.has(e.id)?' · '+esc(ratings.get(selected.get(e.id))):''}</li>`).join('')}</ul>`:'<p class="help">기록된 핵심 퀴즈 풀이가 없습니다.</p>'}
+  </div></details>`;
+ }
  function withholdingQuiz(course){
   const params=new URLSearchParams(location.search),income=course==='income';
+  const dueMode=params.get('review')==='due',Q=SemuonQuizReview;
   const countKey='semuon-withholding-quiz-preview-count';
   const levelKey='semuon-tax-quiz-level-'+course;
   const allowed=['3','5','10','all'];
   const quiz=globalThis.SemuonTaxQuiz;
   const bank=quiz.questions(course),attempts=new Map();
+  const today=()=>SemuonProgress.day(Date.now());
+  const quizState=()=>Q.analyze(storedSnapshot().quizReviewEvents);
   const lawLinks={
    12:['소득세법 제12조','https://www.law.go.kr/LSW/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1001059372'],
    14:['소득세법 제14조','https://law.go.kr/lsLinkCommonInfo.do?lsJoLnkSeq=1019371607'],
@@ -553,10 +568,11 @@
   const back=income?'pages/concepts.html?subject=income':'pages/forms.html?practice=withholding';
   const title=income?'소득세법 핵심 퀴즈':'원천징수 핵심 퀴즈';
   document.title=title+' · 전산세무 2급';
-  content.innerHTML=head(title,'',`<div class="row quiz-heading-actions">${income?'':'<div class="quiz-ink-tools" role="group" aria-label="필기 도구"></div>'}<a class="btn secondary" href="${href(back)}">${income?'소득세법 개념':'원천징수 실무'}</a></div>`)+`
+  content.innerHTML=head(title,'',`<div class="row quiz-heading-actions">${dueMode?`<a class="btn secondary" href="${quizPage(course)}">전체 퀴즈</a>`:''}${income?'':'<div class="quiz-ink-tools" role="group" aria-label="필기 도구"></div>'}<a class="btn secondary" href="${href(back)}">${income?'소득세법 개념':'원천징수 실무'}</a></div>`)+`
    <div class="${income?'':'quiz-ink-layout'}">
    <div class="withholding-quiz">
-    <section class="card withholding-quiz-settings row" aria-label="퀴즈 조건">
+    ${dueMode?'<p class="quiz-due-heading"><strong>오늘 복습</strong></p>':''}
+    <section class="card withholding-quiz-settings row" aria-label="퀴즈 조건"${dueMode?' hidden':''}>
      <label><span id="quiz-unit-label">단원</span><select id="withholding-quiz-unit" aria-labelledby="quiz-unit-label"></select></label>
      <label><span id="quiz-detail-label">세부 주제</span><select id="withholding-quiz-detail" aria-labelledby="quiz-detail-label"></select></label>
      <label><span id="quiz-level-label">난이도</span><select id="withholding-quiz-level" aria-labelledby="quiz-level-label">${quiz.levels.map(level=>
@@ -569,7 +585,33 @@
    ${income?'':`<section id="quiz-ink-paper" class="quiz-ink-paper" aria-label="퀴즈 필기 공간" tabindex="0">
     <span class="quiz-ink-label" aria-hidden="true">필기</span>
     <div class="quiz-ink-images"></div><canvas aria-label="펜과 마우스로 그리는 필기 영역"></canvas>
-   </section>`}</div>`;
+   </section>`}</div>
+   <dialog class="quiz-stats-dialog" aria-labelledby="quiz-stats-title">
+    <header class="row spread"><h2 id="quiz-stats-title">${esc(Q.courses[course])} 퀴즈 통계</h2><form method="dialog"><button class="btn secondary" type="submit">닫기</button></form></header>
+    <div class="quiz-stats-body"></div>
+   </dialog>`;
+  const heading=$('.page-head h1'),titleRow=document.createElement('div'),stats=document.createElement('button');
+  titleRow.className='row quiz-title-row';
+  stats.type='button';stats.className='btn secondary quiz-stats-button';stats.textContent='통계';
+  stats.setAttribute('aria-haspopup','dialog');
+  heading.before(titleRow);titleRow.append(heading,stats);
+  const dialog=$('.quiz-stats-dialog');
+  stats.onclick=()=>{
+   const cards=quizState(),rows=Q.distribution(bank,cards);
+   let start=0;
+   const segments=rows.filter(row=>row.count).map(row=>{
+    const end=start+row.count*100/bank.length,segment=row.color+' '+start+'% '+end+'%';start=end;return segment;
+   });
+   const percent=new Intl.NumberFormat('ko-KR',{style:'percent',maximumFractionDigits:1});
+   const totalDue=Q.due(bank,cards,today()).length;
+   dialog.querySelector('.quiz-stats-body').innerHTML=`
+    <p class="quiz-stats-totals">전체 <strong>${bank.length}문제</strong> · 지금 복습할 문제 <strong>${totalDue}개</strong></p>
+    <div class="quiz-stats-grid"><div class="quiz-stats-pie" style="--quiz-pie:conic-gradient(${segments.length>1?segments.join(','):segments[0]+','+segments[0]})" aria-hidden="true"></div>
+    <table class="quiz-stats-counts"><thead><tr><th scope="col">상태</th><th scope="col">개수</th><th scope="col">비율</th></tr></thead>
+    <tbody>${rows.map(row=>`<tr><th scope="row"><i style="--quiz-color:${row.color}"></i>${row.label}</th><td>${row.count}</td><td>${percent.format(row.ratio)}</td></tr>`).join('')}</tbody></table></div>
+    <p class="help quiz-stats-note">성숙 문제는 복습 간격이 21일 이상인 문제입니다.</p>`;
+   dialog.showModal();
+  };
   const ink=income?null:globalThis.SemuonQuizInk?.mount($('.quiz-ink-tools'),$('#quiz-ink-paper'));
   const count=$('#withholding-quiz-count'),card=$('#withholding-quiz-card');
   const unit=$('#withholding-quiz-unit'),detail=$('#withholding-quiz-detail'),level=$('#withholding-quiz-level');
@@ -581,12 +623,12 @@
   function selectQuestions(){
    const matching=bank.filter(question=>question.level===level.value&&quiz.inUnit(question,unit.value)&&
     (!detail.value||question.detail===detail.value));
-   questions=count.value==='all'?matching:quiz.selectQuestions(matching,Number(count.value),level.value);
+   questions=dueMode?Q.due(bank,quizState(),today()):count.value==='all'?matching:quiz.selectQuestions(matching,Number(count.value),level.value);
    position=0;
    total.textContent=questions.length===matching.length?`${matching.length}문제`:`${matching.length}문제 중 ${questions.length}문제`;
    if(!questions.length){
     ink?.show(null);
-    card.innerHTML=`<h2 id="withholding-question">선택한 난이도에 해당하는 문제가 없습니다.</h2>
+    card.innerHTML=`<h2 id="withholding-question">${dueMode?'오늘 예정된 복습 문제가 없습니다.':'선택한 난이도에 해당하는 문제가 없습니다.'}</h2>
      ${detail.value?'<button type="button" class="btn secondary" id="quiz-clear-detail">전체 주제 보기</button>':''}`;
     const clear=$('#quiz-clear-detail');
     if(clear)clear.onclick=()=>{detail.value='';selectQuestions();detail.focus()};
@@ -657,6 +699,7 @@
         :''}</p>
       </div>
      </form>
+     <section class="quiz-review-rating" aria-label="다음 복습 평가" hidden></section>
      ${questions.length>1?`<nav class="row withholding-quiz-pagination" aria-label="퀴즈 문제 이동">
       <button type="button" class="btn secondary" data-quiz-step="-1"${position===0?' disabled':''}>이전 문제</button>
       <button type="button" class="btn secondary" data-quiz-step="1"${position===questions.length-1?' disabled':''}>다음 문제</button>
@@ -668,8 +711,33 @@
     answer:[question.solution,question.explanation,referenceLabel].filter(Boolean).join("\n")};
    reset.after(problemReportButton("quiz:"+course+":"+question.prompt,quizReport));
    const result=$('#withholding-quiz-result'),explanation=$('#withholding-quiz-explanation');
+   const ratingBox=card.querySelector('.quiz-review-rating');
 
-   function showResult({correct,missed}){
+   function showRatings(attempt){
+    const state=quizState().get(question.id),date=today();
+    if(!state){ratingBox.hidden=true;return}
+    ratingBox.hidden=false;
+    if(state.day!==date||state.first.id!==attempt.id||state.rating){
+     const selected=state.rating&&state.first.id===attempt.id?Q.ratings.find(([id])=>id===state.rating)?.[1]:'';
+     ratingBox.innerHTML=`<p role="status">${selected?`<strong>${selected}</strong> · `:''}다음 복습 <strong>${esc(state.plan.due)}</strong></p>`;
+     return;
+    }
+    ratingBox.innerHTML=`<div class="quiz-rating-buttons">${Q.ratings.map(([id,label],index)=>{
+     const due=Q.nextPlan(state.before,date,id).due,key=index+1;
+     return `<button class="btn secondary" type="button" data-quiz-rating="${id}" aria-keyshortcuts="${key}"${!attempt.correct&&id!=='again'?' disabled':''}><span><kbd>${key}</kbd> ${label}</span><small>${due===SemuonProgress.add(date,1)?'내일':esc(due.slice(5).replace('-','/'))}</small></button>`;
+    }).join('')}</div>`;
+    ratingBox.querySelectorAll('button').forEach(button=>button.onclick=()=>act(()=>{
+     if(problemReportsSyncing){toast('동기화가 끝난 뒤 다시 눌러 주세요.');return}
+     const current=quizState().get(question.id),rating=button.dataset.quizRating;
+     if(current?.first?.id!==attempt.id||current.rating||current.day!==today()){showRatings(attempt);return}
+     store.update(s=>s.quizReviewEvents.push({id:crypto.randomUUID(),kind:'rating',attemptId:attempt.id,rating,at:new Date().toISOString()}));
+     showRatings(attempt);
+     ratingBox.querySelector('[role=status]')?.setAttribute('tabindex','-1');
+     ratingBox.querySelector('[role=status]')?.focus({preventScroll:true});
+    }));
+   }
+   function showResult(attempt){
+    const {correct,missed}=attempt;
     options.disabled=grade.disabled=true;
     reset.hidden=result.hidden=explanation.hidden=false;
     result.classList.toggle('good',correct);
@@ -677,6 +745,7 @@
     result.textContent=correct?'정답입니다.':missed.length
      ?'다시 볼 항목 · '+missed.join(', ')
      :'해설을 확인해 보세요.';
+    showRatings(attempt);
    }
    if(attempt){
     attempt.values.forEach((value,i)=>{
@@ -688,19 +757,26 @@
    form.onsubmit=event=>{
     event.preventDefault();
     if(grade.disabled)return;
+    act(()=>{
+    if(problemReportsSyncing){toast('동기화가 끝난 뒤 다시 눌러 주세요.');return}
     const fields=new FormData(form);
     const values=question.answers.map((_,i)=>fields.get('answer-'+i));
     const matches=question.answers.map((expected,i)=>typeof expected==='number'
      ?Number(values[i].replaceAll(',',''))===expected
      :values[i]===expected);
     const answer={
+     id:crypto.randomUUID(),
      values,
      correct:matches.every(Boolean),
      missed:question.fields?.filter((_,i)=>!matches[i]).map(field=>field.label)||[]
     };
+    store.update(state=>(state.quizReviewEvents||(state.quizReviewEvents=[])).push({
+     id:answer.id,kind:'attempt',course,questionId:question.id,correct:answer.correct,at:new Date().toISOString()
+    }));
     attempts.set(question,answer);
     showResult(answer);
     result.focus();
+    });
    };
    reset.onclick=()=>{
     attempts.delete(question);
@@ -714,6 +790,14 @@
    });
    if(focus)$('#withholding-question').focus();
   }
+  document.addEventListener('keydown',event=>{
+   if(event.defaultPrevented||event.repeat||event.isComposing||event.ctrlKey||event.altKey||event.metaKey||event.shiftKey||
+      dialog.open||event.target.closest?.('input,select,textarea,[contenteditable=true]')||!/^[1-4]$/.test(event.key))return;
+   const id=Q.ratings[Number(event.key)-1][0],button=card.querySelector('[data-quiz-rating="'+id+'"]:not(:disabled)');
+   if(!button)return;
+   event.preventDefault();
+   button.click();
+  });
   updateTopics(params.get('detail'));
  }
  function review(){
@@ -733,11 +817,19 @@
   const external=SemuonJournal.analyze(storedSnapshot()).needs.filter(e=>e.due<=today);
   content.innerHTML=head('오늘 복습','핵심 개념을 확인한 뒤 분야와 세부 유형을 고르게 복습합니다.')+statsCards()+`<section class="card rv-unit-section"><div class="row spread"><h2>단원 복습 · 무엇을 볼까요?</h2><a class="btn secondary" href="${href('pages/learning-map.html')}">학습 지도 →</a></div><div id="rv-unit-plans"></div></section>${external.length?`<section class="card"><h2>교재·외부 실습 재확인</h2><p class="help">사용자가 기록한 어려움입니다. 실제 채점 점수와 별도로 확인하세요.</p>${external.slice(0,4).map(e=>`<p><a href="${href('pages/journal.html?date='+e.date+'&entry='+encodeURIComponent(e.entryId))}">${esc([...SemuonCurriculum.units,...SemuonCurriculum.practiceUnits].find(u=>u.id===e.unitId)?.title||'학습 기록')}${e.focus?' · '+esc(e.focus):''}</a> · ${esc(C.STUDY_RESULTS[e.outcome])}</p>`).join('')}</section>`:''}<div class="toolbar rv-filter-toolbar"><button class="btn" id="combo-start" type="button" title="세 분야 3문제씩 바로 복습" aria-label="세 분야 3문제씩 바로 복습">3문제씩 복습</button><label class="field"><span>분야</span><select id="review-subject"><option value="">세 분야 골고루</option>${V.fields.map(([id,name])=>`<option value="${id}">${name}</option>`).join('')}<option value="all">모든 영역 골고루</option></select></label><label class="field"><span>하루 목표</span><select id="review-limit">${[6,9,12].map(n=>`<option value="${n}" ${settings.reviewLimit===n?'selected':''}>${n}유형</option>`).join('')}</select></label><label class="field"><span>방식</span><select id="review-mode"><option value="balanced">오늘 복습</option><option value="focus">집중훈련 · 직접 선택</option></select></label><label class="field" id="review-type-label" hidden><span>집중할 유형</span><select id="review-type"><option value="">최근 오답 유형</option></select></label><label class="field rv-date-field"><span>추천 날짜</span><span class="rv-date-controls"><button type="button" class="btn secondary" data-review-day="-1" aria-label="이전 날짜">‹</button><input id="review-date" type="date" value="${viewDate}" aria-label="추천 날짜"><button type="button" class="btn secondary" data-review-day="1" aria-label="다음 날짜">›</button><button type="button" class="btn secondary" id="review-today">오늘</button></span></label></div><p id="review-date-notice" class="rv-preview-notice" hidden></p><div class="rv-review-layout"><section aria-label="추천 복습 문제"><div id="review-list"></div></section></div>`;
 
+  $('.rv-unit-section').insertAdjacentHTML('beforebegin','<section class="card quiz-due-card"><h2>핵심 퀴즈 복습</h2><div class="row" id="quiz-due-courses"></div></section>');
+  const quizBanks=Object.entries(SemuonQuizReview.courses).map(([course,label])=>({course,label,bank:SemuonTaxQuiz.questions(course)}));
   {const h1=$('.page-head h1'),row=document.createElement('div');row.className='title-row';h1.before(row);row.append(h1,$('#combo-start'))}
   if([...$('#review-subject').options].some(o=>o.value===params.get('field')))$('#review-subject').value=params.get('field');
   $('#combo-start').onclick=()=>act(startCombo);
   function render(){
    const future=viewDate>today,now=viewDate===today?Date.now():Date.parse(viewDate+'T23:59:59+09:00'),gs=V.analyze(snapshot(),{now}),field=$('#review-subject').value,mode=$('#review-mode').value,limit=Number($('#review-limit').value),scope=gs.filter(g=>V.matchesField(g,field)),selected=$('#review-type').value;
+   const cards=SemuonQuizReview.analyze(storedSnapshot().quizReviewEvents,now);
+   $('#quiz-due-courses').innerHTML=quizBanks.map(({course,label,bank})=>{
+    const n=SemuonQuizReview.due(bank,cards,viewDate).length;
+    return n&&!future?`<a class="btn secondary" href="${quizPage(course,true)}">${label} · ${n}문제</a>`:
+     `<span class="pill">${label} · ${n}문제</span>`;
+   }).join('');
    $('#review-type').innerHTML='<option value="">최근 오답 유형</option>'+scope.map(g=>`<option value="${esc(g.key)}">${esc(g.label)}</option>`).join('');$('#review-type').value=scope.some(g=>g.key===selected)?selected:'';$('#review-type-label').hidden=mode!=='focus';
    const queue=V.select(gs,{now,field,mode,limit,type:mode==='focus'?$('#review-type').value:''}),notice=$('#review-date-notice');notice.hidden=viewDate===today;notice.textContent=future?'예정 미리보기입니다. 이후 채점에 따라 추천이 달라질 수 있으며 예정일 전에는 자동 출제하지 않습니다.':'지난 날짜 기준의 추천입니다. 지금 문제를 풀면 실제 채점 시각으로 기록됩니다.';$('#combo-start').disabled=future;
    const planState={...snapshot(),progressEvents:(snapshot().progressEvents||[]).filter(e=>Date.parse(e.at)<=now&&(!e.date||e.date<=viewDate))};$('#rv-unit-plans').innerHTML=P.cardsHTML(P.analyze(planState,{now}),href,{date:viewDate,limit:3,layout:'grid'});
