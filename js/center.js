@@ -553,7 +553,8 @@
   const back=income?'pages/concepts.html?subject=income':'pages/forms.html?practice=withholding';
   const title=income?'소득세법 핵심 퀴즈':'원천징수 핵심 퀴즈';
   document.title=title+' · 전산세무 2급';
-  content.innerHTML=head(title,'',`<a class="btn secondary" href="${href(back)}">${income?'소득세법 개념':'원천징수 실무'}</a>`)+`
+  content.innerHTML=head(title,'',`<div class="row quiz-heading-actions">${income?'':'<div class="quiz-ink-tools" role="group" aria-label="필기 도구"></div>'}<a class="btn secondary" href="${href(back)}">${income?'소득세법 개념':'원천징수 실무'}</a></div>`)+`
+   <div class="${income?'':'quiz-ink-layout'}">
    <div class="withholding-quiz">
     <section class="card withholding-quiz-settings row" aria-label="퀴즈 조건">
      <label><span id="quiz-unit-label">단원</span><select id="withholding-quiz-unit" aria-labelledby="quiz-unit-label"></select></label>
@@ -564,7 +565,12 @@
      <span class="help withholding-quiz-total" role="status"></span>
     </section>
     <section class="card withholding-quiz-question" id="withholding-quiz-card" aria-labelledby="withholding-question"></section>
-   </div>`;
+   </div>
+   ${income?'':`<section id="quiz-ink-paper" class="quiz-ink-paper" aria-label="퀴즈 필기 공간" tabindex="0">
+    <span class="quiz-ink-label" aria-hidden="true">필기</span>
+    <div class="quiz-ink-images"></div><canvas aria-label="펜과 마우스로 그리는 필기 영역"></canvas>
+   </section>`}</div>`;
+  const ink=income?null:globalThis.SemuonQuizInk?.mount($('.quiz-ink-tools'),$('#quiz-ink-paper'));
   const count=$('#withholding-quiz-count'),card=$('#withholding-quiz-card');
   const unit=$('#withholding-quiz-unit'),detail=$('#withholding-quiz-detail'),level=$('#withholding-quiz-level');
   const total=$('.withholding-quiz-total');
@@ -579,6 +585,7 @@
    position=0;
    total.textContent=questions.length===matching.length?`${matching.length}문제`:`${matching.length}문제 중 ${questions.length}문제`;
    if(!questions.length){
+    ink?.show(null);
     card.innerHTML=`<h2 id="withholding-question">선택한 난이도에 해당하는 문제가 없습니다.</h2>
      ${detail.value?'<button type="button" class="btn secondary" id="quiz-clear-detail">전체 주제 보기</button>':''}`;
     const clear=$('#quiz-clear-detail');
@@ -621,6 +628,7 @@
   }
   function renderQuestion(focus=false){
    const question=questions[position],attempt=attempts.get(question);
+   ink?.show(question);
    const difficulty=quiz.levels.find(option=>option.id===question.level);
    const book=quiz.books[question.book];
    const {bookPage,pdfPage}=question.reference||{bookPage:126,pdfPage:143};
@@ -696,6 +704,7 @@
    };
    reset.onclick=()=>{
     attempts.delete(question);
+    ink?.reset();
     renderQuestion();
     card.querySelector('input,select').focus();
    };
