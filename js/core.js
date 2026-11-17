@@ -6,10 +6,14 @@
   'use strict';
   const EXAM='tax2',KEY='semuon-tax2-v1',VERSION=1,SUBJECTS=['theory','practical','voucher'];
   const labels={theory:'이론 학습',practical:'일반전표 입력',voucher:'매입매출전표 입력'};
-  const MARKUP_TOOLS=[['blue','파란색','1'],['red','빨간색','2'],['green','초록색','3'],['highlight','형광펜','4'],['underline','밑줄','5'],['strike','취소선','6'],['clear','표시 지우기','7']];
+  const MARKUP_TOOLS=[['blue','파란색','1'],['red','빨간색','2'],['green','초록색','3'],['highlight','형광펜','+'],['underline','밑줄','5'],['strike','취소선','6'],['clear','표시 지우기','7']];
   const MARKUP_SHORTCUT_DEFAULTS=Object.fromEntries(MARKUP_TOOLS.map(([id,,key])=>[id,key]));
-  function markupShortcuts(settings){return{...MARKUP_SHORTCUT_DEFAULTS,...settings.markupShortcuts}}
-  function validateMarkupShortcuts(value){assert(value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).length===MARKUP_TOOLS.length&&MARKUP_TOOLS.every(([id])=>typeof value[id]==='string'&&/^[0-9A-Z]$/.test(value[id])),'단축키는 기능마다 숫자 또는 영문 한 글자로 입력해 주세요.');assert(new Set(Object.values(value)).size===MARKUP_TOOLS.length,'같은 단축키를 두 기능에 사용할 수 없습니다.');return value}
+  function markupShortcuts(settings){
+    const saved=settings.markupShortcuts;
+    const oldDefaults=saved&&MARKUP_TOOLS.every(([id,,key])=>saved[id]===(id==='highlight'?'4':key));
+    return {...MARKUP_SHORTCUT_DEFAULTS,...(oldDefaults?{}:saved)};
+  }
+  function validateMarkupShortcuts(value){assert(value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).length===MARKUP_TOOLS.length&&MARKUP_TOOLS.every(([id])=>typeof value[id]==='string'&&/^[0-9A-Z+]$/.test(value[id])),'단축키는 기능마다 숫자, 영문 한 글자 또는 +로 입력해 주세요.');assert(new Set(Object.values(value)).size===MARKUP_TOOLS.length,'같은 단축키를 두 기능에 사용할 수 없습니다.');return value}
   const FONT_DEFAULTS={fontUiPt:10.5,fontBodyPt:12,fontUiFamily:'default',fontBodyFamily:'default'};
   const FONT_FAMILIES={default:{label:'기본 글꼴 (Noto Sans KR)',css:'"Noto Sans KR", "Malgun Gothic", "Segoe UI", system-ui, sans-serif'},malgun:{label:'맑은 고딕',css:'"Malgun Gothic", "Segoe UI", system-ui, sans-serif'},nanum:{label:'나눔고딕',css:'"Nanum Gothic", "Malgun Gothic", system-ui, sans-serif'},gulim:{label:'굴림',css:'Gulim, "Malgun Gothic", system-ui, sans-serif'},batang:{label:'바탕',css:'Batang, "Noto Serif KR", serif'},mono:{label:'고정폭 글꼴',css:'Consolas, "D2Coding", monospace'}};
   function fontPreferences(settings){const old=settings.fontSize||18;return{fontUiPt:settings.fontUiPt??Math.max(16,old-2)*72/96,fontBodyPt:settings.fontBodyPt??old*72/96,fontUiFamily:settings.fontUiFamily||'default',fontBodyFamily:settings.fontBodyFamily||'default'}}
@@ -128,6 +132,11 @@
   function validStudyUnit(id){const m=/^(unit|practice):([a-z]+):(\d{2})$/.exec(id||''),limits=m&&(m[1]==='unit'?{fa:13,cost:7,vat:8,income:6}:{foundation:3,general:13,voucher:15,vat:10,closing:14,withholding:5,yearend:7});return Boolean(m&&Number(m[3])>=1&&Number(m[3])<=limits[m[2]])}
   function validateStudyEvent(e,ids){assert(e&&typeof e.id==='string'&&e.id.length>0&&e.id.length<=100&&Number.isFinite(Date.parse(e.at))&&validStudyDate(e.date)&&['entry','daily','delete'].includes(e.kind),'학습 기록의 날짜·형식을 확인해 주세요.');if(e.kind==='daily'){assert(typeof e.noteMd==='string'&&e.noteMd.length<=4000,'오늘의 한 줄을 확인해 주세요.');return}assert(typeof e.entryId==='string'&&e.entryId&&e.entryId.length<=100,'학습 항목 ID를 확인해 주세요.');if(e.kind==='delete')return;assert(['theory','practice'].includes(e.lane)&&validStudyUnit(e.unitId)&&(e.lane==='theory')===e.unitId.startsWith('unit:')&&Object.hasOwn(STUDY_RESULTS,e.outcome)&&Object.hasOwn(STUDY_METHODS,e.method)&&Object.hasOwn(STUDY_DIFFICULTIES,e.difficulty),'학습 항목의 단원·결과를 확인해 주세요.');for(const[key,max]of [['focus',200],['noteMd',12000],['pages',80]])assert(typeof e[key]==='string'&&e[key].length<=max,'학습 메모의 길이를 확인해 주세요.');(typeof module==='object'&&module.exports?require('./textbook.js'):globalThis.SemuonTextbook).validateRecord(e);if(e.problemId)assert(ids.has(e.problemId),'연결한 문제를 찾을 수 없습니다.');if(e.minutes!==null)assert(Number.isInteger(e.minutes)&&e.minutes>=0&&e.minutes<=1440,'학습 시간은 0~1440분으로 입력해 주세요.');}
   function problemNotes(s,now=Date.now()){const ids=new Set(s.items.map(p=>p.id)),out=new Map();for(const e of(s.problemNotes||[]).filter(e=>ids.has(e.problemId)&&Date.parse(e.at)<=now).slice().sort((a,b)=>Date.parse(a.at)-Date.parse(b.at)||a.id.localeCompare(b.id)))out.set(e.problemId,e);return out}
+  function pendingProblemReports(state){
+    const latest=new Map();
+    for(const event of [...(state.problemReports||[])].sort((a,b)=>Date.parse(a.at)-Date.parse(b.at)||Number(b.open)-Number(a.open)||a.id.localeCompare(b.id)))latest.set(event.problemId,event);
+    return new Map([...latest].filter(([,event])=>event.open).sort(([,a],[,b])=>Date.parse(b.at)-Date.parse(a.at)));
+  }
   function fresh(){return{schemaVersion:VERSION,examId:EXAM,revision:0,items:[],drafts:{},history:[],studyLog:[],progressEvents:[],reviewNotes:[],inbox:[],settings:{fontSize:18,reviewLimit:6,...FONT_DEFAULTS}}}
   function grade(p,input){
     assert(input&&typeof input==='object','입력 답안을 확인해 주세요.');
@@ -180,6 +189,17 @@
     if(s.settings.examDate!==undefined){const d=s.settings.examDate;assert(typeof d==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d)&&Number.isFinite(Date.parse(d))&&new Date(d+'T00:00:00Z').toISOString().slice(0,10)===d,'시험일을 확인해 주세요.')}
     if(s.progressEvents!==undefined){assert(Array.isArray(s.progressEvents),'진도 기록을 확인해 주세요.');const seenProgress=new Set(),limits={fa:13,cost:7,vat:8,income:6},practiceLimits={foundation:3,general:13,voucher:15,vat:10,closing:14,withholding:5,yearend:7},validDay=d=>typeof d==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d)&&Number.isFinite(Date.parse(d))&&new Date(d+'T00:00:00Z').toISOString().slice(0,10)===d;for(const e of s.progressEvents){const unit=/^(unit|practice):(fa|cost|vat|income|foundation|general|voucher|closing|withholding|yearend):(\d{2})$/.exec(e?.unitId||''),limit=unit&&(unit[1]==='unit'?limits:practiceLimits)[unit[2]];assert(e&&typeof e.id==='string'&&e.id&&!seenProgress.has(e.id)&&unit&&Number(unit[3])>=1&&Number(unit[3])<=limit&&['complete','reopen','date','review'].includes(e.action)&&Number.isFinite(Date.parse(e.at))&&(e.date===null||validDay(e.date)),'손상되거나 중복된 진도 기록입니다.');if(e.action==='review')assert(['theory','practice'].includes(e.mode)&&['done','again'].includes(e.outcome)&&validDay(e.date),'복습 기록을 확인해 주세요.');seenProgress.add(e.id)}}
     if(s.problemNotes!==undefined){assert(Array.isArray(s.problemNotes),'문제 메모를 확인해 주세요.');const seen=new Set();for(const e of s.problemNotes){assert(e&&typeof e.id==='string'&&e.id&&!seen.has(e.id)&&ids.has(e.problemId)&&Number.isFinite(Date.parse(e.at))&&typeof e.text==='string'&&e.text.length<=4000,'문제 메모의 내용·날짜를 확인해 주세요.');seen.add(e.id)}}
+    if(s.problemReports!==undefined){
+      assert(Array.isArray(s.problemReports),'문제 오류 확인 기록을 확인해 주세요.');
+      const seen=new Set();
+      for(const e of s.problemReports){
+        assert(e&&typeof e.id==='string'&&e.id&&!seen.has(e.id)&&typeof e.open==='boolean'&&Number.isFinite(Date.parse(e.at)),'손상되거나 중복된 문제 오류 확인 기록입니다.');
+        const q=e.quiz;
+        if(q)assert(['income','withholding'].includes(q.course)&&typeof q.prompt==='string'&&q.prompt.length>0&&q.prompt.length<=4000&&e.problemId==='quiz:'+q.course+':'+q.prompt&&['title','conditions','answer'].every(key=>typeof q[key]==='string'&&q[key].length<=8000),'퀴즈 오류 확인 정보를 확인해 주세요.');
+        else assert(ids.has(e.problemId),'오류 확인을 요청한 문제를 찾을 수 없습니다.');
+        seen.add(e.id);
+      }
+    }
     if(s.reviewNotes!==undefined){assert(Array.isArray(s.reviewNotes),'헷갈림 기록을 확인해 주세요.');const seenNotes=new Set();for(const e of s.reviewNotes){assert(e&&typeof e.id==='string'&&e.id&&!seenNotes.has(e.id)&&ids.has(e.problemId)&&['uncertain','clear'].includes(e.value)&&Number.isFinite(Date.parse(e.at)),'손상되거나 중복된 헷갈림 기록입니다.');assert((e.reason===undefined||typeof e.reason==='string'&&e.reason.length<=200)&&(e.markedAt===undefined||Number.isFinite(Date.parse(e.markedAt))&&Date.parse(e.markedAt)<=Date.parse(e.at)),'헷갈림 이유를 확인해 주세요.');seenNotes.add(e.id)}}
     if(s.studyLog!==undefined){assert(Array.isArray(s.studyLog),'학습 기록을 확인해 주세요.');const seen=new Set();for(const e of s.studyLog){validateStudyEvent(e,ids);assert(!seen.has(e.id),'학습 기록 ID가 중복됩니다.');seen.add(e.id)}}
     const validateDraft=d=>{assert(d&&validStudyDate(d.date)&&['theory','practice'].includes(d.lane)&&(d.entryId===null||typeof d.entryId==='string')&&d.values&&typeof d.values==='object'&&!Array.isArray(d.values)&&Object.entries(d.values).every(([k,v])=>['date','course','unitId','outcome','method','difficulty','focus','noteMd','pages','problemId','minutes','completeUnit','bookActivity','bookRefs'].includes(k)&&typeof v==='string'&&v.length<=12000),'작성 중인 학습 기록을 확인해 주세요.');};if(s.studyDraft!==undefined)validateDraft(s.studyDraft);if(s.studyDrafts!==undefined){assert(s.studyDrafts&&typeof s.studyDrafts==='object'&&!Array.isArray(s.studyDrafts),'작성 중인 학습 기록 목록을 확인해 주세요.');for(const[key,d]of Object.entries(s.studyDrafts)){assert(/^\d{4}-\d{2}-\d{2}:(theory|practice)$/.test(key),'학습 초안 날짜를 확인해 주세요.');validateDraft(d)}}
@@ -197,6 +217,15 @@
     if(incoming.progressEvents?.length){const progress=new Map((next.progressEvents||[]).map(e=>[e.id,e]));for(const e of incoming.progressEvents){const old=progress.get(e.id);if(old)assert(stable(old)===stable(e),'같은 진도 기록의 내용이 충돌합니다.');else progress.set(e.id,clone(e))}next.progressEvents=[...progress.values()]}
     if(incoming.roadmapTaskEvents?.length){const tasks=new Map((next.roadmapTaskEvents||[]).map(e=>[e.id,e]));for(const e of incoming.roadmapTaskEvents){const old=tasks.get(e.id);if(old)assert(stable(old)===stable(e),'같은 로드맵 과제 기록의 내용이 충돌합니다.');else tasks.set(e.id,clone(e))}next.roadmapTaskEvents=[...tasks.values()]}
     if(incoming.problemNotes?.length){const notes=new Map((next.problemNotes||[]).map(e=>[e.id,e]));for(const raw of incoming.problemNotes){const e={...clone(raw),problemId:remap.get(raw.problemId)},old=notes.get(e.id);if(old)assert(stable(old)===stable(e),'같은 문제 메모의 내용이 충돌합니다.');else notes.set(e.id,e)}next.problemNotes=[...notes.values()]}
+    if(incoming.problemReports?.length){
+      const reports=new Map((next.problemReports||[]).map(e=>[e.id,e]));
+      for(const raw of incoming.problemReports){
+        const e={...clone(raw),problemId:raw.quiz?raw.problemId:remap.get(raw.problemId)},old=reports.get(e.id);
+        if(old)assert(stable(old)===stable(e),'같은 문제 오류 확인 기록의 내용이 충돌합니다.');
+        else reports.set(e.id,e);
+      }
+      next.problemReports=[...reports.values()];
+    }
     if(incoming.reviewNotes?.length){const notes=new Map((next.reviewNotes||[]).map(e=>[e.id,e]));for(const raw of incoming.reviewNotes){const e={...clone(raw),problemId:remap.get(raw.problemId)},old=notes.get(e.id);if(old)assert(stable(old)===stable(e),'같은 헷갈림 기록의 내용이 충돌합니다.');else notes.set(e.id,e)}next.reviewNotes=[...notes.values()]}
     if(incoming.studyLog?.length){const events=new Map((next.studyLog||[]).map(e=>[e.id,e]));for(const raw of incoming.studyLog){const e=clone(raw);if(e.problemId)e.problemId=remap.get(e.problemId);const old=events.get(e.id);if(old)assert(stable(old)===stable(e),'같은 학습 기록의 내용이 충돌합니다.');else events.set(e.id,e)}next.studyLog=[...events.values()]}
     if(incoming.studyDrafts)next.studyDrafts={...clone(incoming.studyDrafts),...(next.studyDrafts||{})};
@@ -211,5 +240,5 @@
     if(incoming.mockExams){const exams=new Map((next.mockExams||[]).map(e=>[e.id,e]));for(const e of incoming.mockExams){const old=exams.get(e.id);if(old){const a={...old},b={...e};delete a.deleted;delete b.deleted;assert(stable(a)===stable(b),'같은 실전 성적의 내용이 충돌합니다.');if(e.deleted)old.deleted=true}else exams.set(e.id,clone(e))}next.mockExams=[...exams.values()]}
     return next;
   }
-  return{EXAM,KEY,VERSION,SUBJECTS,labels,STUDY_RESULTS,STUDY_METHODS,STUDY_DIFFICULTIES,JOURNAL_TOOL_IDS,validStudyDate,validStudyUnit,MARKUP_TOOLS,MARKUP_SHORTCUT_DEFAULTS,markupShortcuts,validateMarkupShortcuts,FONT_DEFAULTS,FONT_FAMILIES,fontPreferences,clone,norm,stable,assert,validateItem,immutableItem,stateValidator,plan,fresh,problemNotes,grade,active,uncertainties,uncertaintyReasons,questionSchedules,reviewStates,stats,validateState,merge,identity,fingerprint,answerSignature,broadTopics};
+  return{EXAM,KEY,VERSION,SUBJECTS,labels,STUDY_RESULTS,STUDY_METHODS,STUDY_DIFFICULTIES,JOURNAL_TOOL_IDS,validStudyDate,validStudyUnit,MARKUP_TOOLS,MARKUP_SHORTCUT_DEFAULTS,markupShortcuts,validateMarkupShortcuts,FONT_DEFAULTS,FONT_FAMILIES,fontPreferences,clone,norm,stable,assert,validateItem,immutableItem,stateValidator,plan,fresh,problemNotes,pendingProblemReports,grade,active,uncertainties,uncertaintyReasons,questionSchedules,reviewStates,stats,validateState,merge,identity,fingerprint,answerSignature,broadTopics};
 });

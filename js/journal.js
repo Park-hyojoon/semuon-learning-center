@@ -14,6 +14,33 @@
   return{entries,daily,needs,today,dates:[...new Set([...entries.map(e=>e.date),...daily.keys()])].sort().reverse()};
  }
  function problemNotesMarkdown(state,{start='0000-00-00',end='9999-12-31'}={}){const notes=[...Core.problemNotes(state).values()].filter(n=>n.text&&P.day(n.at)>=start&&P.day(n.at)<=end),lines=['# 세무온 문제별 취약점 메모','','아래 원문과 메모를 참고해 숫자·날짜·조건을 조금씩 바꾼 응용문제를 만들고, 정답과 해설을 따로 확인할 수 있게 준비해 주세요.',''];for(const n of notes){const p=state.items.find(p=>p.id===n.problemId);lines.push('## '+p.title,'- 문제 ID: '+p.id,'- 분류: '+(p.subject==='theory'?'이론':'실무')+' / '+p.type+' / '+(p.tags||[]).join(', '),'- 기록일: '+P.day(n.at),'','### 학습자 메모',n.text,'','### 원문',p.prompt,'','### 정답·해설',p.subject==='theory'?(p.acceptedAnswers||[p.answer]).map(i=>(i+1)+'번: '+p.choices[i]).join(' / '):JSON.stringify(p.answers||p.variants||p.form?.fields||[]),p.explanation,'')}return lines.join('\n')}
+ function problemReportTitle(p){
+  const source=p.source,number=source.questionNo;
+  return [source.round?source.round+"회":source.name,number===undefined?"":"문항 "+number,p.type].filter(Boolean).join(" · ");
+ }
+ function problemReportsMarkdown(state){
+  const items=new Map(state.items.map(p=>[p.id,p]));
+  const lines=["# 세무온 문제 오류 확인 요청","","아래 문항을 원본 문제지·증빙·확정답안과 대조해 주세요. 빠진 조건이나 잘못된 지문·정답을 발견하면 문항별 근거와 수정안을 알려 주세요.",""];
+  const material=blocks=>blocks.flatMap(block=>typeof block==="string"?[block]:[block.caption||"문제 자료",...block.rows.map(row=>row.map(cell=>cell.blocks?material(cell.blocks).join(" "):cell.text).join(" | "))]);
+  for(const report of Core.pendingProblemReports(state).values()){
+   const p=items.get(report.problemId);
+   if(report.quiz){
+    const q=report.quiz;
+    lines.push("## "+q.title,"- 등록일 "+P.day(report.at),"","### 화면에 표시된 문제",q.prompt,q.conditions,"","### 현재 정답·해설",q.answer,"");
+    continue;
+   }
+   lines.push("## "+problemReportTitle(p),"- 문항 ID "+p.id,"- 출처 "+p.source.name,"- 등록일 "+P.day(report.at));
+   const evidence=(p.source.evidence||[]).map(file=>file.name);
+   if(evidence.length)lines.push("- 첨부 증빙 "+evidence.join(", "));
+   lines.push("","### 화면에 표시된 문제",...(p.displayBlocks?.length?material(p.displayBlocks):[p.displayPrompt||p.prompt]));
+   if(p.choices)lines.push(...p.choices.map((choice,i)=>(i+1)+". "+choice));
+   if(p.exhibit)lines.push(p.exhibit.caption||p.exhibit.title||"증빙 자료",...(p.exhibit.headers?.length?[p.exhibit.headers.join(" | ")]:[]),...p.exhibit.rows.map(row=>row.join(" | ")));
+   lines.push("","### 현재 정답·해설",p.source.answerText||p.explanation);
+   if(p.explanation&&p.explanation!==p.source.answerText)lines.push(p.explanation);
+   lines.push("");
+  }
+  return lines.join("\n");
+ }
  function markdown(state,{end=P.day(Date.now()),weekly=false}={}){
   const a=analyze(state),start=weekly?P.add(end,-6):'0000-00-00',entries=a.entries.filter(e=>e.date>=start&&e.date<=end),dates=[...new Set([...entries.map(e=>e.date),...[...a.daily.keys()].filter(d=>d>=start&&d<=end)])].sort(),lines=['# 세무온 학습 기록',`기준일: ${end}${weekly?' · 최근 7일':''}`,'','학습 완료·자기평가 기록입니다. 실제 채점 결과와 구별해서 읽어 주세요.','진도·재확인 항목은 내보내는 시점의 현재 상태입니다.',''];
   const book=P.analyze(state),study=S.analyze(state);lines.push(`이전 목차 완료 체크: 이론 ${book.completed}/${book.units.length} 소단원 · 실무 ${book.practiceCompleted}/${book.practiceUnits.length} 유형`,'','## 교재 범위 누적 현황 — 현재 상태','');for(const b of study.books){lines.push('### '+(b.lane==='theory'?'이론':'실무'));for(const g of b.groups)lines.push(`- ${g.title}: 개념 읽음 ${g.read}/${g.concepts.length} · 문제 시도 ${g.attempted}/${g.exercises.length} · 혼자 완료(자기평가) ${g.independent} · 범위 미지정 기록 ${g.unmapped.length}건`);}lines.push('','범위 미지정 기록·풀이 확인만으로는 문제 시도를 늘리지 않습니다. 교재의 확보 분량과 개인 학습 분량, 실제 채점을 구별해 주세요.','');
@@ -102,5 +129,5 @@
   addEventListener('beforeunload',e=>{if(!flushDaily()||[...sessions.values()].some(s=>!s.flush())){e.preventDefault();e.returnValue=''}});render();const editEntry=a.entries.find(e=>e.entryId===params.get('entry'));if(editEntry)openEntry(editEntry.lane,editEntry);const bookRef=T.get(params.get('book'));if(bookRef)openEntry(bookRef.unitId.startsWith('unit:')?'theory':'practice',null,null,{unitId:bookRef.unitId,bookActivity:bookRef.kind==='concept'?'concept':'exercise',bookRefs:[bookRef.id]});const unit=byUnit.get(params.get('unit'));if(unit){openEntry(unit.id.startsWith('unit:')?'theory':'practice',null,null,{unitId:unit.id,focus:params.get('focus')||'',problemId:params.get('problem')||''});}
   return{refresh:render};
  }
- return{analyze,event,problemNotesMarkdown,markdown,preview,mount,defaultTools};
+ return{analyze,event,problemNotesMarkdown,problemReportsMarkdown,problemReportTitle,markdown,preview,mount,defaultTools};
 });

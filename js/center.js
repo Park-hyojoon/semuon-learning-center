@@ -7,7 +7,13 @@
  // Retired exams remain in storage and complete backups; every learning view uses only available items.
  const available=p=>!(Number(p.source.round)>0&&Number(p.source.round)<=105);
  let snapshotRevision=-1,snapshotValue,storedValue;function storedSnapshot(){if(snapshotRevision!==store.revision){storedValue=store.get();const items=storedValue.items.filter(available),ids=new Set(items.map(p=>p.id));snapshotValue={...storedValue,items,history:storedValue.history.filter(e=>ids.has(e.problemId))};snapshotRevision=store.revision}return storedValue}function snapshot(){storedSnapshot();return snapshotValue}
- let editor=null,lastUndo=null;const nav=[['home','⌂','학습 홈','index.html'],['theory','▤','이론 학습','pages/theory.html'],['practical','≡','일반전표 입력','pages/general.html'],['voucher','▦','매입매출전표 입력','pages/voucher.html'],['forms','▧','신고서 · 급여','pages/forms.html'],['status','◇','학습 현황',null],['review','↺','오늘 복습','pages/review.html'],['settings','⚙','설정 · 백업','pages/settings.html'],['guide','▤','디자인 가이드','pages/guide.html']];
+ let editor=null;const nav=[['home','⌂','학습 홈','index.html'],['theory','▤','이론 학습','pages/theory.html'],['practice-learning','▦','실무 학습',null],['status','◇','학습 현황',null],['review','↺','오늘 복습','pages/review.html'],['settings','⚙','설정 · 백업','pages/settings.html'],['guide','▤','디자인 가이드','pages/guide.html']];
+ const practiceMenu=[
+  ['practical','일반전표 입력','pages/general.html'],
+  ['voucher','매입매출전표 입력','pages/voucher.html'],
+  ['forms','신고서 · 급여','pages/forms.html']
+ ];
+ const quizCourse=new URLSearchParams(location.search).get('course')==='income'?'income':'withholding';
  const conceptGuide=$('#concept-guide-template')?.content;
  const conceptSubjects=[['fa','재무회계'],['vat','부가가치세법'],['cost','원가회계'],['income','소득세법']];
  const conceptArticles=conceptGuide?[...conceptGuide.querySelectorAll('[data-concept-subject]')]:[];
@@ -17,10 +23,17 @@
   const links=conceptSubjects.map(([id,name])=>`<a data-sub-menu-id="sub:concepts:${id}" href="${href('pages/concepts.html?subject='+id)}" ${selectedConcept?.dataset.conceptSubject===id?'class="active" aria-current="page"':''}>${name}</a>`);
   return `<details class="app-nav-group" data-menu-id="theory" open>
     <summary><span aria-hidden="true">${icon}</span><a class="menu-parent-link" href="${href(path)}" ${page==='theory'?'aria-current="page"':''}>${label}</a></summary>
-    <div class="app-subnav">${links.join('')}</div>
+    <div class="app-subnav">${links.join('')}<a data-sub-menu-id="sub:quiz:income" data-menu-parent-id="sub:concepts:income" href="${href('pages/quiz.html?course=income')}" ${page==='quiz'&&quizCourse==='income'?'class="active" aria-current="page"':''}>핵심 퀴즈</a></div>
   </details>`;
  }
- document.body.classList.add('semuon');document.body.innerHTML=`<aside class="app-sidebar"><a class="app-brand" href="${href('index.html')}"><img src="${href('assets/favicon.svg')}" alt=""><span>세무온<small>전산세무 2급 학습센터</small></span></a><button class="btn secondary mobile-menu" aria-expanded="false" aria-controls="app-nav" type="button">☰<span class="sr-only">메뉴 열기</span></button><nav id="app-nav" class="app-nav" aria-label="주 메뉴">${nav.map(([key,icon,label,path])=>key==='theory'?theoryNavigation(icon,label,path):key==='settings'?`<details class="app-nav-group ${['settings','database'].includes(page)?'is-active':''}" data-menu-id="settings" open><summary><span>⚙</span><span>설정 · 백업</span></summary><div class="app-subnav"><a href="${href('pages/settings.html')}" ${page==='settings'?'class="active"':''}>설정 · 백업</a><a href="${href('pages/database.html')}" ${page==='database'?'class="active" aria-current="page"':''}>데이터베이스 현황</a></div></details>`:key==='status'?`<details class="app-nav-group ${['progress','map','journal','roadmap'].includes(page)?'is-active':''}" data-menu-id="status" open><summary><span aria-hidden="true">${icon}</span><span>${label}</span></summary><div class="app-subnav"><a href="${href('pages/learning-map.html')}" ${page==='map'?'class="active" aria-current="page"':''}>나의 학습 지도</a><a href="${href('pages/journal.html')}" ${page==='journal'?'class="active" aria-current="page"':''}>학습 기록</a></div></details>`:`<a data-menu-id="${key}" href="${href(path)}" ${key===page?'class="active" aria-current="page"':''}><span aria-hidden="true">${icon}</span><span>${label}</span></a>`).join('')}</nav></aside><main class="app-main"><header class="app-topbar"><p class="app-date">${new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',dateStyle:'full'}).format(new Date())}</p>${SemuonFullscreen.button()}</header><div id="save-status" class="notice error" role="alert" hidden></div><div id="content"></div><footer class="app-footer">세무온 · 전산세무 2급 전용 · <a href="${href('pages/settings.html')}">백업 · 설정</a></footer></main><div class="toast" role="status" hidden></div>`;
+ function practiceNavigation(icon,label){
+  const links=practiceMenu.map(([id,name,path])=>`<a data-sub-menu-id="${id}" href="${href(path)}" ${page===id?'class="active" aria-current="page"':''}>${name}</a>`);
+  return `<details class="app-nav-group" data-menu-id="practice-learning" open>
+   <summary><span aria-hidden="true">${icon}</span><span>${label}</span></summary>
+   <div class="app-subnav">${links.join('')}<a data-sub-menu-id="sub:quiz:withholding" href="${href('pages/quiz.html?course=withholding')}" ${page==='quiz'&&quizCourse==='withholding'?'class="active" aria-current="page"':''}>원천징수 핵심 퀴즈</a></div>
+  </details>`;
+ }
+ document.body.classList.add('semuon');document.body.innerHTML=`<aside class="app-sidebar"><a class="app-brand" href="${href('index.html')}"><img src="${href('assets/favicon.svg')}" alt=""><span>세무온<small>전산세무 2급 학습센터</small></span></a><button class="btn secondary mobile-menu" aria-expanded="false" aria-controls="app-nav" type="button">☰<span class="sr-only">메뉴 열기</span></button><nav id="app-nav" class="app-nav" aria-label="주 메뉴">${nav.map(([key,icon,label,path])=>key==='theory'?theoryNavigation(icon,label,path):key==='practice-learning'?practiceNavigation(icon,label):key==='settings'?`<details class="app-nav-group ${['settings','database'].includes(page)?'is-active':''}" data-menu-id="settings" open><summary><span>⚙</span><span>설정 · 백업</span></summary><div class="app-subnav"><a href="${href('pages/settings.html')}" ${page==='settings'?'class="active"':''}>설정 · 백업</a><a href="${href('pages/database.html')}" ${page==='database'?'class="active" aria-current="page"':''}>데이터베이스 현황</a></div></details>`:key==='status'?`<details class="app-nav-group ${['progress','map','journal','roadmap'].includes(page)?'is-active':''}" data-menu-id="status" open><summary><span aria-hidden="true">${icon}</span><span>${label}</span></summary><div class="app-subnav"><a href="${href('pages/learning-map.html')}" ${page==='map'?'class="active" aria-current="page"':''}>나의 학습 지도</a><a href="${href('pages/journal.html')}" ${page==='journal'?'class="active" aria-current="page"':''}>학습 기록</a></div></details>`:`<a data-menu-id="${key}" href="${href(path)}" ${key===page?'class="active" aria-current="page"':''}><span aria-hidden="true">${icon}</span><span>${label}</span></a>`).join('')}</nav></aside><main class="app-main"><header class="app-topbar"><p class="app-date">${new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',dateStyle:'full'}).format(new Date())}</p>${SemuonFullscreen.button()}</header><div id="save-status" class="notice error" role="alert" hidden></div><div id="content"></div><footer class="app-footer">세무온 · 전산세무 2급 전용 · <a href="${href('pages/settings.html')}">백업 · 설정</a></footer></main><div class="toast" role="status" hidden></div>`;
  const content=$('#content');let toastTimer;
  function paintStudyLanes(root){
   if(!root||root.nodeType!==1)return;
@@ -43,6 +56,38 @@
   const mark=correct=>act(()=>{const e=store.mark(p,correct);globalThis.SemuonMarkup?.retire(p.id);done();toast(correct?'통과로 기록했습니다.':'다시 연습할 문제로 기록했습니다.',()=>act(()=>{store.cancel(e.id);done();if(isGeneral(p))$('#questions')?.dispatchEvent(new CustomEvent('semuon-general-undo',{detail:{problemId:p.id}}));toast('직접 표시를 되돌렸습니다.')}));if(correct&&isGeneral(p))pass.dispatchEvent(new CustomEvent('semuon-general-pass',{bubbles:true,detail:{problemId:p.id}}))});pass.onclick=()=>mark(true);wrong.onclick=()=>mark(false);return[pass,wrong]}
  document.addEventListener('semuon-general-pass',e=>{const card=e.target.closest('.question');if(!card)return;if(TrainingComboReview.active(comboKey)){card.remove();const remaining=$('#questions .question');if(remaining)remaining.scrollIntoView({block:'start',behavior:'smooth'});else $('#questions').insertAdjacentHTML('beforeend','<p class="notice">일반전표 복습을 마쳤습니다.</p>');return}let search='';try{search=sessionStorage.getItem('semuon-tax2-list-practical')||''}catch(_){}const url=new URL(href('pages/general.html')+search);url.searchParams.delete('scope');url.searchParams.delete('id');SemuonFullscreen.navigate(url.href)});
  function resetButton(p,run){const b=document.createElement('button');b.type='button';b.className='btn secondary reset-one';b.textContent='초기화';b.onclick=()=>{if(confirm(p.initialEntry?.subject===p.subject?'수정 전 입력으로 되돌릴까요? 채점·학습기록은 보존됩니다.':'이 문제에 입력한 답안만 초기화할까요? 채점·학습기록은 보존됩니다.'))act(run)};return b}
+ let problemReportsSyncing=false,reportQueueRevision=-1,reportQueue;
+ function pendingProblemReports(){
+  if(reportQueueRevision!==store.revision){reportQueue=C.pendingProblemReports(storedSnapshot());reportQueueRevision=store.revision}
+  return reportQueue;
+ }
+ function saveProblemReport(problemId,open,quiz){
+  if(problemReportsSyncing){toast("동기화가 끝난 뒤 다시 눌러 주세요.");return false}
+  if(pendingProblemReports().has(problemId)===open)return false;
+  store.update(state=>{
+   const reports=state.problemReports||(state.problemReports=[]);
+   const last=reports.filter(e=>e.problemId===problemId).reduce((time,e)=>Math.max(time,Date.parse(e.at)),0);
+   reports.push({id:crypto.randomUUID(),problemId,open,at:new Date(Math.max(Date.now(),last+1)).toISOString(),...(quiz?{quiz}:{})});
+  });
+  return true;
+ }
+ function problemReportButton(problemId,quiz){
+  const button=document.createElement("button");
+  button.type="button";
+  button.className="btn secondary problem-report-button";
+  const paint=()=>{
+   const saved=pendingProblemReports().has(problemId);
+   button.textContent=saved?"오류 확인 요청됨":"오류 확인 요청";
+   button.setAttribute("aria-disabled",String(saved));
+  };
+  paint();
+  button.onclick=()=>act(()=>{
+   if(saveProblemReport(problemId,true,quiz)){paint();toast("학습 기록에 오류 확인 요청을 담았습니다.")}
+  });
+  return button;
+ }
+ document.addEventListener("semuon-before-sync",e=>{if(!e.defaultPrevented)problemReportsSyncing=true});
+ document.addEventListener("semuon-sync-finished",e=>{if(!e.detail.succeeded)problemReportsSyncing=false});
  function fail(e){$('#save-status').textContent=e.message||String(e);$('#save-status').hidden=false}
  function act(fn){try{return fn()}catch(e){fail(e);return null}}
  function recordAnswer(p,input){const event=store.record(p,input);globalThis.SemuonMarkup?.retire(p.id);return event}
@@ -63,17 +108,47 @@
  function materialTable(b){return`<figure class="table-scroll problem-material-table"><figcaption>${esc(b.caption||'문제 자료')}</figcaption><table><tbody>${b.rows.map((r,i)=>`<tr>${r.map(c=>{const tag=i<(b.headerRows||0)?'th':'td';return`<${tag}${c.colspan>1?` colspan="${c.colspan}"`:''}${c.rowspan>1?` rowspan="${c.rowspan}"`:''}>${c.blocks?materialBlocks(c.blocks):nl(c.text)}</${tag}>`}).join('')}</tr>`).join('')}</tbody></table></figure>`}
  // Reflow PDF/OCR line wraps in general-journal prose; originals and structured evidence stay intact.
  function flowingText(value){return String(value).replace(/하[ \t]*\r?\n\s*(?=여(?:\s|[,.]))/g,'하').replace(/[ \t]*\r?\n(?:[ \t]*\r?\n)*[ \t]*/g,' ').trim()}
+ function formText(value,plainTable=false){
+  const item=/^(?:[ㆍ·•∙▪■□○◦※-]|[①-⑳]|\[\d+\]|\(?\d+[.)]\s|<[^>]+>)/u;
+  const heading=/^(?:<[^>]+>|\[[^\]]+\])$/u;
+  const tableRow=line=>/\S(?:\t| {2,})\s*\S/u.test(line);
+  // OCR may insert empty lines between wrapped lines of the same paragraph.
+  const lines=String(value).split(/\r?\n/).map(line=>line.trim()).filter(Boolean);
+  return lines.map((line,i)=>{
+   const previous=lines[i-1];
+   if(i===0)return line;
+   if(item.test(line)||heading.test(line)||heading.test(previous)||
+     (plainTable&&(tableRow(previous)||tableRow(line))))return '\n'+line;
+   // Keep common OCR-split verb endings attached to their stem.
+   const joined=/(?:지급|처리|계산|작성|입력|등록|신고|공제|적용|이체|부담)$/u.test(previous)
+    && /^(?:하며|하고|하여|하였다|합니다|하시오|되며|된다)(?=[\s,.)]|$)/u.test(line)
+    || /하$/u.test(previous)&&/^여(?=[\s,.)]|$)/u.test(line);
+   return (joined?'':' ')+line;
+  }).join('').replace(/\[급여자료\s+입력\]/gu,'[급여자료입력]');
+ }
+ function formConditions(p){
+  const prompt=p.displayBlocks?.length
+   ?materialBlocks(p.displayBlocks.map(block=>typeof block==='string'?formText(block):block))
+   :promptHtml(formText(displayText(p),true));
+  return `<div class="evidence-preview" data-question-conditions><div class="question-conditions-source">
+   <div class="prompt">${prompt}</div>${exhibits(p,false,'conditions')}
+  </div></div>`;
+ }
  function problemHtml(p){const flowing=p.subject==='voucher'||p.subject==='practical'&&SemuonCurriculum.practiceGroup(p)==='general';return p.displayBlocks?.length?materialBlocks(flowing?p.displayBlocks.map(b=>typeof b==='string'?flowingText(b):b):p.displayBlocks):flowing?esc(flowingText(displayText(p))):promptHtml(displayText(p))}
  function exhibits(p,hideTable=false,inlineEvidence=false){const html=globalThis.SemuonExhibits?.[p.id];return(hideTable||p.displayHideExhibit||p.exhibitRenderer==='registry'&&html?'':table(p.exhibit))+(html||evidence(p,inlineEvidence))}
  function evidence(p,inline=false){
   const files=p.source.evidence||[];
   const images=files.filter(f=>/^data:image\//.test(f.data));
   const downloads=files.filter(f=>!/^data:image\//.test(f.data));
+  const originalDownloads=downloads.map(f=>`<p><a href="${f.data}" download="${esc(f.name)}">${esc(f.name)} 원본 저장</a></p>`).join('');
+  if(inline==='conditions')return images.map((f,i)=>
+   `<img class="question-conditions-image" loading="lazy" src="${f.data}" alt="증빙 ${i+1}">`
+  ).join('')+originalDownloads;
   const preview=images.length?`<div class="evidence-preview"${inline?' data-evidence-inline':''}>
     ${inline?'':`<button type="button" class="btn secondary evidence-quick" aria-haspopup="dialog" aria-expanded="false">증빙 보기${images.length>1?' · '+images.length+'장':''}</button>`}
     <template>${images.map((f,i)=>`<img src="${f.data}" alt="증빙 ${i+1}">`).join('')}</template>
    </div>`:'';
-  return preview+downloads.map(f=>`<p><a href="${f.data}" download="${esc(f.name)}">${esc(f.name)} 원본 저장</a></p>`).join('');
+  return preview+originalDownloads;
  }
  function sourceBox(p){const original=globalThis.SemuonExhibits?.[p.id]&&(p.source.evidence||[]).length?`<details><summary>첨부 증빙 원본 이미지</summary><div>${evidence(p)}</div></details>`:'';return original+`<p class="topic-source">${esc(p.source.name)}${p.source.round?' · '+esc(p.source.round)+'회':''} · 문항 ${esc(p.source.questionNo)}</p><details><summary>원문 · 정답 확인 자료</summary><div><p>정답 확인: ${esc(p.source.answerReference)}</p><pre class="original-text">${esc(p.source.originalText)}</pre><details><summary>원본 정답</summary><div class="original-text">${esc(p.source.answerText)}</div></details>${p.source.originalDocument?`<details><summary>접수 TXT 전체 원문</summary><div class="original-text">${esc(p.source.originalDocument)}</div></details>`:''}${p.source.originalFile?.data?`<a href="${p.source.originalFile.data}" download="${esc(p.source.originalFile.name)}">원본 파일 저장</a>`:''}</div></details>`}
  function statsCards(){const s=snapshot(),v=C.stats({...s,history:s.history.filter(e=>e.source==='semuon-grade')});return`<section class="stat-grid"><div class="stat"><span>등록 문제</span><strong>${v.registered}</strong></div><div class="stat"><span>채점한 문제</span><strong>${v.solved}</strong></div><div class="stat"><span>현재 오답 문제</span><strong>${v.wrong}</strong></div><div class="stat"><span title="문제마다 한국 날짜별 첫 실제 채점 결과">첫 채점 정답률</span><strong>${v.firstRate===null?'—':v.firstRate+'%'}</strong></div></section>`}
@@ -99,7 +174,42 @@
 
  function repeatedFieldsHTML(){const rows=V.analyze(snapshot()).filter(g=>g.fields.length);return `<section class="card" id="journal-repeated-fields"><h2>반복해서 틀린 입력 항목</h2>${rows.map(g=>`<p>${esc(g.label)}: ${g.fields.map(([name,n])=>esc(name)+' '+n+'학습일').join(' · ')}</p>`).join('')||'<p class="help">실제 채점한 서로 다른 학습일이 쌓이면 표시합니다.</p>'}</section>`}
  function problemNotesHTML(){const state=storedSnapshot(),notes=[...C.problemNotes(state).values()].filter(n=>n.text);return `<section class="card"><div class="row spread"><h2>문제별 취약점 메모</h2><button id="export-problem-notes" class="btn secondary" ${notes.length?'':'disabled'}>GPT용 메모 내보내기</button></div><details><summary>${notes.length}문제</summary>${notes.map(n=>{const p=state.items.find(p=>p.id===n.problemId);return `<article><a class="btn secondary" href="${href('pages/'+(p.subject==='theory'?'theory':p.subject==='voucher'?'voucher':'general')+'.html?id='+encodeURIComponent(p.id))}">${esc(p.title)}</a><p style="white-space:pre-wrap">${esc(n.text)}</p></article>`}).join('')}</details></section>`}
- function journalPage(){content.innerHTML=head('학습 기록','이론과 실무를 나란히 기록하고, 다음에 확인할 부분을 남기세요.')+'<div id="journal-host"></div><div id="journal-exams"></div>';SemuonJournal.mount($('#journal-host'),storedSnapshot,{href,save:fn=>store.update(fn),notify:toast});SemuonRoadmap.mount($('#journal-exams'),{getState:storedSnapshot,save:fn=>store.update(fn),href,notify:toast,mode:'exams'});content.insertAdjacentHTML('beforeend',problemNotesHTML()+repeatedFieldsHTML()+`<section class="card"><h2>최근 채점기록</h2><p class="help">학습 대상 문제의 최근 30개를 표시합니다. 보관한 기출문제의 기존 기록도 전체 백업에 포함됩니다. 취소한 기록은 보존하고 통계·복습에서 제외합니다.</p><div id="history-list"></div></section>`);renderHistory();const notesExport=$('#export-problem-notes');if(notesExport)notesExport.onclick=()=>download('세무온_취약점메모.md',SemuonJournal.problemNotesMarkdown(storedSnapshot()),'text/markdown')}
+ function mountProblemReports(host){
+  function render(){
+   const queue=[...pendingProblemReports().values()], state=storedSnapshot();
+   const items=new Map(state.items.map(p=>[p.id,p]));
+   host.innerHTML='<div class="row spread"><h2>문제 오류 확인 요청 <span class="help">'+queue.length+'건</span></h2></div>';
+   if(!queue.length)return;
+   const copy=document.createElement("button");
+   copy.type="button";copy.className="btn secondary";copy.textContent="GPT 요청문 복사";
+   host.firstElementChild.append(copy);
+   const manual=document.createElement("textarea");
+   manual.className="problem-report-copy";manual.readOnly=true;manual.rows=6;manual.hidden=true;
+   manual.setAttribute("aria-label","GPT에 보낼 오류 확인 요청문");
+   host.append(manual);
+   copy.onclick=async()=>{
+    const text=SemuonJournal.problemReportsMarkdown(storedSnapshot());
+    try{await navigator.clipboard.writeText(text);manual.hidden=true;toast("GPT에 붙여넣을 요청문을 복사했습니다.")}
+    catch(_){manual.hidden=false;manual.value=text;manual.focus();manual.select()}
+   };
+   const list=document.createElement("ul");list.className="problem-report-list";host.append(list);
+   for(const report of queue){
+    const problem=items.get(report.problemId);
+    const item=document.createElement("li");item.className="row spread";
+    const label=document.createElement(problem?"a":"span");
+    label.textContent=problem?SemuonJournal.problemReportTitle(problem):report.quiz.title;
+    if(problem)label.href=link(problem);
+    const remove=document.createElement("button");remove.type="button";remove.className="btn secondary";remove.textContent="목록에서 빼기";
+    remove.setAttribute("aria-label",label.textContent+" 오류 확인 요청을 목록에서 빼기");
+    remove.onclick=()=>act(()=>{if(saveProblemReport(report.problemId,false,report.quiz)){render();(host.querySelector("button")||host).focus()}});
+    item.append(label,remove);list.append(item);
+   }
+  }
+  host.tabIndex=-1;
+  render();
+  document.addEventListener("semuon-after-sync",render);
+ }
+ function journalPage(){content.innerHTML=head('학습 기록','이론과 실무를 나란히 기록하고, 다음에 확인할 부분을 남기세요.')+'<div id="journal-host"></div><div id="journal-exams"></div>';SemuonJournal.mount($('#journal-host'),storedSnapshot,{href,save:fn=>store.update(fn),notify:toast});SemuonRoadmap.mount($('#journal-exams'),{getState:storedSnapshot,save:fn=>store.update(fn),href,notify:toast,mode:'exams'});content.insertAdjacentHTML('beforeend','<section id="problem-reports" class="card"></section>'+problemNotesHTML()+repeatedFieldsHTML()+`<section class="card"><h2>최근 채점기록</h2><p class="help">학습 대상 문제의 최근 30개를 표시합니다. 보관한 기출문제의 기존 기록도 전체 백업에 포함됩니다. 취소한 기록은 보존하고 통계·복습에서 제외합니다.</p><div id="history-list"></div></section>`);renderHistory();mountProblemReports($('#problem-reports'));const notesExport=$('#export-problem-notes');if(notesExport)notesExport.onclick=()=>download('세무온_취약점메모.md',SemuonJournal.problemNotesMarkdown(storedSnapshot()),'text/markdown')}
  function latest(id){return historyFor(id).at(-1)}
  let uncertaintyKey='',uncertaintyValue;function uncertainNotes(){const key=store.revision+'|'+R.day(Date.now());if(uncertaintyKey!==key){uncertaintyValue=C.uncertainties(snapshot());uncertaintyKey=key}return uncertaintyValue}
  let scheduleKey='',scheduleValue;function schedules(){const key=store.revision+'|'+R.day(Date.now());if(scheduleKey!==key){scheduleValue=C.questionSchedules(snapshot());scheduleKey=key}return scheduleValue}
@@ -117,6 +227,7 @@
   const tagModel=SemuonTagFilter.create(items,tagsOf,params.get('tag')||'',practiceGroup);
   content.innerHTML=head(practiceGroup==='closing'?'결산 정리':['vat','withholding','yearend'].includes(practiceGroup)?SemuonCurriculum.practiceGroups.find(g=>g.id===practiceGroup).name:subject==='topic'?topic+' · 전체 문제':subject==='forms'?'신고서 · 급여':C.labels[subject],'',`<a class="btn secondary" href="${href('pages/review.html')}">오늘 복습</a>`)+`<div class="toolbar list-filters"><label class="field filter-round-compact"><span>기출 회차</span><select id="filter-round"><option value="">전체</option>${options(items.map(p=>p.source.round),v=>v+'회',(a,b)=>Number(b)-Number(a))}</select></label><label class="field" title="최근 14일의 반복 오답을 먼저 보고, 연속 오답·최근 5회 결과로 정렬합니다. 채점 전 문제는 순위에 넣지 않습니다."><span>취약점 Top10</span><select id="filter-weak" ${ranked.length?'':'disabled'}><option value="">${ranked.length?'선택하기':'현재 확인된 취약 유형이 없습니다.'}</option>${ranked.map(({tag,rows,best},i)=>`<option value="${esc(tag)}">${i+1}. ${esc(tag)}</option>`).join('')}</select></label><label class="field"><span>정렬</span><select id="sort-order"><option value="priority">취약 우선 · 추천</option><option value="original">등록 순</option><option value="recentRegistered">최근 등록 순</option><option value="wrong">오답 많은 순</option><option value="random">랜덤 순</option><option value="unattempted">아직 안 푼 문제 우선</option><option value="recentAttempt">최근에 푼 순</option></select></label><div class="field"><span id="filter-tag-label">${practiceGroup?'실무 유형':'학습 단원'}</span><select id="filter-tag" hidden tabindex="-1" aria-hidden="true">${tagModel.rows.filter(row=>row.value!==undefined).map(row=>`<option value="${esc(row.value)}">${esc(row.label)}</option>`).join('')}</select><div id="tag-picker"></div></div><label class="field filter-kind-compact"><span>문제 구분</span><select id="filter-kind"><option value="">전체 문제</option><option value="exam">기출문제</option><option value="chapter">단원 연습문제</option><option value="application">응용문제</option></select></label><label class="field"><span>문제 검색</span><input id="question-search" type="search" placeholder="단원, 제목, 문제 검색"></label><label class="field filter-state-compact"><span>상태</span><select id="question-filter"><option value="all">전체 문제</option><option value="new">미풀이</option><option value="wrong">현재 오답</option><option value="correct">최근 정답</option></select></label></div><p id="weak-band" class="notice warning" hidden></p><div class="list-overview"><div class="list-summary"><p id="list-count" class="help" role="status"></p></div><nav id="list-pagination" class="row" aria-label="문제 목록 쪽 이동"><button type="button" id="list-previous" class="btn secondary">이전</button><span id="list-page" class="help" aria-live="polite"></span><button type="button" id="list-next" class="btn secondary">다음</button></nav></div><div id="entry-host" data-entry-host="${subject}"><div id="questions"></div></div>`;
   const listHead=content.querySelector('.page-head');listHead.classList.add('problem-list-head');const meter=document.createElement('div');meter.className='problem-progress';meter.id='problem-progress';listHead.insertBefore(meter,listHead.lastElementChild);
+
   function updateProgress(){const ids=new Set(items.map(p=>p.id)),done=new Set(C.active(snapshot()).filter(e=>ids.has(e.problemId)).map(e=>e.problemId)),total=ids.size;meter.innerHTML=`<div class="row spread"><strong>전체 문제 풀이</strong><span>${done.size}/${total} · ${total?Math.round(done.size/total*100):0}%</span></div><div class="problem-progress-track" role="progressbar" aria-label="전체 문제 풀이" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${done.size}"><i style="width:${total?done.size/total*100:0}%"></i></div>`}updateProgress();
   $('.list-filters').insertAdjacentHTML('afterend','<div class="list-schedule-controls row"><label><input id="show-all-problems" type="checkbox"> 전체 문제 보기</label><span id="schedule-count" class="help" role="status"></span></div>');
   const filterPanel=document.createElement('section');filterPanel.id='problem-filter-panel';filterPanel.className='problem-filter-panel';filterPanel.hidden=true;filterPanel.setAttribute('aria-label','문제 검색 조건');const controls=$('.list-filters');controls.before(filterPanel);filterPanel.append(controls,$('.list-schedule-controls'),$('#weak-band'));
@@ -143,7 +254,7 @@
   field('show-all-problems').addEventListener('change',filter);$('#questions').addEventListener('semuon-general-pass',e=>{e.stopPropagation();passedHere.add(e.detail.problemId);filter(true)});$('#questions').addEventListener('semuon-general-undo',e=>{passedHere.delete(e.detail.problemId);filter(true)});$('#questions').addEventListener('click',e=>{if(e.target.closest('[data-dismiss-completed]'))filter(true)});
  }
  const loaded=new Map();function script(url){const key=String(url);if(!loaded.has(key))loaded.set(key,new Promise((resolve,reject)=>{const el=document.createElement('script');el.src=key;el.onload=resolve;el.onerror=()=>{loaded.delete(key);el.remove();reject(Error('문제 입력 화면을 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.'))};document.head.append(el)}));return loaded.get(key)}
- const loadEvidence=()=>script(new URL('js/evidence.js?v=3',rootURL));
+ const loadEvidence=()=>script(new URL('js/evidence.js?v=9',rootURL));
  content.addEventListener('click',async event=>{
   const trigger=event.target.closest('.evidence-quick');
   if(!trigger)return;
@@ -163,7 +274,76 @@
    if(!names.some(n=>t.includes(n))||!/\d/.test(t))return true;let rest=t.replace(/\(차\)|\(대\)/g,'');for(const name of [...names,...p.answers.map(a=>a.partner).filter(Boolean)].sort((a,b)=>b.length-a.length))rest=rest.split(name).join('');return rest.replace(/[\d,.\s원()\/\-]/g,'').length>0;
   }).join('\n').replace(/\n{3,}/g,'\n\n').trim();
  }
- function compile(p){const q=C.clone(p);q.title=esc(p.title);q.type=esc(p.type);q.prompt=problemHtml(p);q.explanation=nl(answerExplanation(p));q.exhibit=exhibits(p,p.initialEntry&&/수정\s+전|삭제\s*(대상|할)|기존\s*(입력|전표)/.test(p.exhibit?.caption||''),p.subject==='voucher');q.before=nl(p.before||'');q.item=esc(p.item||'');delete q.variantOf;
+ function voucherAnswer(p){
+  const v=p.voucher,primary=p.variants[0],money=value=>Number(value).toLocaleString('ko-KR')+'원';
+  const fields=pairs=>`<dl class="voucher-answer-fields">${pairs.map(([label,value])=>`<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join('')}</dl>`;
+  function journal(variant){
+   const debit=variant.rows.filter(row=>row.side==='D'),credit=variant.rows.filter(row=>row.side==='C');
+   if(variant.journal==='현금'){
+    if(!debit.length&&credit.length)debit.push({account:'현금 (자동)',amount:credit.reduce((sum,r)=>sum+r.amount,0)});
+    if(!credit.length&&debit.length)credit.push({account:'현금 (자동)',amount:debit.reduce((sum,r)=>sum+r.amount,0)});
+   }else if(variant.journal==='카드'&&p.cardAuto){
+    const sale=/^[12]/.test(variant.type||v.type);
+    const account=(sale?(p.cardReceivableAccount||'미수금'):'미지급금')+' (자동)';
+    if(!debit.length&&credit.length)debit.push({account,amount:credit.reduce((sum,r)=>sum+r.amount,0),partner:v.cardCompany});
+    if(!credit.length&&debit.length)credit.push({account,amount:debit.reduce((sum,r)=>sum+r.amount,0),partner:v.cardCompany});
+   }
+   if(!debit.length&&!credit.length)return {key:'',html:''};
+   const cell=row=>{
+    const code=row.accountCode||p.requiredAccountCodes?.[row.account]||EntryGrading.REQUIRED_ACCOUNT_CODES[row.account];
+    const partner=row.partner||p.taxExtras?.partners?.[row.account]||
+     (['카드','혼합'].includes(variant.journal)&&['미지급금','미지급비용'].includes(row.account)?v.cardCompany:'');
+    const account=row.account+(code?' ('+code+')':'')+(row.division?' ('+row.division+')':'');
+    return `<td><div class="voucher-answer-line"><span>${esc(account)}${partner?`<small>${esc(partner)}</small>`:''}</span><strong>${esc(money(row.amount))}</strong></div></td>`;
+   };
+   const left=debit.map(cell),right=credit.map(cell);
+   const rows=Array.from({length:Math.max(left.length,right.length)},(_,i)=>`<tr>${left[i]||'<td></td>'}${right[i]||'<td></td>'}</tr>`).join('');
+   return {
+    key:JSON.stringify([left.slice().sort(),right.slice().sort()]),
+    html:`<table class="voucher-answer-journal"><thead><tr><th scope="col">차변</th><th scope="col">대변</th></tr></thead><tbody>${rows}</tbody></table>`
+   };
+  }
+  const conditions=[['거래일',v.date],['유형',primary.type||v.type],['공급가액',money(primary.supply??v.supply)],['부가세',money(primary.vat??v.vat)],['공급처명',v.supplier||'해당 없음'],['분개',primary.journal]];
+  const more=[];
+  if(v.electronic!=null)more.push(['전자',v.electronic]);
+  if(v.cardCompany)more.push(['신용카드사',v.cardCompany]);
+  if(v.serviceFee!=null)more.push(['봉사료',money(v.serviceFee)]);
+  if(v.zeroRate)more.push(['영세율 구분',v.zeroRate]);
+  if(v.deductReason)more.push(['불공제 사유',v.deductReason]);
+  if(p.requiresDeletion)more.push(['선행 절차','기존 일반전표 삭제']);
+  if(p.taxExtras?.omitted){
+   const {period,acceptedPeriods}=p.taxExtras.omitted;
+   more.push(['예정신고누락분','확정신고에 반영'],['확정신고 개시연월',(acceptedPeriods||[period]).join(' 또는 ')]);
+  }
+  for(const field of p.form?.fields||[]){
+   const values=Array.isArray(field.expected)?field.expected:[field.expected];
+   more.push([field.label,values.map(value=>typeof value==='boolean'?(value?'체크':'체크 안 함'):typeof value==='number'?value.toLocaleString('ko-KR'):value).join(' 또는 ')]);
+  }
+  const mainJournal=journal(primary),alternativeGroups=new Map();
+  for(const variant of p.variants.slice(1)){
+   const changed=[['분개',variant.journal]];
+   if((variant.type||v.type)!==(primary.type||v.type))changed.push(['유형',variant.type||v.type]);
+   if((variant.supply??v.supply)!==(primary.supply??v.supply)||(variant.vat??v.vat)!==(primary.vat??v.vat))changed.push(['공급가액',money(variant.supply??v.supply)],['부가세',money(variant.vat??v.vat)]);
+   const table=journal(variant),sameJournal=table.key===mainJournal.key;
+   if(sameJournal&&changed.length===1&&variant.journal===primary.journal)continue;
+   if(!alternativeGroups.has(table.key))alternativeGroups.set(table.key,{table:sameJournal?'':table.html,conditions:new Set()});
+   alternativeGroups.get(table.key).conditions.add(fields(changed));
+  }
+  const alternatives=[...alternativeGroups.values()].map(({table,conditions})=>
+   `<section class="voucher-answer-alternative">${[...conditions].join('')}${table}</section>`).join('');
+  const source=p.source.answerText?.trim();
+  let explanation=p.explanation.trim();
+  if(source&&explanation.includes(source)){
+   const sourceLines=source.split(/\r?\n/);
+   const note=sourceLines.findIndex(line=>/^\s*(?:※|[ㆍ·•*]|\(주\d+\))/.test(line));
+   const supplement=note<0?'':sourceLines.slice(note).join('\n').replace(/우리\s*\n\s*카드/g,'우리카드').trim();
+   explanation=[explanation.replace(source,'').trim(),supplement].filter(Boolean).join('\n');
+  }
+  return `<div class="voucher-answer">${fields(conditions)}${more.length?fields(more):''}${mainJournal.html}
+   ${alternatives?`<details class="voucher-answer-alternatives"><summary>추가 허용 답안</summary><div>${alternatives}</div></details>`:''}
+   ${explanation?`<p class="voucher-answer-note">${nl(explanation)}</p>`:''}</div>`;
+ }
+ function compile(p){const q=C.clone(p);q.title=esc(p.title);q.type=esc(p.type);q.prompt=problemHtml(p);q.explanation=nl(answerExplanation(p));q.exhibit=exhibits(p,p.initialEntry&&/수정\s+전|삭제\s*(대상|할)|기존\s*(입력|전표)/.test(p.exhibit?.caption||''),p.subject==='voucher'||isGeneral(p));q.before=nl(p.before||'');q.item=esc(p.item||'');delete q.variantOf;
   if(p.subject==='practical'){q.accountSelect=true;q.accountOptions=[...new Set([...EntryAccounts,...[p.answers,...(p.alternateAnswers||[])].flat().flatMap(r=>r.account.split('/').map(a=>(r.accountCode||p.requiredAccountCodes?.[a])?(r.accountCode||p.requiredAccountCodes[a])+'|'+a:a))])];q.partnerOptions=[...new Set([p.answers,...(p.alternateAnswers||[])].flat().map(r=>r.partner).filter(Boolean))]}
   else{q.suppliers=[...new Set([p.voucher.supplier,...(p.suppliers||[])].filter(Boolean))];q.accounts=[...new Set([...EntryAccounts,...p.variants.flatMap(a=>a.rows).map(r=>p.requiredAccountCodes?.[r.account]?p.requiredAccountCodes[r.account]+'|'+r.account:r.account)])]}return q;
  }
@@ -172,13 +352,13 @@
  function confidenceButton(p){return `<button class="btn secondary" type="button" data-confidence-problem="${esc(p.id)}" aria-pressed="${uncertainNotes().has(p.id)}">${uncertainNotes().has(p.id)?'헷갈림 표시 해제':'헷갈려요'}</button>`}
  function gradeNotice(p,box=$('#grade-notice')){const plan=schedules().get(p.id),e=latest(p.id),general=isGeneral(p);if(!box)return;if(general&&box.id==='grade-notice'&&content.querySelector('.question .inline-notice')){box.innerHTML='';return}const uncertain=uncertainNotes().has(p.id);if(general)content.querySelectorAll('[data-confidence-problem]').forEach(b=>{if(b.dataset.confidenceProblem===p.id){b.textContent=uncertain?'헷갈림 표시 해제':'헷갈려요';b.setAttribute('aria-pressed',String(uncertain))}});box.innerHTML=(e?`<p class="feedback ${e.correct?'good':'wrong'}">${e.source==='semuon-self'?(e.correct?'직접 통과로 기록했습니다.':'다시 연습할 문제로 기록했습니다.'):e.correct?'정답입니다.':'다시 확인해 주세요.'} ${e.wrongLabels?.length?'확인할 항목: '+e.wrongLabels.map(esc).join(', ')+' · ':''}이 문제의 다음 복습일: ${plan.due} (${plan.interval}일 간격)</p>`:'')+`<div class="row review-feedback-actions">${!general&&e?confidenceButton(p):''}${uncertain?`<form class="uncertainty-form" data-uncertainty-form="${esc(p.id)}"><label>헷갈린 이유<input name="reason" maxlength="200" placeholder="예: 자본화 요건과 비용 구분" value="${esc(uncertainNotes().get(p.id).reason||'')}"></label><button type="submit" class="btn secondary">이유 저장</button></form>`:''}${!general&&e&&plan.practicedToday&&($('#show-all-problems')||$('#review-session-next'))&&!$('#show-all-problems')?.checked?'<button class="btn secondary" type="button" data-dismiss-completed>확인 후 다음 문제 →</button>':''}</div>`;}
  async function solve(p){await ensureExhibits([p]);editor?.dispose();const back=p.subject==='practical'?'general':p.subject==='voucher'?'voucher':'theory';content.innerHTML=head(p.form&&!p.voucher&&p.formEntry!=='practical'?'신고서 · 급여':C.labels[p.subject],p.type,`<a class="btn secondary" href="${href('pages/'+back+'.html')}">전체 문제 목록</a>`)+`<div class="toolbar"><a class="btn" href="${href('pages/review.html')}">오늘 복습 목록으로</a><button class="btn secondary" id="undo-grade">마지막 채점 취소</button></div><div id="entry-host" data-entry-host="${p.subject}"><div id="questions"></div></div><div id="grade-notice" role="status"></div>${sourceBox(p)}`;
-  $('#undo-grade').onclick=()=>act(()=>{const e=latest(p.id);if(!e){toast('취소할 채점이 없습니다.');return}store.cancel(e.id);lastUndo=e.id;toast('채점을 취소했습니다. 통계와 복습 일정에서 제외됩니다.');solve(p)});
+  $('#undo-grade').onclick=()=>act(()=>{const e=latest(p.id);if(!e){toast('취소할 채점이 없습니다.');return}store.cancel(e.id);toast('채점을 취소했습니다. 통계와 복습 일정에서 제외됩니다.');solve(p)});
   await mountList(p.subject,[p],$('#questions'),$('#entry-host'),{rerender:()=>solve(p),onUpdate:()=>gradeNotice(p)});gradeNotice(p);
  }
  // 2026-10-14 사용자 지정: 이론 문제에서 ‘ㆍ·•’ 등으로 시작하는 계산 자료가 3줄 이상 이어지면 3열 목록으로 표시한다. 글자·순서는 원문 그대로.
  function promptHtml(text){const out=[];let group=[];const bullet=/^\s*[ㆍ·•∙▪■□○◦\-]/,flush=()=>{if(group.length>=3)out.push(`<ul class="prompt-grid">${group.map(l=>`<li>${esc(l.trim())}</li>`).join('')}</ul>`);else out.push(...group.map(l=>esc(l.trimEnd())+'<br>'));group=[]};
   for(const line of String(text??'').split(/\r?\n/)){if(bullet.test(line)){group.push(line);continue}flush();out.push(esc(line.trimEnd())+'<br>')}flush();return out.join('').replace(/(<br>)+$/,'')}
- function renderTheory(p,target=document.getElementById('questions'),notice=()=>gradeNotice(p),reset=()=>{store.update(s=>{delete s.drafts[p.id]});renderTheory(p,target,notice)}){const $=s=>target.querySelector(s),$$=s=>[...target.querySelectorAll(s)],draft=snapshot().drafts[p.id]||{};target.innerHTML=`<article class="theory-card" data-problem-id="${esc(p.id)}"><div class="prompt">${problemHtml(p)}</div>${exhibits(p)}<div class="choices">${p.choices.map((c,i)=>`<label class="choice"><input type="radio" name="${target.id==='questions'?'theory-answer':'theory-answer-'+esc(p.id)}" value="${i}" ${draft.choice===i?'checked':''}><span>${i+1}. ${nl(c)}</span></label>`).join('')}</div><div class="qactions row"><button class="btn check-one">채점하기</button></div><details class="answer-reveal"><summary>정답 · 해설 보기</summary><div><p>정답: ${(p.acceptedAnswers||[p.answer]).map(i=>(i+1)+'번').join(' 또는 ')}</p><p>${nl(p.explanation)}</p></div></details><div class="theory-result" role="status"></div></article>`;TrainingDataTables.prepare(target);$$('.choices input').forEach(el=>el.onchange=()=>act(()=>store.update(s=>s.drafts[p.id]={choice:Number(el.value),graded:false})));$('.check-one').onclick=()=>act(()=>{const checked=$('.choices input:checked');if(!checked){toast('보기 하나를 선택해 주세요.');return}recordAnswer(p,{choice:Number(checked.value)});notice()});$('.qactions').prepend(...selfButtons(p,notice));$('.check-one').after(resetButton(p,reset));notice()}
+ function renderTheory(p,target=document.getElementById('questions'),notice=()=>gradeNotice(p),reset=()=>{store.update(s=>{delete s.drafts[p.id]});renderTheory(p,target,notice)}){const $=s=>target.querySelector(s),$$=s=>[...target.querySelectorAll(s)],draft=snapshot().drafts[p.id]||{};target.innerHTML=`<article class="theory-card" data-problem-id="${esc(p.id)}"><div class="prompt">${problemHtml(p)}</div>${exhibits(p)}<div class="choices">${p.choices.map((c,i)=>`<label class="choice"><input type="radio" name="${target.id==='questions'?'theory-answer':'theory-answer-'+esc(p.id)}" value="${i}" ${draft.choice===i?'checked':''}><span>${i+1}. ${nl(c)}</span></label>`).join('')}</div><div class="qactions row"><button class="btn check-one">채점하기</button></div><details class="answer-reveal"><summary>정답 · 해설 보기</summary><div><p>정답: ${(p.acceptedAnswers||[p.answer]).map(i=>(i+1)+'번').join(' 또는 ')}</p><p>${nl(p.explanation)}</p></div></details><div class="theory-result" role="status"></div></article>`;TrainingDataTables.prepare(target);$$('.choices input').forEach(el=>el.onchange=()=>act(()=>store.update(s=>s.drafts[p.id]={choice:Number(el.value),graded:false})));$('.check-one').onclick=()=>act(()=>{const checked=$('.choices input:checked');if(!checked){toast('보기 하나를 선택해 주세요.');return}recordAnswer(p,{choice:Number(checked.value)});notice()});$('.qactions').prepend(...selfButtons(p,notice));$('.check-one').after(resetButton(p,reset),problemReportButton(p.id));notice()}
  const comboKey='semuon-tax2-review-combo',comboSources=Object.fromEntries(C.SUBJECTS.map(s=>[s,{file:href('pages/'+(s==='practical'?'general':s==='voucher'?'voucher':'theory')+'.html')}]));
  function startCombo(){const gs=groups(),selections=Object.fromEntries(C.SUBJECTS.map(subject=>{const field=subject==='practical'?'general':subject,done=gs.filter(g=>g.field===field&&g.practicedToday).length;return[subject,V.select(gs,{field,limit:3+done}).map(g=>g.candidate.id)]})),session=TrainingComboReview.create(comboKey,selections),first=C.SUBJECTS.find(s=>session.subjects[s].length);if(first)SemuonFullscreen.navigate(TrainingComboReview.url(session,first,comboSources));else toast('복습할 문제가 아직 없습니다. 문제를 등록하거나 다음 복습일을 확인해 주세요.')}
  // 여러 문제를 한 화면에서 바로 풀기(문제 목록·복합 복습 공용). 문제마다 통과/다시 연습/채점/초기화와 채점 결과를 둔다.
@@ -194,7 +374,7 @@
  async function loadBookDictionary(){
   if(bookDictionary)return bookDictionary;
   const assets=['dictionary-income.js','dictionary-subjects.js','dictionary.js'];
-  await Promise.all(assets.map(file=>script(new URL('js/'+file+'?v=20261111-reading-2',rootURL))));
+  await Promise.all(assets.map(file=>script(new URL('js/'+file+'?v=20261116-combined-book',rootURL))));
   const api=window.SemuonDictionarySearch;
   bookDictionary={api,index:api.createIndex(window.SemuonDictionaryCatalogs||[])};
   return bookDictionary;
@@ -236,7 +416,7 @@
   if(memo)memo.before(note);else reveal.append(note);
  }
  async function markup(container,isCurrent=()=>true){
-  if(container.querySelector('[data-evidence-inline]')){
+  if(container.querySelector('[data-evidence-inline],[data-question-conditions]')){
    try{
     await loadEvidence();
     if(isCurrent())SemuonEvidence.mountInline(container);
@@ -247,8 +427,19 @@
   if(isCurrent())for(const card of cards){
    attachBookReading(card,snapshot().items.find(p=>p.id===card.dataset.problemId),dictionary);
   }
-  try{await script(new URL('js/markup.js?v=20261109',rootURL));if(isCurrent()){SemuonMarkup.attach(container,{shortcuts:()=>C.markupShortcuts(snapshot().settings)});container.querySelectorAll('[data-problem-id]').forEach(card=>{attachProblemNote(card);if(card.querySelector('.journal-problem-link'))return;const p=snapshot().items.find(p=>p.id===card.dataset.problemId),unitId=p&&(p.subject==='theory'?SemuonCurriculum.classify(p).units[0]:SemuonCurriculum.practiceClassify(p).units[0]),actions=card.querySelector('.qactions');if(unitId&&actions&&!isGeneral(p)){const a=document.createElement('a');a.className='btn ghost journal-problem-link';a.textContent='학습 기록';a.href=href('pages/journal.html?unit='+encodeURIComponent(unitId)+'&problem='+encodeURIComponent(p.id));actions.append(a)}})}}catch(_){}}
- async function loadEntry(subject){await script(new URL('entry/accounts.js',legacyURL));await script(new URL('entry/correction.js?v=1',legacyURL));await script(new URL('entry/'+subject+'.js?v='+(subject==='voucher'?10:11),legacyURL));await script(new URL('account-search.js',legacyURL));css(new URL('entry/common.css',legacyURL));css(new URL('entry/'+subject+'.css',legacyURL));css(new URL('css/entry-flat.css?v=20261031-1',rootURL));css(new URL('entry/correction.css?v=1',legacyURL))}
+  try{await script(new URL('js/markup.js?v=20261116-undo',rootURL));if(isCurrent()){SemuonMarkup.attach(container,{shortcuts:()=>C.markupShortcuts(snapshot().settings),onUndo:recordScreenUndo});container.querySelectorAll('[data-problem-id]').forEach(card=>{attachProblemNote(card);if(card.querySelector('.journal-problem-link'))return;const p=snapshot().items.find(p=>p.id===card.dataset.problemId),unitId=p&&(p.subject==='theory'?SemuonCurriculum.classify(p).units[0]:SemuonCurriculum.practiceClassify(p).units[0]),actions=card.querySelector('.qactions');if(unitId&&actions&&!isGeneral(p)){const a=document.createElement('a');a.className='btn ghost journal-problem-link';a.textContent='학습 기록';a.href=href('pages/journal.html?unit='+encodeURIComponent(unitId)+'&problem='+encodeURIComponent(p.id));actions.append(a)}})}}catch(_){}}
+ async function loadEntry(subject){await script(new URL('entry/accounts.js',legacyURL));await script(new URL('entry/correction.js?v=1',legacyURL));await script(new URL('entry/'+subject+'.js?v='+(subject==='voucher'?13:12),legacyURL));await script(new URL('account-search.js',legacyURL));css(new URL('entry/common.css',legacyURL));css(new URL('entry/'+subject+'.css',legacyURL));css(new URL('css/entry-flat.css?v=20261116-voucher-answer',rootURL));css(new URL('entry/correction.css?v=1',legacyURL))}
+ function arrangeVoucherEvidence(card){
+  const workspace=card.querySelector('.answer-workspace');
+  const question=workspace.querySelector('.question-top'),entry=workspace.querySelector('.kclep-shell');
+  const exhibit=question.querySelector('.exhibit-layout'),preview=exhibit?.querySelector(':scope > [data-evidence-inline]');
+  if(!preview)return;
+  const layout=document.createElement('div');
+  layout.className='voucher-evidence-layout';
+  question.before(layout);
+  layout.append(question,preview,entry);
+  if(exhibit.childElementCount===1)exhibit.replaceWith(exhibit.firstElementChild);
+ }
  async function mountList(subject,items,target,host,{rerender,onUpdate=()=>{},isCurrent=()=>true}={}){if(!isCurrent())return;await ensureExhibits(items);if(!isCurrent())return;editor?.dispose();editor=null;target.innerHTML='';if(!items.length)return;const notify=(p,box)=>{gradeNotice(p,box);onUpdate()},clearDraft=p=>()=>{store.update(s=>s.drafts[p.id]={graded:false,rows:[],voucher:{}});rerender()};
   if(items.some(p=>p.form&&!p.voucher&&p.formEntry!=='practical')||new Set(items.map(p=>p.subject)).size>1){const children=[];for(const [i,p]of items.entries()){if(!isCurrent())return;const slot=document.createElement('section');slot.className='tax-question-slot';target.append(slot);if(p.form&&!p.voucher&&p.formEntry!=='practical'){renderForm(p,slot,()=>notify(p,slot.querySelector('.inline-notice')),clearDraft(p));continue}const inner=document.createElement('div');slot.dataset.entryHost=p.subject;slot.append(inner);await mountList(p.subject,[p],inner,slot,{rerender,onUpdate,isCurrent});if(!isCurrent())return;if(editor)children.push(editor);editor=null;}editor={dispose(){children.forEach(x=>x.dispose?.())}};await markup(target,isCurrent);return}
   // A topic or forms page can narrow down to one subject after filtering.
@@ -259,11 +450,56 @@
   const save=s=>act(()=>store.update(state=>{for(const [i,p] of items.entries()){const d=s.cards[i];state.drafts[p.id]=Object.fromEntries(['rows','voucher','form','taxExtras','graded','correct','passed','matched','correctionInitialized'].filter(k=>d[k]!==undefined).map(k=>[k,C.clone(d[k])]))}}));
   const adapters=new Map();
   const onGrade=card=>act(()=>{const i=Number(card.dataset.index),p=items[i],d=working.cards[i],e=d.history.at(-1),input={rows:e.rows,...(subject==='voucher'?{voucher:e.voucher}:{}),...adapters.get(i)?.snapshot()},result=C.grade(p,input);Object.assign(e,{correct:result.correct,wrongLabels:result.wrongLabels});d.correct=result.correct;d.passed=result.correct;d.wrongCount=historyFor(p.id).filter(e=>!e.correct).length+(result.correct?0:1);Object.assign(d,adapters.get(i)?.snapshot());save(working);recordAnswer(p,input);card.dataset.correct=String(result.correct);card.classList.toggle('correct',result.correct);card.classList.toggle('wrong',!result.correct);const res=card.querySelector('.result');res.className='result '+(result.correct?'ok':'no');res.textContent=result.correct?'정답입니다!':'다시 확인해 주세요.';const feedback=card.querySelector('.field-feedback');if(feedback){feedback.className='field-feedback '+(result.correct?'ok':'no');feedback.textContent=result.correct?'입력·추가 설정·신고서 조건이 모두 맞습니다.':'확인할 항목: '+result.wrongLabels.join(', ')}card.querySelectorAll('.entry-row').forEach(r=>{r.style.background='';const label=r.querySelector('.row-state');if(label&&label.textContent)label.textContent=result.correct?'✓':'확인'});const attempt=card.querySelector('.attempt');if(attempt)attempt.textContent='채점 '+d.attempts+'회 · 틀림 '+d.wrongCount+'회';adapters.get(i)?.feedback(result);notify(p,card.querySelector('.inline-notice'))});
-  editor=(subject==='practical'?PracticalEntry:VoucherEntry).mount({root:host,target,problems:items.map(compile),state:working,save,embedded:true,onGrade});
+  editor=(subject==='practical'?PracticalEntry:VoucherEntry).mount({root:host,target,problems:items.map(compile),state:working,save,embedded:true,onGrade,renderAnswer:(_,i)=>voucherAnswer(items[i])});
   if(subject!=='practical')host.querySelectorAll('.entry-toggle').forEach(el=>el.setAttribute('open',''));
-  host.querySelectorAll('.question').forEach(card=>{const p=items[Number(card.dataset.index)],actions=card.querySelector('.qactions'),reveal=card.querySelector('.answer-reveal'),box=document.createElement('div');box.className='inline-notice';box.setAttribute('role','status');actions.after(box);if(reveal)box.after(reveal);actions.querySelector('.reset-one')?.remove();actions.prepend(...selfButtons(p,()=>notify(p,box)));actions.querySelector('.check-one').after(resetButton(p,clearDraft(p)));gradeNotice(p,box);card.dataset.problemId=p.id;card.querySelectorAll('.qhead h2,.qhead h3').forEach(title=>title.remove());if(isGeneral(p)){actions.querySelector('.check-one').outerHTML=confidenceButton(p);}if(p.form||p.taxExtras){const i=Number(card.dataset.index);adapters.set(i,SemuonTaxForms.attachVoucher(card,p,{getDraft:()=>working.cards[i],setDraft:patch=>{Object.assign(working.cards[i],patch);save(working);delete card.dataset.graded;delete card.dataset.correct;card.classList.remove('correct','wrong');card.querySelector('.result').textContent='입력 내용이 저장되었습니다. 다시 채점해 주세요.'}}))}});const sharedEditor=editor;editor={dispose(){sharedEditor?.dispose();adapters.forEach(a=>a.dispose())}};await markup(target,isCurrent);
+  host.querySelectorAll('.question').forEach(card=>{if(subject==='voucher')arrangeVoucherEvidence(card);const p=items[Number(card.dataset.index)],actions=card.querySelector('.qactions'),reveal=card.querySelector('.answer-reveal'),box=document.createElement('div');box.className='inline-notice';box.setAttribute('role','status');actions.after(box);if(reveal)box.after(reveal);actions.querySelector('.reset-one')?.remove();actions.prepend(...selfButtons(p,()=>notify(p,box)));actions.querySelector('.check-one').after(resetButton(p,clearDraft(p)),problemReportButton(p.id));gradeNotice(p,box);card.dataset.problemId=p.id;card.querySelectorAll('.qhead h2,.qhead h3').forEach(title=>title.remove());if(isGeneral(p)){actions.querySelector('.check-one').outerHTML=confidenceButton(p);}if(p.form||p.taxExtras){const i=Number(card.dataset.index);adapters.set(i,SemuonTaxForms.attachVoucher(card,p,{getDraft:()=>working.cards[i],setDraft:patch=>{Object.assign(working.cards[i],patch);save(working);delete card.dataset.graded;delete card.dataset.correct;card.classList.remove('correct','wrong');card.querySelector('.result').textContent='입력 내용이 저장되었습니다. 다시 채점해 주세요.'}}))}});const sharedEditor=editor;editor={dispose(){sharedEditor?.dispose();adapters.forEach(a=>a.dispose())}};await markup(target,isCurrent);
  }
- function renderForm(p,target,notice,reset){const draft=snapshot().drafts[p.id]||{};target.innerHTML=`<article class="tax-form-question" data-problem-id="${esc(p.id)}"><span class="pill">${esc(p.type)}</span><div class="prompt">${problemHtml(p)}</div>${exhibits(p)}<div class="tax-form-input"></div><div class="qactions"><button class="btn check-one" type="button">채점하기</button></div><div class="inline-notice" role="status"></div><details class="answer-reveal"><summary>정답 · 해설 보기</summary><div><p>${nl(p.explanation)}</p><div class="tax-answer-grid">${p.form.fields.map(f=>`<p>${esc(f.label)}: <strong>${esc((Array.isArray(f.expected)?f.expected:[f.expected]).map(x=>x===true?'체크':x===false?'체크 안 함':typeof x==='number'?x.toLocaleString('ko-KR'):x).join(' 또는 '))}</strong></p>`).join('')}</div>${p.form.variants?.length?'<p class="help">허용 대체답안은 선택한 조건에 맞는 합계까지 일관되게 입력해야 합니다.</p>':''}</div></details></article>`;const fields=SemuonTaxForms.mountFields(target.querySelector('.tax-form-input'),p,{values:draft.form,save:form=>act(()=>store.update(s=>s.drafts[p.id]={form,graded:false}))}),actions=target.querySelector('.qactions');if(!p.source.officialAllAccepted)actions.prepend(...selfButtons(p,notice));actions.querySelector('.check-one').after(resetButton(p,reset));if(p.source.officialAllAccepted)actions.querySelector('.check-one').textContent='참고답안 비교';actions.querySelector('.check-one').onclick=()=>act(()=>{if(p.source.officialAllAccepted){const result=C.grade(p,{form:fields.read()});fields.feedback(result);target.querySelector('.inline-notice').textContent='공식 시험에서는 출제 오류로 전원 정답 처리된 문항입니다. '+(result.correct?'입력값이 학습용 참고답안과 일치합니다.':'참고답안과 다른 항목: '+result.wrongLabels.join(', '))+'. 이 비교는 채점기록·취약점 통계에 반영하지 않습니다.';globalThis.SemuonMarkup?.retire(p.id);return}const event=recordAnswer(p,{form:fields.read()});store.update(s=>Object.assign(s.drafts[p.id]||(s.drafts[p.id]={}),{graded:true,correct:event.correct}));fields.feedback(event);notice()});notice();}
+ function renderForm(p,target,notice,reset){
+  const draft=snapshot().drafts[p.id]||{};
+  const answer=p.form.fields.map(f=>{
+   const values=Array.isArray(f.expected)?f.expected:[f.expected];
+   const text=values.map(x=>x===true?'체크':x===false?'체크 안 함':typeof x==='number'?x.toLocaleString('ko-KR'):x);
+   return `<p>${esc(f.label)}: <strong>${esc(text.join(' 또는 '))}</strong></p>`;
+  }).join('');
+  target.innerHTML=`<article class="tax-form-question" data-problem-id="${esc(p.id)}">
+   <span class="pill">${esc(p.type)}</span>
+   <div class="tax-form-workspace">
+    <div class="tax-form-context">${formConditions(p)}</div>
+    <div class="tax-form-entry">
+     <div class="tax-form-input"></div>
+     <div class="qactions"><button class="btn check-one" type="button">채점하기</button></div>
+     <div class="inline-notice" role="status"></div>
+    </div>
+   </div>
+   <details class="answer-reveal"><summary>정답 · 해설 보기</summary><div>
+    <p>${nl(p.explanation)}</p><div class="tax-answer-grid">${answer}</div>
+    ${p.form.variants?.length?'<p class="help">허용 대체답안은 선택한 조건에 맞는 합계까지 일관되게 입력해야 합니다.</p>':''}
+   </div></details>
+  </article>`;
+  const fields=SemuonTaxForms.mountFields(target.querySelector('.tax-form-input'),p,{
+   compact:true,values:draft.form,save:form=>act(()=>store.update(s=>s.drafts[p.id]={form,graded:false}))
+  });
+  const actions=target.querySelector('.qactions'),check=actions.querySelector('.check-one');
+  if(!p.source.officialAllAccepted)actions.prepend(...selfButtons(p,notice));
+  check.after(resetButton(p,reset),problemReportButton(p.id));
+  if(p.source.officialAllAccepted)check.textContent='참고답안 비교';
+  check.onclick=()=>act(()=>{
+   if(p.source.officialAllAccepted){
+    const result=C.grade(p,{form:fields.read()});
+    fields.feedback(result);
+    target.querySelector('.inline-notice').textContent='공식 시험에서는 출제 오류로 전원 정답 처리된 문항입니다. '+
+     (result.correct?'입력값이 학습용 참고답안과 일치합니다.':'참고답안과 다른 항목: '+result.wrongLabels.join(', '))+
+     '. 이 비교는 채점기록·취약점 통계에 반영하지 않습니다.';
+    globalThis.SemuonMarkup?.retire(p.id);
+    return;
+   }
+   const event=recordAnswer(p,{form:fields.read()});
+   store.update(s=>Object.assign(s.drafts[p.id]||(s.drafts[p.id]={}),{graded:true,correct:event.correct}));
+   fields.feedback(event);
+   notice();
+  });
+  notice();
+ }
  async function solveCombo(){
   const session=TrainingComboReview.active(comboKey),items=session.subjects[page].map(id=>snapshot().items.find(p=>p.id===id&&p.subject===page)).filter(Boolean);editor?.dispose();
   content.innerHTML=head('복합 복습 · 세 분야 3문제씩','선택한 문제를 이어서 풀어 보세요.')+`<div id="entry-host" data-entry-host="${page}"><div id="questions"></div></div>`;
@@ -273,10 +509,221 @@
   comboUI=TrainingComboReview.install({key:comboKey,subject:page,sources:comboSources,returnURL:href('pages/review.html'),history:(subject,id)=>historyFor(id).filter(e=>e.subject===subject)});
   if(!items.length)target.innerHTML='<p>이 분야의 복습 문제가 없습니다. 위 버튼에서 다른 분야를 선택해 주세요.</p>';
  }
- function review(){if(new URLSearchParams(location.search).has('unit')){unitReviewPage().catch(fail);return}
+ function withholdingQuiz(course){
+  const params=new URLSearchParams(location.search),income=course==='income';
+  const countKey='semuon-withholding-quiz-preview-count';
+  const levelKey='semuon-tax-quiz-level-'+course;
+  const allowed=['3','5','10','all'];
+  const quiz=globalThis.SemuonTaxQuiz;
+  const bank=quiz.questions(course),attempts=new Map();
+  const lawLinks={
+   12:['소득세법 제12조','https://www.law.go.kr/LSW/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1001059372'],
+   14:['소득세법 제14조','https://law.go.kr/lsLinkCommonInfo.do?lsJoLnkSeq=1019371607'],
+   21:['소득세법 제21조','https://www.law.go.kr/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1026500583'],
+   50:['소득세법 제50조','https://www.law.go.kr/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1031985573'],
+   51:['소득세법 제51조','https://www.law.go.kr/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1031622827'],
+   medical:['소득세법 제59조의4','https://www.law.go.kr/LSW/lsLinkCommonInfo.do?lsJoLnkSeq=1018486163'],
+   19:['소득세법 제19조','https://law.go.kr/lsLinkCommonInfo.do?lsJoLnkSeq=1022119213'],
+   20:['소득세법 제20조','https://www.law.go.kr/법령/소득세법/제20조'],
+   33:['소득세법 제33조','https://www.law.go.kr/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1029623881'],
+   47:['소득세법 제47조','https://www.law.go.kr/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1026637559'],
+   135:['소득세법 제135조','https://www.law.go.kr/LSW/lsLinkCommonInfo.do?lsJoLnkSeq=1017635085'],
+   insurance:['소득세법 제59조의4','https://www.law.go.kr/법령/소득세법/제59조의4'],
+   glasses:['소득세법 시행령 제118조의5','https://law.go.kr/lsLawLinkInfo.do?chrClsCd=010202&lsJoLnkSeq=1001059439'],
+   pensionDeduction:['소득세법 제47조의2','https://www.law.go.kr/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1032880567'],
+   pensionTiming:['소득세법 시행령 제50조','https://www.law.go.kr/법령/소득세법시행령/제50조'],
+   interestTiming:['소득세법 시행령 제45조','https://law.go.kr/LSW/lsLinkCommonInfo.do?lsJoLnkSeq=1032167209'],
+   dividendTiming:['소득세법 시행령 제46조','https://www.law.go.kr/법령/소득세법시행령/제46조'],
+   businessTiming:['소득세법 시행령 제48조','https://www.law.go.kr/LSW/lsLawLinkInfo.do?chrClsCd=010202&lsJoLnkSeq=1001063397'],
+   otherExpense:['소득세법 시행령 제87조','https://law.go.kr/lsLinkCommonInfo.do?lsJoLnkSeq=1024401661'],
+   vehicle:['소득세법 시행령 제12조','https://www.law.go.kr/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1028395329'],
+   salary:['소득세법 시행령 제49조','https://www.law.go.kr/LSW/lsSideInfoP.do?docCls=jo&joBrNo=00&joNo=0049&lsiSeq=290841&urlMode=lsScJoRltInfoR']
+  };
+  let questions=[];
+  let position=0;
+  let daily='5';
+  let preferredLevel;
+  try{
+   const saved=localStorage.getItem(countKey);
+   if(allowed.includes(saved))daily=saved;
+   preferredLevel=localStorage.getItem(levelKey);
+  }catch(_){}
+  const initialLevel=quiz.levels.find(level=>level.id===params.get('level'))||
+   quiz.levels.find(level=>level.id===preferredLevel)||quiz.levels[0];
+  const back=income?'pages/concepts.html?subject=income':'pages/forms.html?practice=withholding';
+  const title=income?'소득세법 핵심 퀴즈':'원천징수 핵심 퀴즈';
+  document.title=title+' · 전산세무 2급';
+  content.innerHTML=head(title,'',`<a class="btn secondary" href="${href(back)}">${income?'소득세법 개념':'원천징수 실무'}</a>`)+`
+   <div class="withholding-quiz">
+    <section class="card withholding-quiz-settings row" aria-label="퀴즈 조건">
+     <label><span id="quiz-unit-label">단원</span><select id="withholding-quiz-unit" aria-labelledby="quiz-unit-label"></select></label>
+     <label><span id="quiz-detail-label">세부 주제</span><select id="withholding-quiz-detail" aria-labelledby="quiz-detail-label"></select></label>
+     <label><span id="quiz-level-label">난이도</span><select id="withholding-quiz-level" aria-labelledby="quiz-level-label">${quiz.levels.map(level=>
+      `<option value="${level.id}"${level===initialLevel?' selected':''}>${esc(level.option)}</option>`).join('')}</select></label>
+     <label><span id="quiz-count-label">풀 문제 수</span><select id="withholding-quiz-count" aria-labelledby="quiz-count-label">${allowed.map(n=>`<option value="${n}"${daily===n?' selected':''}>${n==='all'?'전체':n+'문제'}</option>`).join('')}</select></label>
+     <span class="help withholding-quiz-total" role="status"></span>
+    </section>
+    <section class="card withholding-quiz-question" id="withholding-quiz-card" aria-labelledby="withholding-question"></section>
+   </div>`;
+  const count=$('#withholding-quiz-count'),card=$('#withholding-quiz-card');
+  const unit=$('#withholding-quiz-unit'),detail=$('#withholding-quiz-detail'),level=$('#withholding-quiz-level');
+  const total=$('.withholding-quiz-total');
+  function setOptions(select,values,label,selected){
+   select.replaceChildren(new Option(label,''),...[...new Set(values)].map(value=>new Option(value,value)));
+   if([...select.options].some(option=>option.value===selected))select.value=selected;
+  }
+  function selectQuestions(){
+   const matching=bank.filter(question=>question.level===level.value&&quiz.inUnit(question,unit.value)&&
+    (!detail.value||question.detail===detail.value));
+   questions=count.value==='all'?matching:quiz.selectQuestions(matching,Number(count.value),level.value);
+   position=0;
+   total.textContent=questions.length===matching.length?`${matching.length}문제`:`${matching.length}문제 중 ${questions.length}문제`;
+   if(!questions.length){
+    card.innerHTML=`<h2 id="withholding-question">선택한 난이도에 해당하는 문제가 없습니다.</h2>
+     ${detail.value?'<button type="button" class="btn secondary" id="quiz-clear-detail">전체 주제 보기</button>':''}`;
+    const clear=$('#quiz-clear-detail');
+    if(clear)clear.onclick=()=>{detail.value='';selectQuestions();detail.focus()};
+    return;
+   }
+   renderQuestion();
+  }
+  function updateTopics(selected){
+   setOptions(detail,bank.filter(question=>quiz.inUnit(question,unit.value)).map(question=>question.detail),'전체 주제',selected);
+   selectQuestions();
+  }
+  setOptions(unit,quiz.units[course],'전체 단원',params.get('unit'));
+  unit.onchange=()=>updateTopics(detail.value);
+  detail.onchange=selectQuestions;
+  level.onchange=()=>{
+   try{localStorage.setItem(levelKey,level.value)}catch(_){}
+   if(params.has('level')){
+    const url=new URL(location.href);
+    url.searchParams.set('level',level.value);
+    history.replaceState(null,'',url);
+   }
+   selectQuestions();
+  };
+  count.onchange=()=>{
+   try{localStorage.setItem(countKey,count.value)}catch(_){}
+   selectQuestions();
+  };
+
+  function answerFields(question){
+   if(question.choices)return `<div class="withholding-quiz-options">${question.choices.map(([value,label])=>
+    `<label><input type="radio" name="answer-0" value="${value}" required> ${esc(label)}</label>`).join('')}</div>`;
+   return `<div class="withholding-quiz-fields">${question.fields.map(({label,options},i)=>`
+    <label class="field"><span>${esc(label)}</span>
+     ${options
+      ?`<select name="answer-${i}" required>${options.map(([value,text])=>`<option value="${value}">${text}</option>`).join('')}</select>`
+      :`<span class="withholding-quiz-amount"><input type="text" name="answer-${i}" inputmode="numeric" autocomplete="off"
+         pattern="[0-9]+|[0-9]{1,3}(,[0-9]{3})+" maxlength="10" required aria-describedby="withholding-quiz-unit-${i}"><span id="withholding-quiz-unit-${i}">만 원</span></span>`}
+    </label>`).join('')}</div>`;
+  }
+  function renderQuestion(focus=false){
+   const question=questions[position],attempt=attempts.get(question);
+   const difficulty=quiz.levels.find(option=>option.id===question.level);
+   const book=quiz.books[question.book];
+   const {bookPage,pdfPage}=question.reference||{bookPage:126,pdfPage:143};
+   const referenceLabel=`${book.label} ${bookPage}쪽 (PDF ${pdfPage}쪽)`;
+   const localPdf=location.protocol==='file:'&&!rootURL.pathname.includes('/github-publish/site/');
+   const reference=localPdf
+    ?`<a href="${esc(href(book.file+'#page='+pdfPage))}" target="_blank" rel="noopener">${referenceLabel}</a>`
+    :referenceLabel;
+   card.innerHTML=`
+    <div class="row spread"><span class="pill">${income?'이론':'실무'} · ${esc(question.topic)}</span><span class="help">${esc(difficulty.label)} · ${position+1} / ${questions.length}</span></div>
+     <form id="withholding-quiz-form">
+      <fieldset>
+       <legend id="withholding-question" tabindex="-1">${esc(question.prompt)}</legend>
+       ${answerFields(question)}
+      </fieldset>
+      <div class="row">
+       <button type="submit" class="btn">정답 확인</button>
+       <button type="button" class="btn secondary" id="withholding-quiz-reset" hidden>다시 풀기</button>
+      </div>
+      <p id="withholding-quiz-result" class="feedback" role="status" tabindex="-1" hidden></p>
+      <div id="withholding-quiz-explanation" hidden>
+       <p><strong>정답</strong> ${esc(question.solution)}</p>
+       <p>${esc(question.explanation)}</p>
+       <p class="help">${reference}${question.articles
+        ?' · '+question.articles.map(n=>`<a href="${esc(lawLinks[n][1])}" target="_blank" rel="noopener">${esc(lawLinks[n][0])}</a>`).join(' · ')
+        :''}</p>
+      </div>
+     </form>
+     ${questions.length>1?`<nav class="row withholding-quiz-pagination" aria-label="퀴즈 문제 이동">
+      <button type="button" class="btn secondary" data-quiz-step="-1"${position===0?' disabled':''}>이전 문제</button>
+      <button type="button" class="btn secondary" data-quiz-step="1"${position===questions.length-1?' disabled':''}>다음 문제</button>
+     </nav>`:''}`;
+   const form=$('#withholding-quiz-form'),grade=form.querySelector('[type=submit]');
+   const options=form.querySelector('fieldset'),reset=$('#withholding-quiz-reset');
+   const quizReport={course,title:title+" · "+question.topic,prompt:question.prompt,
+    conditions:question.choices?.map(([,label],i)=>(i+1)+". "+label).join("\n")||question.fields.map(field=>field.label+(field.options?" · "+field.options.filter(([value])=>value).map(([,label])=>label).join(" / "):"")).join("\n"),
+    answer:[question.solution,question.explanation,referenceLabel].filter(Boolean).join("\n")};
+   reset.after(problemReportButton("quiz:"+course+":"+question.prompt,quizReport));
+   const result=$('#withholding-quiz-result'),explanation=$('#withholding-quiz-explanation');
+
+   function showResult({correct,missed}){
+    options.disabled=grade.disabled=true;
+    reset.hidden=result.hidden=explanation.hidden=false;
+    result.classList.toggle('good',correct);
+    result.classList.toggle('wrong',!correct);
+    result.textContent=correct?'정답입니다.':missed.length
+     ?'다시 볼 항목 · '+missed.join(', ')
+     :'해설을 확인해 보세요.';
+   }
+   if(attempt){
+    attempt.values.forEach((value,i)=>{
+     const field=form.elements.namedItem('answer-'+i);
+     field.value=value;
+    });
+    showResult(attempt);
+   }
+   form.onsubmit=event=>{
+    event.preventDefault();
+    if(grade.disabled)return;
+    const fields=new FormData(form);
+    const values=question.answers.map((_,i)=>fields.get('answer-'+i));
+    const matches=question.answers.map((expected,i)=>typeof expected==='number'
+     ?Number(values[i].replaceAll(',',''))===expected
+     :values[i]===expected);
+    const answer={
+     values,
+     correct:matches.every(Boolean),
+     missed:question.fields?.filter((_,i)=>!matches[i]).map(field=>field.label)||[]
+    };
+    attempts.set(question,answer);
+    showResult(answer);
+    result.focus();
+   };
+   reset.onclick=()=>{
+    attempts.delete(question);
+    renderQuestion();
+    card.querySelector('input,select').focus();
+   };
+   card.querySelectorAll('[data-quiz-step]').forEach(button=>button.onclick=()=>{
+    position+=Number(button.dataset.quizStep);
+    renderQuestion(true);
+   });
+   if(focus)$('#withholding-question').focus();
+  }
+  updateTopics(params.get('detail'));
+ }
+ function review(){
+  const query=new URLSearchParams(location.search);
+  const quiz=query.get('quiz');
+  if(quiz==='withholding'||quiz==='deductions'){
+   const target=new URL('pages/quiz.html',rootURL);
+   target.searchParams.set('course','withholding');
+   target.searchParams.set('level','basic');
+   target.searchParams.set('unit',quiz==='deductions'?'사원등록':'급여자료입력');
+   if(quiz==='withholding')target.searchParams.set('detail','수당·공제 등록');
+   location.replace(target.href);
+   return;
+  }
+  if(query.has('unit')){unitReviewPage().catch(fail);return}
   const settings=snapshot().settings,P=SemuonProgress,today=R.day(Date.now()),params=new URLSearchParams(location.search),dayParam=params.get('day');let viewDate=dayParam==='tomorrow'?P.add(today,1):dayParam==='yesterday'?P.add(today,-1):P.validDate(dayParam)?dayParam:today;
   const external=SemuonJournal.analyze(storedSnapshot()).needs.filter(e=>e.due<=today);
   content.innerHTML=head('오늘 복습','핵심 개념을 확인한 뒤 분야와 세부 유형을 고르게 복습합니다.')+statsCards()+`<section class="card rv-unit-section"><div class="row spread"><h2>단원 복습 · 무엇을 볼까요?</h2><a class="btn secondary" href="${href('pages/learning-map.html')}">학습 지도 →</a></div><div id="rv-unit-plans"></div></section>${external.length?`<section class="card"><h2>교재·외부 실습 재확인</h2><p class="help">사용자가 기록한 어려움입니다. 실제 채점 점수와 별도로 확인하세요.</p>${external.slice(0,4).map(e=>`<p><a href="${href('pages/journal.html?date='+e.date+'&entry='+encodeURIComponent(e.entryId))}">${esc([...SemuonCurriculum.units,...SemuonCurriculum.practiceUnits].find(u=>u.id===e.unitId)?.title||'학습 기록')}${e.focus?' · '+esc(e.focus):''}</a> · ${esc(C.STUDY_RESULTS[e.outcome])}</p>`).join('')}</section>`:''}<div class="toolbar rv-filter-toolbar"><button class="btn" id="combo-start" type="button" title="세 분야 3문제씩 바로 복습" aria-label="세 분야 3문제씩 바로 복습">3문제씩 복습</button><label class="field"><span>분야</span><select id="review-subject"><option value="">세 분야 골고루</option>${V.fields.map(([id,name])=>`<option value="${id}">${name}</option>`).join('')}<option value="all">모든 영역 골고루</option></select></label><label class="field"><span>하루 목표</span><select id="review-limit">${[6,9,12].map(n=>`<option value="${n}" ${settings.reviewLimit===n?'selected':''}>${n}유형</option>`).join('')}</select></label><label class="field"><span>방식</span><select id="review-mode"><option value="balanced">오늘 복습</option><option value="focus">집중훈련 · 직접 선택</option></select></label><label class="field" id="review-type-label" hidden><span>집중할 유형</span><select id="review-type"><option value="">최근 오답 유형</option></select></label><label class="field rv-date-field"><span>추천 날짜</span><span class="rv-date-controls"><button type="button" class="btn secondary" data-review-day="-1" aria-label="이전 날짜">‹</button><input id="review-date" type="date" value="${viewDate}" aria-label="추천 날짜"><button type="button" class="btn secondary" data-review-day="1" aria-label="다음 날짜">›</button><button type="button" class="btn secondary" id="review-today">오늘</button></span></label></div><p id="review-date-notice" class="rv-preview-notice" hidden></p><div class="rv-review-layout"><section aria-label="추천 복습 문제"><div id="review-list"></div></section></div>`;
+
   {const h1=$('.page-head h1'),row=document.createElement('div');row.className='title-row';h1.before(row);row.append(h1,$('#combo-start'))}
   if([...$('#review-subject').options].some(o=>o.value===params.get('field')))$('#review-subject').value=params.get('field');
   $('#combo-start').onclick=()=>act(startCombo);
@@ -293,7 +740,7 @@
   ['review-subject','review-mode','review-type'].forEach(id=>$('#'+id).onchange=render);$('#review-limit').onchange=()=>{act(()=>store.update(s=>s.settings.reviewLimit=Number($('#review-limit').value)));render()};$('#review-date').onchange=e=>{if(!P.validDate(e.target.value)){e.target.value=viewDate;return}viewDate=e.target.value;render()};$$('[data-review-day]').forEach(b=>b.onclick=()=>{viewDate=P.add(viewDate,Number(b.dataset.reviewDay));$('#review-date').value=viewDate;render()});$('#review-today').onclick=()=>{viewDate=today;$('#review-date').value=viewDate;render()};render();
  }
 
- function settings(){applyTheme();let candidate=null;content.innerHTML=head('설정 · 백업','문제·답안·첨부 자료·학습기록을 함께 보존합니다.')+SemuonSync.settingsHTML()+themeSettingsHTML()+`<section class="card"><h2>글꼴 · 크기</h2><div class="font-settings-grid">${[['Ui','메뉴·탐색 UI'],['Body','읽기·문제 본문']].map(([kind,title])=>{const f=C.fontPreferences(snapshot().settings);return `<fieldset class="font-setting"><legend>${title}</legend><label class="field"><span>글꼴</span><select id="font-${kind}-family">${Object.entries(C.FONT_FAMILIES).map(([key,font])=>`<option value="${key}" ${f['font'+kind+'Family']===key?'selected':''}>${esc(font.label)}</option>`).join('')}</select></label><div class="row"><label class="field font-size-field"><span>크기 (pt)</span><input id="font-${kind}-size" type="number" inputmode="decimal" min="1" max="30" step="any" value="${f['font'+kind+'Pt']}" aria-describedby="font-${kind}-notice"></label><button class="btn" type="button" data-font-save="${kind}">저장</button><button class="btn secondary font-reset" type="button" data-font-reset="${kind}">기본값</button></div><p id="font-${kind}-notice" class="help" role="status" hidden></p></fieldset>`}).join('')}</div></section><section class="card"><h2>문제 · 기록 백업</h2><p>105회 이하 기출문제는 학습에서 제외하고 원문·정답·기존 기록을 전체 백업에 보관합니다.</p><p>같은 전산세무 2급 문제와 고유 채점기록을 합칩니다. 다른 시험 자료나 충돌하는 답안은 가져오기를 중단합니다.</p><div class="row"><button class="btn" id="export-backup">전체 백업 내보내기</button><button class="btn secondary" id="export-raw">저장 원본 내보내기</button></div><label class="field"><span>백업 파일 가져오기</span><input id="backup-file" type="file" accept=".json"></label><div id="backup-preview"></div><button class="btn secondary" id="merge-backup" disabled>미리보기 확인 후 합치기</button></section><section class="card"><h2>단축키</h2><form id="markup-shortcut-form"><h3>글자 표시</h3><p class="help">문제의 글자를 선택한 뒤 Alt와 지정한 키를 함께 누르세요.</p><div class="markup-shortcut-grid">${C.MARKUP_TOOLS.map(([id,label])=>`<label class="markup-shortcut-field"><span>${esc(label)}</span><span class="markup-key-input"><kbd>Alt</kbd><span>+</span><input type="text" maxlength="1" pattern="[0-9A-Za-z]" autocomplete="off" autocapitalize="characters" spellcheck="false" data-markup-shortcut="${id}" aria-label="${esc(label)} 단축키" value="${esc(C.markupShortcuts(snapshot().settings)[id])}" required></span></label>`).join('')}</div><div class="row"><button type="submit" class="btn">단축키 저장</button><button type="button" class="btn secondary" id="markup-shortcut-reset">기본값</button></div><p class="help" id="markup-shortcut-notice" role="status" hidden></p></form><p>입력칸 밖에서 Ctrl + Z: 마지막 채점 취소 · Ctrl + Shift + Z: 취소한 채점 복구</p><p>입력칸의 복사·붙여넣기·실행 취소와 오른쪽 기본 메뉴를 사용합니다. 전표 금액 + 키는 000을 붙이고, 매입매출 공급가액 Enter는 부가세를 계산합니다.</p></section>`;
+ function settings(){applyTheme();let candidate=null;content.innerHTML=head('설정 · 백업','문제·답안·첨부 자료·학습기록을 함께 보존합니다.')+SemuonSync.settingsHTML()+themeSettingsHTML()+`<section class="card"><h2>글꼴 · 크기</h2><div class="font-settings-grid">${[['Ui','메뉴·탐색 UI'],['Body','읽기·문제 본문']].map(([kind,title])=>{const f=C.fontPreferences(snapshot().settings);return `<fieldset class="font-setting"><legend>${title}</legend><label class="field"><span>글꼴</span><select id="font-${kind}-family">${Object.entries(C.FONT_FAMILIES).map(([key,font])=>`<option value="${key}" ${f['font'+kind+'Family']===key?'selected':''}>${esc(font.label)}</option>`).join('')}</select></label><div class="row"><label class="field font-size-field"><span>크기 (pt)</span><input id="font-${kind}-size" type="number" inputmode="decimal" min="1" max="30" step="any" value="${f['font'+kind+'Pt']}" aria-describedby="font-${kind}-notice"></label><button class="btn" type="button" data-font-save="${kind}">저장</button><button class="btn secondary font-reset" type="button" data-font-reset="${kind}">기본값</button></div><p id="font-${kind}-notice" class="help" role="status" hidden></p></fieldset>`}).join('')}</div></section><section class="card"><h2>문제 · 기록 백업</h2><p>105회 이하 기출문제는 학습에서 제외하고 원문·정답·기존 기록을 전체 백업에 보관합니다.</p><p>같은 전산세무 2급 문제와 고유 채점기록을 합칩니다. 다른 시험 자료나 충돌하는 답안은 가져오기를 중단합니다.</p><div class="row"><button class="btn" id="export-backup">전체 백업 내보내기</button><button class="btn secondary" id="export-raw">저장 원본 내보내기</button></div><label class="field"><span>백업 파일 가져오기</span><input id="backup-file" type="file" accept=".json"></label><div id="backup-preview"></div><button class="btn secondary" id="merge-backup" disabled>미리보기 확인 후 합치기</button></section><section class="card"><h2>단축키</h2><form id="markup-shortcut-form"><h3>글자 표시</h3><p class="help">문제의 글자를 선택한 뒤 Alt와 지정한 키를 함께 누르세요.</p><div class="markup-shortcut-grid">${C.MARKUP_TOOLS.map(([id,label])=>`<label class="markup-shortcut-field"><span>${esc(label)}</span><span class="markup-key-input"><kbd>Alt</kbd><span>+</span><input type="text" maxlength="1" pattern="[0-9A-Za-z+]" autocomplete="off" autocapitalize="characters" spellcheck="false" data-markup-shortcut="${id}" aria-label="${esc(label)} 단축키" value="${esc(C.markupShortcuts(snapshot().settings)[id])}" required></span></label>`).join('')}</div><div class="row"><button type="submit" class="btn">단축키 저장</button><button type="button" class="btn secondary" id="markup-shortcut-reset">기본값</button></div><p class="help" id="markup-shortcut-notice" role="status" hidden></p></form><p>Ctrl + Z: 직전 글자 표시 또는 체크 되돌리기</p><p>입력칸의 복사·붙여넣기·실행 취소와 오른쪽 기본 메뉴를 사용합니다. 전표 금액 + 키는 000을 붙이고, 매입매출 공급가액 Enter는 부가세를 계산합니다.</p></section>`;
   const settingCards=[...content.children],backupCard=settingCards.find(e=>e.querySelector('#export-backup')),fontCard=settingCards.find(e=>e.querySelector('#font-Ui-size'));
   const layout=document.createElement('div');layout.className='settings-layout';fontCard.before(layout);layout.append(backupCard,fontCard);
   SemuonFullscreen.refresh();SemuonSync.mountSettings(content);
@@ -314,8 +761,8 @@
   const label=id=>nav.find(n=>n[0]===id)?.[2]||id;
   const iconChoices=[['default','기본 아이콘'],['none','아이콘 없음'],['⌂','집'],['▤','책'],['▦','표'],['≡','목록'],['◇','마름모'],['↺','복습'],['⚙','설정'],['✎','연필'],['✓','체크'],['★','별'],['◎','목표'],['◷','시계'],['▣','카드'],['☷','목차'],['↗','성장'],['☑','완료'],['⚑','깃발'],['✦','반짝임'],['●','원'],['◆','다이아'],['☀','해'],['☕','컵'],['📚','책 묶음'],['📝','메모'],['📅','달력'],['📊','그래프'],['🎯','과녁'],['🌱','새싹'],['🏠','홈'],['📖','읽기'],['📒','노트'],['📌','핀'],['🔖','책갈피'],['💡','아이디어'],['🧩','퍼즐'],['🔍','찾기'],['⏰','알람'],['✅','완료 표시'],['🎓','학습'],['💻','컴퓨터'],['🗂️','자료함'],['📁','폴더'],['🧮','계산기'],['💰','돈'],['🧾','영수증'],['📈','성장 그래프'],['🛠️','도구'],['🔔','알림'],['🗓️','일정'],['🚀','시작'],['🌟','별빛'],['🍀','행운']];
   const iconIds=new Set(iconChoices.map(c=>c[0])),descriptors=links.map(el=>{const row=el.matches('details')?el.querySelector('summary'):el;return{id:el.dataset.menuId,label:label(el.dataset.menuId),el,icon:row.children[0],name:row.children[1],original:nav.find(n=>n[0]===el.dataset.menuId)?.[1]||''}});
-  for(const el of navBox.querySelectorAll('.app-subnav a')){const icon=document.createElement('span'),name=document.createElement('span'),originalName=el.textContent;icon.className='menu-user-icon';icon.setAttribute('aria-hidden','true');name.className='menu-user-label';name.textContent=originalName;el.replaceChildren(icon,name);descriptors.push({id:el.dataset.subMenuId||'sub:'+new URL(el.href).pathname.split('/').pop(),label:originalName,el,icon,name,original:'',parent:el.closest('[data-menu-id]').dataset.menuId})}
-  const byId=new Map(descriptors.map(d=>[d.id,d])),subDefaults=Object.fromEntries(links.filter(el=>el.matches('details')).map(el=>[el.dataset.menuId,descriptors.filter(d=>d.parent===el.dataset.menuId).map(d=>d.id)]));
+  for(const el of navBox.querySelectorAll('.app-subnav a')){const icon=document.createElement('span'),name=document.createElement('span'),originalName=el.textContent;icon.className='menu-user-icon';icon.setAttribute('aria-hidden','true');name.className='menu-user-label';name.textContent=originalName;el.replaceChildren(icon,name);descriptors.push({id:el.dataset.subMenuId||'sub:'+new URL(el.href).pathname.split('/').pop(),label:originalName,el,icon,name,original:({practical:'≡',voucher:'▦',forms:'▧'})[el.dataset.subMenuId]||'',parent:el.dataset.menuParentId||el.closest('[data-menu-id]').dataset.menuId})}
+  const byId=new Map(descriptors.map(d=>[d.id,d])),subDefaults=Object.fromEntries(descriptors.map(({id})=>[id,descriptors.filter(d=>d.parent===id).map(d=>d.id)]).filter(([,ids])=>ids.length));
   for(const d of descriptors)d.route=d.el.matches('a')?d.el.href:d.name.matches('a')?d.name.href:null;
   const activeNode=descriptors.find(d=>d.route&&(d.el.classList.contains('active')||d.name.getAttribute('aria-current')==='page'))?.id||activeMenu;
   function complete(order,hidden){const seen=new Set(),out=[];[...(Array.isArray(order)?order:[]).map(menuId),...DEFAULT].forEach(id=>{if(DEFAULT.includes(id)&&!hidden.includes(id)&&!seen.has(id)){seen.add(id);out.push(id)}});return out}
@@ -331,6 +778,18 @@
      seen.add(id);
      out.push(id);
      add(raw?raw.children?.[id]:legacy[id],children[id]);
+    }
+   }
+   const oldRoot=raw?.root||legacy.order;
+   const grouped=Array.isArray(oldRoot)&&!oldRoot.includes('practice-learning')&&
+    !Object.values(raw?.children||{}).some(ids=>Array.isArray(ids)&&ids.includes('practice-learning'));
+   if(grouped){
+    const oldPractice=oldRoot.filter(id=>practiceMenu.some(([key])=>key===id));
+    if(oldPractice.length){
+     const remaining=oldRoot.filter(id=>!oldPractice.includes(id));
+     remaining.splice(oldRoot.indexOf(oldPractice[0]),0,'practice-learning');
+     const oldChildren=raw?.children||legacy;
+     raw={root:raw?remaining:complete(remaining,[]),children:{...oldChildren,'practice-learning':oldPractice}};
     }
    }
    add(raw?.root||complete(legacy.order,[]),root);
@@ -388,7 +847,49 @@
   window.addEventListener('storage',e=>{if(e.key===SIDEBAR_KEY){collapsed=e.newValue==='1';setCollapsed(collapsed)}if(e.key===MENU_KEY)apply(load())});
   media.addEventListener('change',()=>setCollapsed(collapsed));setCollapsed(collapsed);
  })();
- document.addEventListener('keydown',e=>{if(page==='journal'||page==='concepts')return;if(e.ctrlKey&&!e.altKey&&e.key.toLowerCase()==='z'&&!e.target.closest('input,textarea,select,[contenteditable]')){e.preventDefault();act(()=>{if(e.shiftKey&&lastUndo){store.restore(lastUndo);lastUndo=null;toast('취소한 채점을 복구했습니다.')}else{const event=C.active(snapshot()).at(-1);if(event){store.cancel(event.id);lastUndo=event.id;toast('마지막 채점을 취소했습니다.')}}if(page==='review')review();if(page==='home')home();if(page==='map')learningMap();if(page==='settings')renderHistory();const p=snapshot().items.find(p=>p.id===new URLSearchParams(location.search).get('id'));if(p)solve(p)})}});
+ const screenUndo=[];
+ let restoringCheckbox=false;
+ function recordScreenUndo(undo){
+  screenUndo.push(undo);
+  if(screenUndo.length>50)screenUndo.shift();
+ }
+ function checkboxTarget(box){
+  const card=box.closest('[data-problem-id]');
+  const key=['data-field','data-complete','data-roadmap-task','data-focus'].find(attr=>box.hasAttribute(attr));
+  const field=key?`input[type="checkbox"][${key}="${CSS.escape(box.getAttribute(key))}"]`:'';
+  if(card&&field){
+   const id=CSS.escape(card.dataset.problemId);
+   return ()=>box.isConnected?box:document.querySelector(`[data-problem-id="${id}"] ${field}`);
+  }
+  if(box.id){
+   const id=box.id;
+   return ()=>box.isConnected?box:document.getElementById(id);
+  }
+  return ()=>box.isConnected?box:field?document.querySelector(field):null;
+ }
+ document.addEventListener('change',event=>{
+  const box=event.target;
+  if(restoringCheckbox||!event.isTrusted||!box.matches?.('input[type="checkbox"]'))return;
+  const checked=box.checked,findBox=checkboxTarget(box);
+  recordScreenUndo(()=>{
+   const current=findBox();
+   if(!current?.matches('input[type="checkbox"]')||current.disabled||current.checked!==checked)return false;
+   restoringCheckbox=true;
+   try{current.click()}finally{restoringCheckbox=false}
+   return true;
+  });
+ },true);
+ document.addEventListener('keydown',event=>{
+  if(!event.ctrlKey||event.altKey||event.metaKey||event.shiftKey||event.repeat||event.isComposing||
+     event.defaultPrevented||event.key.toLowerCase()!=='z'||
+     event.target.closest?.('textarea,select,[contenteditable],input:not([type=radio]):not([type=checkbox])'))return;
+  while(screenUndo.length){
+   if(screenUndo.pop()()){
+    event.preventDefault();event.stopPropagation();
+    return;
+   }
+  }
+ });
  if(page==='home'||page==='map'||page==='progress'||page==='roadmap'){window.addEventListener('storage',e=>{if(e.key===C.KEY&&!SemuonFullscreen.hosting())location.reload()});window.addEventListener('pageshow',e=>{if(e.persisted)location.reload()})}
  applyFont();applyTheme();if(store.error){fail(Error('학습자료를 읽지 못해 저장을 중지하고 원본을 보존했습니다. 설정에서 저장 원본을 내보내 주세요.'));if(page!=='settings'){content.innerHTML=`<div class="empty"><h2>저장 자료를 확인해 주세요.</h2><a class="btn" href="${href('pages/settings.html')}">저장 원본 · 백업 확인</a></div>`;return}}
  function installDictionarySearch(){
@@ -432,5 +933,5 @@
   content.append(conceptGuide);
   return;
  }
- try{if(page==='home')home();else if(C.SUBJECTS.includes(page)){const id=new URLSearchParams(location.search).get('id'),p=snapshot().items.find(p=>p.id===id&&p.subject===page);if(TrainingComboReview.active(comboKey))await solveCombo();else if(p)await solve(p);else{problemList(page);if(id&&storedSnapshot().items.some(p=>p.id===id&&!available(p)))toast('105회 이하 기출문제는 보관 중이며 학습 대상에서 제외했습니다.');}}else if(page==='topic'||page==='forms')problemList(page);else if(page==='review')review();else if(page==='map')learningMap();else if(page==='roadmap')SemuonRoadmap.mount(content,{getState:storedSnapshot,save:fn=>store.update(fn),href,notify:toast});else if(page==='journal')journalPage();else if(page==='register'){location.replace(href('index.html'));return}else if(page==='database'){await script(new URL('js/database.js?v=20261029-3',rootURL));SemuonDatabase.mount(content,storedSnapshot().items,href)}else if(page==='settings')settings();else if(page==='guide')guide();else content.innerHTML=head('실무 훈련','일반전표 또는 매입매출전표를 선택하세요.')+`<div class="row"><a class="btn" href="${href('pages/general.html')}">일반전표 입력</a><a class="btn" href="${href('pages/voucher.html')}">매입매출전표 입력</a></div>`}catch(e){fail(e)}
+ try{if(page==='home')home();else if(C.SUBJECTS.includes(page)){const id=new URLSearchParams(location.search).get('id'),p=snapshot().items.find(p=>p.id===id&&p.subject===page);if(TrainingComboReview.active(comboKey))await solveCombo();else if(p)await solve(p);else{problemList(page);if(id&&storedSnapshot().items.some(p=>p.id===id&&!available(p)))toast('105회 이하 기출문제는 보관 중이며 학습 대상에서 제외했습니다.');}}else if(page==='topic'||page==='forms')problemList(page);else if(page==='quiz')withholdingQuiz(quizCourse);else if(page==='review')review();else if(page==='map')learningMap();else if(page==='roadmap')SemuonRoadmap.mount(content,{getState:storedSnapshot,save:fn=>store.update(fn),href,notify:toast});else if(page==='journal')journalPage();else if(page==='register'){location.replace(href('index.html'));return}else if(page==='database'){await script(new URL('js/database.js?v=20261029-3',rootURL));SemuonDatabase.mount(content,storedSnapshot().items,href)}else if(page==='settings')settings();else if(page==='guide')guide();else content.innerHTML=head('실무 훈련','일반전표 또는 매입매출전표를 선택하세요.')+`<div class="row"><a class="btn" href="${href('pages/general.html')}">일반전표 입력</a><a class="btn" href="${href('pages/voucher.html')}">매입매출전표 입력</a></div>`}catch(e){fail(e)}
 })();

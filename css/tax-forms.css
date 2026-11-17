@@ -1,1 +1,61 @@
 .tax-fields{margin:var(--space-6,24px) 0;padding:var(--space-5,20px);background:#f8fbfb;border:1px solid #c9d9dd;border-radius:8px;min-width:0}.tax-field-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,245px),1fr));gap:20px}.tax-field-grid .field{min-width:0}.tax-field-grid input,.tax-field-grid select{width:100%;min-height:46px;font-size:max(16px,var(--font-ui,16px));background:#fff;border:1px solid #92aab2;border-radius:5px;color:#253d48;padding:10px;box-shadow:none}.tax-field-grid small{font-size:14px;line-height:1.6}.tax-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}.tax-tabs [aria-selected=true]{background:#225966;color:white;border-color:#225966}.tax-check input{width:24px;height:24px;min-height:24px}.tax-tab{margin-bottom:20px}.tax-tab[hidden]{display:none}.tax-fields [aria-invalid=true]{border:2px solid #bd413a;background:#fff5f4}.tax-dialog{max-width:560px;width:calc(100% - 32px);padding:24px;border:1px solid #93a9b1;border-radius:10px;background:#fff;color:#253d48}.tax-dialog::backdrop{background:#132e4780}.tax-dialog input{min-height:44px;font-size:18px}.tax-extra{margin:16px 0}.tax-row-partner{font-size:16px;min-width:150px;max-width:100%;min-height:44px}.topic-links{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 24px}.tax-form-question{border:1px solid #c9d9dd;background:#fff;border-radius:10px;padding:24px;margin:20px 0}.tax-form-question .prompt{white-space:pre-line;line-height:1.8}.tax-form-question .qactions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}.tax-form-question h2{font-size:24px}.tax-answer-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;padding:16px}.tax-answer-grid p{margin:0}.tax-form-question [role=status]{overflow-wrap:anywhere}@media(max-width:600px){.tax-fields,.tax-form-question{padding:16px}.tax-tabs button{flex:1 1 45%;font-size:16px}.tax-form-question h2{font-size:22px}}
+
+.tax-form-question{
+ container:tax-workspace / inline-size;
+ min-width:0;padding:clamp(12px,1.35vw,20px);background:var(--surface);border-color:var(--line)
+}
+.tax-form-workspace{display:grid;gap:12px;margin-top:10px}
+.tax-form-context,.tax-form-entry{min-width:0}
+.tax-form-context>.evidence-preview{margin:0}
+.tax-form-entry .qactions{gap:6px;margin-top:9px}
+.tax-form-entry .qactions .btn,.tax-fields-compact .btn{min-height:36px;padding:5px 9px;line-height:1.25}
+.tax-fields-compact{
+ container:tax-entry / inline-size;
+ margin:0;padding:12px;background:var(--surface);border-color:var(--line)
+}
+.tax-fields-compact .tax-fields-head{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;margin-bottom:10px}
+.tax-fields-compact h3{flex:1 1 180px;margin:0;font-size:calc(var(--font-body)*1.12);line-height:1.35}
+.tax-fields-compact .tax-field-actions{gap:6px}
+.tax-fields-compact>.notice{margin:0 0 8px;padding:8px 10px;font-size:var(--font-ui)}
+.tax-fields-compact .tax-tabs{gap:5px;margin:0 0 10px}
+.tax-fields-compact .tax-tabs button{flex:0 1 auto;white-space:normal;text-align:start}
+.tax-fields-compact .tax-tab{margin-bottom:6px}
+.tax-fields-compact .tax-field-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:8px 10px}
+.tax-fields-compact .field{grid-template-rows:auto auto;align-content:start;gap:3px;margin:0;font-size:var(--font-ui);line-height:1.35}
+.tax-fields-compact .field>span{font-weight:650;overflow-wrap:anywhere}
+.tax-fields-compact .field :is(input,select):not([type=checkbox]){
+ min-width:0;min-height:36px;padding:5px 7px;border-color:var(--line);
+ color:var(--ink);background:var(--canvas)
+}
+.tax-fields-compact .field input:is([type=date],[type=month]){
+ font-variant-numeric:tabular-nums
+}
+.tax-fields-compact .field input:is([type=date],[type=month])::-webkit-calendar-picker-indicator{
+ margin:0;padding:2px;cursor:pointer
+}
+html[data-design-theme=night] .tax-fields-compact .field input:is([type=date],[type=month]){color-scheme:dark}
+.tax-fields-compact .field.tax-check{
+ grid-template: auto / auto minmax(0,1fr);align-items:center;align-content:center;gap:7px;min-height:36px
+}
+.tax-fields-compact .tax-check input{grid-area:1 / 1;width:19px;height:19px;min-height:19px;margin:0;accent-color:var(--primary)}
+.tax-fields-compact .tax-check span{grid-area:1 / 2}
+.tax-fields-compact .tax-check small{grid-column:2}
+.tax-fields-compact .tax-rate input{max-width:12ch}
+.tax-fields-compact .tax-save{margin:6px 0 0}
+.tax-form-question>.answer-reveal{margin:10px 0 0}
+@container tax-workspace (min-width:660px){
+ .tax-form-workspace{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+ @media(min-height:360px){.tax-form-context{position:sticky;top:var(--tax-context-top,76px)}}
+}
+@container tax-entry (min-width:360px){
+ .tax-fields-compact .tax-field-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(pointer:coarse){
+ .tax-form-entry .qactions .btn,.tax-fields-compact .btn,
+ .tax-fields-compact .field :is(input,select):not([type=checkbox]){min-height:40px}
+ .tax-fields-compact .field.tax-check{min-height:40px}
+}
+@media print{
+ .tax-form-question{container:none}
+ .tax-form-context{position:static}
+}

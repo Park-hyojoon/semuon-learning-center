@@ -15,18 +15,51 @@
   for(const [key,answer]of Object.entries(x.entryFields||{})){const actual=input.voucher?.[key];if(typeof answer==='number'?number(actual)!==answer:norm(actual)!==norm(answer))wrongLabels.push(({item:'품목',quantity:'수량',unitPrice:'단가'})[key]||key)}
   return{correct:!wrongLabels.length,wrongLabels};
  }
- function mountFields(target,p,options){const form=p.form,values={...(options.values||{})},groups=[...new Set(form.fields.map(f=>f.group||'입력'))];
-  target.classList.add('tax-fields');target.innerHTML=`<h3>${esc(form.title)}</h3>${form.note?`<p class="notice">${esc(form.note)}</p>`:''}<div class="tax-tabs" role="tablist">${groups.map((g,i)=>`<button type="button" class="btn secondary" role="tab" aria-selected="${i===0}" data-tab="${i}">${esc(g)}</button>`).join('')}</div>${groups.map((g,i)=>`<section class="tax-tab" data-panel="${i}" ${i?'hidden':''}><h4>${esc(g)}</h4><div class="tax-field-grid">${form.fields.filter(f=>(f.group||'입력')===g).map(f=>`<label class="field ${f.kind==='checkbox'?'tax-check':''}"><span>${esc(f.label)}</span>${control(f,values[f.key])}${f.help?`<small>${esc(f.help)}</small>`:''}</label>`).join('')}</div></section>`).join('')}<div class="row">${form.calculators?.length?'<button type="button" class="btn secondary tax-calculate">입력값으로 합계 계산</button>':''}${options.reflect?'<button type="button" class="btn secondary tax-reflect">전표에서 신고서로 반영</button>':''}</div><p class="tax-save help" role="status">입력 내용은 자동으로 저장됩니다.</p>`;
+ let fieldsSequence=0;
+ function mountFields(target,p,options){
+  const form=p.form,values={...(options.values||{})},groups=[...new Set(form.fields.map(f=>f.group||'입력'))];
+  const compact=Boolean(options.compact),showTabs=!compact||groups.length>1;
+  const panelId='tax-fields-'+(++fieldsSequence);
+  const buttons=(form.calculators?.length?'<button type="button" class="btn secondary tax-calculate">입력값으로 합계 계산</button>':'')+
+   (options.reflect?'<button type="button" class="btn secondary tax-reflect">전표에서 신고서로 반영</button>':'');
+  const actions=buttons?`<div class="row tax-field-actions">${buttons}</div>`:'';
+  target.classList.add('tax-fields');
+  target.classList.toggle('tax-fields-compact',compact);
+  target.innerHTML=`<header class="tax-fields-head"><h3>${esc(form.title)}</h3>${compact?actions:''}</header>
+   ${form.note?`<p class="notice">${esc(form.note)}</p>`:''}
+   ${showTabs?`<div class="tax-tabs" role="tablist" aria-label="입력 구역">${groups.map((g,i)=>
+    `<button type="button" class="btn secondary" role="tab" id="${panelId}-tab-${i}" aria-controls="${panelId}-panel-${i}" aria-selected="${i===0}" tabindex="${i===0?0:-1}" data-tab="${i}">${esc(g)}</button>`).join('')}</div>`:''}
+   ${groups.map((g,i)=>`<section class="tax-tab" data-panel="${i}" id="${panelId}-panel-${i}" ${showTabs?`role="tabpanel" aria-labelledby="${panelId}-tab-${i}"`:''} ${i?'hidden':''}>
+    ${compact?'':`<h4>${esc(g)}</h4>`}
+    <div class="tax-field-grid">${form.fields.filter(f=>(f.group||'입력')===g).map(f=>{
+     const rate=compact&&f.kind==='text'&&/이자율/u.test(f.label);
+     return `<label class="field${f.kind==='checkbox'?' tax-check':''}${rate?' tax-rate':''}"><span>${esc(f.label)}</span>
+      ${control(f,values[f.key],rate)}${f.help?`<small>${esc(f.help)}</small>`:''}</label>`;
+    }).join('')}</div>
+   </section>`).join('')}
+   ${compact?'':actions}
+   <p class="tax-save help" role="status">${compact?'자동 저장':'입력 내용은 자동으로 저장됩니다.'}</p>`;
   const read=()=>{for(const el of target.querySelectorAll('[data-field]'))values[el.dataset.field]=el.type==='checkbox'?el.checked:el.value;return{...values}};
   const write=()=>{for(const el of target.querySelectorAll('[data-field]')){const value=values[el.dataset.field];if(el.type==='checkbox')el.checked=Boolean(value);else el.value=value??''}};
-  const save=()=>{read();options.save({...values});target.querySelector('.tax-save').textContent='입력 내용이 저장되었습니다. 채점 전 합계와 누락 항목을 확인해 주세요.'};
+  const status=target.querySelector('.tax-save');
+  const save=()=>{read();options.save({...values});status.textContent=compact?'자동 저장됨':'입력 내용이 저장되었습니다. 채점 전 합계와 누락 항목을 확인해 주세요.'};
   target.querySelectorAll('[data-field]').forEach(el=>{el.addEventListener('input',save);el.addEventListener('change',save)});
   const tabs=[...target.querySelectorAll('[data-tab]')];tabs.forEach((b,i)=>{const select=()=>{tabs.forEach((x,j)=>{x.setAttribute('aria-selected',String(i===j));x.tabIndex=i===j?0:-1});target.querySelectorAll('[data-panel]').forEach((x,j)=>x.hidden=i!==j)};b.onclick=select;b.onkeydown=e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();const j=e.key==='Home'?0:e.key==='End'?tabs.length-1:(i+(e.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;tabs[j].click();tabs[j].focus()}}});
-  target.querySelector('.tax-calculate')?.addEventListener('click',()=>{read();calculate(form,values);write();save();target.querySelector('.tax-save').textContent='입력값으로 합계를 계산했습니다. 금액이 필요한 빈 항목은 직접 입력해 주세요.'});
+  target.querySelector('.tax-calculate')?.addEventListener('click',()=>{read();calculate(form,values);write();save();status.textContent=compact?'합계 계산 완료. 빈 항목은 직접 입력하세요.':'입력값으로 합계를 계산했습니다. 금액이 필요한 빈 항목은 직접 입력해 주세요.'});
   target.querySelector('.tax-reflect')?.addEventListener('click',()=>{read();Object.assign(values,options.reflect({...values}));write();save()});
-  return{read,update(next){Object.assign(values,next);write();save()},feedback(result){for(const el of target.querySelectorAll('[data-field]')){const f=form.fields.find(f=>f.key===el.dataset.field),bad=result.wrongLabels.includes(f.label);el.setAttribute('aria-invalid',String(bad));}const first=target.querySelector('[aria-invalid="true"]');if(first){const panel=first.closest('[data-panel]');tabs[Number(panel.dataset.panel)].click()}}};
+  return{read,update(next){Object.assign(values,next);write();save()},feedback(result){for(const el of target.querySelectorAll('[data-field]')){const f=form.fields.find(f=>f.key===el.dataset.field),bad=result.wrongLabels.includes(f.label);el.setAttribute('aria-invalid',String(bad));}const first=target.querySelector('[aria-invalid="true"]');if(first){const panel=first.closest('[data-panel]');tabs[Number(panel.dataset.panel)]?.click()}}};
  }
- function control(f,v){const a=`data-field="${esc(f.key)}"`;if(f.kind==='checkbox')return`<input type="checkbox" ${a} ${v===true?'checked':''}>`;if(f.kind==='select')return`<select ${a}><option value="">선택</option>${f.options.map(o=>{const [value,label]=Array.isArray(o)?o:[o,o];return`<option value="${esc(value)}" ${String(v)===String(value)?'selected':''}>${esc(label)}</option>`}).join('')}</select>`;return`<input ${a} type="${['date','month'].includes(f.kind)?f.kind:'text'}" ${f.kind==='number'?'inputmode="decimal"':''} value="${esc(v??'')}" autocomplete="off">`}
+ function control(f,v,rate=false){
+  const attribute=`data-field="${esc(f.key)}"`;
+  if(f.kind==='checkbox')return `<input type="checkbox" ${attribute} ${v===true?'checked':''}>`;
+  if(f.kind==='select')return `<select ${attribute}><option value="">선택</option>${f.options.map(o=>{
+   const [value,label]=Array.isArray(o)?o:[o,o];
+   return `<option value="${esc(value)}" ${String(v)===String(value)?'selected':''}>${esc(label)}</option>`;
+  }).join('')}</select>`;
+  const type=['date','month'].includes(f.kind)?f.kind:'text';
+  const inputMode=f.kind==='number'||rate?'inputmode="decimal"':'';
+  return `<input ${attribute} type="${type}" ${inputMode} value="${esc(v??'')}" autocomplete="off">`;
+ }
  function attachVoucher(card,p,{getDraft,setDraft}){const draft=getDraft(),x=p.taxExtras||{};let extra={...(draft.taxExtras||{})},fieldUI=null,dialog=null;
   const save=()=>setDraft({taxExtras:{...extra},...(fieldUI?{form:fieldUI.read()}:{}),graded:false});
   if(x.omitted){const section=document.createElement('section');section.className='tax-extra notice';section.innerHTML='<button class="btn secondary tax-f11" type="button">F11 · 예정누락분 설정</button> <output class="tax-f11-status">미설정</output>';card.querySelector('.qactions').before(section);const status=()=>section.querySelector('output').textContent=extra.confirmed?(extra.omitted?'예정누락분 · '+extra.period:'예정누락 아님'):'미설정';status();

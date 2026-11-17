@@ -1,0 +1,438 @@
+(function (root) {
+ 'use strict';
+
+ function withholdingQuizQuestions(deductions){
+  if(!deductions)return [{
+   topic:'급여자료입력',
+   prompt:'이번 달 급여에 새 수당을 추가하려고 합니다. [수당·공제등록]에서 먼저 구분할 것은 무엇인가요?',
+   choices:[['taxable','과세 대상 수당인지, 비과세 수당인지'],['dependents','부양가족이 기본공제 대상인지'],['deduction','의료비가 세액공제 대상인지']],
+   answers:['taxable'],
+   solution:'과세 대상 수당인지, 비과세 수당인지',
+   explanation:'급여에 새 수당을 반영하기 전에 해당 수당의 과세 구분을 먼저 확인합니다.',
+   reference:{bookPage:129,pdfPage:146}
+  }];
+  const judgment=[['','선택'],['yes','가능'],['no','불가']];
+  return [
+   {
+    topic:'기본공제 · 숫자 입력',
+    prompt:'부양가족 기본공제의 소득 기준과 공제액을 각각 만 원 단위로 입력하세요.',
+    fields:[{label:'연간 소득금액 기준'},{label:'근로소득만 있는 경우 총급여 기준'},{label:'대상자 1명당 기본공제액'}],
+    answers:[100,500,150],
+    solution:'소득금액 100만 원 이하 / 총급여 500만 원 이하 / 기본공제액 150만 원',
+    explanation:'앞의 두 수치는 소득 요건을 판단하는 기준입니다. 150만 원은 요건을 충족하는 대상자 1명당 공제하는 금액입니다.',
+    articles:[50]
+   },
+   {
+    topic:'기본공제 · 경계값 판단',
+    prompt:'어머니에게 근로소득만 있고, 기본공제의 나머지 요건은 모두 충족합니다. 총급여가 다음과 같을 때 각각 기본공제를 받을 수 있나요?',
+    fields:[{label:'총급여 500만 원',options:judgment},{label:'총급여 501만 원',options:judgment}],
+    answers:['yes','no'],
+    solution:'500만 원은 가능 / 501만 원은 불가',
+    explanation:'근로소득만 있는 경우 총급여 500만 원까지 포함하므로, 501만 원은 한도를 넘습니다.',
+    articles:[50]
+   },
+   {
+    topic:'장애인 추가공제 · 금액 입력',
+    prompt:'어머니가 기본공제 대상이며 세법상 장애인에 해당합니다. 어머니 한 분의 기본공제액과 장애인 추가공제액을 각각 만 원 단위로 입력하세요.',
+    fields:[{label:'기본공제액'},{label:'장애인 추가공제액'}],
+    answers:[150,200],
+    solution:'기본공제 150만 원 + 장애인 추가공제 200만 원 = 350만 원',
+    explanation:'기본공제 대상인 어머니가 장애인 요건도 충족하므로, 기본공제에 추가공제액을 더합니다.',
+    articles:[50,51]
+   },
+   {
+    topic:'부녀자 추가공제 · 조건 비교',
+    prompt:'두 여성 거주자 모두 종합소득금액이 2,900만 원이고 배우자가 없으며, 기본공제 대상인 어머니를 부양합니다. 한 사람만 세대주입니다. 각자의 부녀자 추가공제액을 만 원 단위로 입력하세요. 대상이 아니면 0을 입력하세요.',
+    fields:[{label:'세대주인 경우'},{label:'세대주가 아닌 경우'}],
+    answers:[50,0],
+    solution:'세대주 50만 원 / 세대주가 아니면 0원',
+    explanation:'종합소득금액이 3,000만 원 이하이고 배우자가 없는 여성은 기본공제 대상 부양가족이 있는 세대주여야 합니다. 배우자가 있는 여성에게는 이 세대주 요건이 적용되지 않습니다.',
+    articles:[51]
+   }
+  ];
+ }
+ function basicQuestions(course){
+  if(course==='withholding'){
+   const [registration]=withholdingQuizQuestions(false);
+   const payroll={unit:'급여자료입력',detail:'비과세',reference:{bookPage:129,pdfPage:146}};
+   return [
+    {...registration,unit:payroll.unit,detail:'수당·공제 등록'},
+    {
+     ...payroll,topic:'식대 · 금액 입력',
+     prompt:'회사에서 식사를 제공받지 않는 직원에게 이번 달 식대 23만 원을 현금으로 지급했습니다. 비과세 금액과 과세 금액을 만 원 단위로 각각 입력하세요.',
+     fields:[{label:'비과세 식대'},{label:'과세 식대'}],answers:[20,3],
+     solution:'비과세 20만 원 / 과세 3만 원',
+     explanation:'식사를 제공받지 않는 직원의 현금 식대는 월 20만 원까지 비과세입니다.',
+     articles:[12]
+    },
+    {
+     ...payroll,topic:'식대 · 조건 비교',
+     prompt:'A와 B는 모두 현금 식대 18만 원을 받았습니다. A는 회사에서 식사를 제공받고 B는 제공받지 않습니다. 두 사람의 현금 식대 중 비과세 금액을 만 원 단위로 각각 입력하세요.',
+     fields:[{label:'A의 비과세 식대'},{label:'B의 비과세 식대'}],answers:[0,18],
+     solution:'A 0원 / B 18만 원',
+     explanation:'현금 식대의 비과세 여부는 금액뿐 아니라 식사를 제공받는지도 확인해야 합니다.',
+     articles:[12]
+    },
+    {
+     ...payroll,topic:'자가운전보조금 · 요건 적용',
+     prompt:'직원이 본인 차량을 직접 운전해 회사 업무에 사용합니다. 회사 지급 기준에 따라 실제 시내 출장비를 정산받는 대신 월 25만 원을 받았다면, 비과세 금액과 과세 금액은 각각 몇 만 원인가요?',
+     fields:[{label:'비과세 자가운전보조금'},{label:'과세 자가운전보조금'}],answers:[20,5],
+     solution:'비과세 20만 원 / 과세 5만 원',
+     explanation:'본인 차량으로 업무를 수행하고 실제 여비 대신 규정에 따라 지급받는 등 요건을 충족하면 월 20만 원까지 비과세입니다.',
+     articles:['vehicle']
+    },
+    ...withholdingQuizQuestions(true).map((question,i)=>({...question,unit:'사원등록',detail:i<2?'기본공제':'추가공제'})),
+    {
+     unit:'연말정산 추가자료입력',detail:'의료비 세액공제',topic:'의료비 · 기준과 금액 입력',
+     prompt:'총급여 4,000만 원인 근로자가 일반 의료비로 인정되는 금액 180만 원을 지출했습니다. 다른 의료비나 환급액은 없습니다. 총급여의 3%에 해당하는 기준액과 그 기준을 넘는 일반 의료비를 만 원 단위로 입력하세요.',
+     fields:[{label:'총급여의 3% 기준액'},{label:'기준을 초과한 일반 의료비'}],answers:[120,60],
+     solution:'기준액 120만 원 / 초과 의료비 60만 원',
+     explanation:'4,000만 원의 3%인 120만 원을 의료비 180만 원에서 뺍니다. 60만 원은 공제율을 적용하기 전 금액입니다.',
+     reference:{bookPage:132,pdfPage:149},articles:['medical']
+    }
+   ];
+  }
+  const finance={unit:'이자소득',detail:'종합과세·분리과세',reference:{bookPage:74,pdfPage:85},articles:[14]};
+  const method=[['','선택'],['combined','종합과세'],['separate','분리과세']];
+  const other={unit:'기타소득',reference:{bookPage:77,pdfPage:88}};
+  return [
+   {
+    ...finance,alsoUnits:['배당소득'],topic:'금융소득 · 경계값 판단',
+    prompt:'거주자의 국내에서 원천징수된 일반 이자·배당소득만 있다고 가정합니다. 두 경우에 금융소득을 각각 어떻게 과세하나요?',
+    fields:[{label:'이자·배당 합계 2,000만 원',options:method},{label:'이자·배당 합계 2,001만 원',options:method}],
+    answers:['separate','combined'],solution:'2,000만 원은 분리과세 / 2,001만 원은 종합과세',
+    explanation:'이 유형의 금융소득은 원천징수되었고 연간 합계가 2,000만 원 이하일 때 분리과세됩니다.'
+   },
+   {
+    ...finance,topic:'금융소득 · 원천징수 여부 비교',
+    prompt:'두 거주자의 금융소득은 일반 이자소득 1,800만 원뿐입니다. A는 국내에서 원천징수됐고, B는 국외 예금 이자를 받아 국내에서 원천징수되지 않았습니다. 각각 과세방법을 고르세요.',
+    fields:[{label:'A의 이자소득',options:method},{label:'B의 이자소득',options:method}],
+    answers:['separate','combined'],solution:'A는 분리과세 / B는 종합과세',
+    explanation:'국내에서 원천징수되지 않은 이 사례의 국외 이자는 금융소득 합계가 2,000만 원 이하라도 종합과세 대상입니다.'
+   },
+   {
+    ...other,detail:'소득금액 계산',topic:'기타소득금액 · 금액 입력',
+    prompt:'일회성 강연의 기타소득 총수입금액은 240만 원입니다. 세법상 인정되는 필요경비가 144만 원일 때 기타소득금액을 만 원 단위로 입력하세요.',
+    fields:[{label:'기타소득금액'}],answers:[96],solution:'96만 원',
+    explanation:'총수입금액 240만 원에서 필요경비 144만 원을 뺍니다.',articles:[21]
+   },
+   {
+    ...other,detail:'종합과세·분리과세',topic:'기타소득 · 선택적 분리과세',
+    prompt:'원천징수된 일회성 강연료에서 필요경비를 빼고 남은 연간 기타소득금액이 각각 300만 원, 301만 원입니다. 두 경우에 분리과세를 선택할 수 있는지 고르세요.',
+    fields:[300,301].map(value=>({label:'기타소득금액 '+value+'만 원',options:[['','선택'],['yes','선택 가능'],['no','선택 불가']]})),
+    answers:['yes','no'],solution:'300만 원은 선택 가능 / 301만 원은 선택 불가',
+    explanation:'이 사례는 필요경비를 뺀 금액이 300만 원 이하일 때 분리과세를 선택할 수 있습니다.',articles:[14]
+   },
+   {
+    unit:'근로소득',detail:'수입 시기',topic:'급여 · 귀속연도 판단',
+    prompt:'정기 급여를 받는 직원이 2025년 12월에 일했습니다. 이 12월분 일반 급여를 2026년 1월에 받았다면 어느 연도의 근로소득인가요?',
+    fields:[{label:'급여 귀속연도',options:[['','선택'],['2025','2025년'],['2026','2026년']]}],
+    answers:['2025'],solution:'2025년',
+    explanation:'일반 급여의 수입 시기는 근로를 제공한 날을 기준으로 봅니다.',
+    reference:{bookPage:76,pdfPage:87},articles:['salary']
+   }
+  ];
+ }
+
+ const units={
+  income:['근로소득','연금소득','기타소득','이자소득','배당소득','사업소득'],
+  withholding:['급여자료입력','사원등록','연말정산 추가자료입력']
+ };
+ const levels=[
+  {id:'basic',label:'기초',option:'기초 · 셀파',parkShare:0},
+  {id:'applied',label:'적용',option:'적용 · 셀파 + 박문각',parkShare:0.5},
+  {id:'advanced',label:'심화',option:'심화 · 박문각 중심',parkShare:0.75}
+ ];
+ const books={
+  income:{label:'셀파 소득세법',file:'01. 학습/(셀파)_이론+실무_OCR.pdf'},
+  withholding:{label:'셀파 실무 교재',file:'01. 학습/(셀파)_이론+실무_OCR.pdf'},
+  park:{label:'박문각 교재',file:'01. 학습/04. 소득세/소득세_20261028_OCR.pdf'}
+ };
+
+ const selpaIncome=bookPage=>({bookPage,pdfPage:bookPage+11});
+ const selpaPractice=(bookPage,pdfPage)=>({bookPage,pdfPage});
+ const parkReference=bookPage=>({bookPage,pdfPage:bookPage-220});
+ const years=[['','선택'],['2026','2026년'],['2027','2027년']];
+ const judgment=[['','선택'],['yes','가능'],['no','불가']];
+ const method=[['','선택'],['combined','종합과세'],['separate','분리과세']];
+
+ const extraIncomeBasics=[
+  {
+   unit:'연금소득',detail:'소득금액 계산',topic:'연금소득 · 공제와 소득금액',
+   prompt:'종합과세 대상 총연금액이 500만 원입니다. 연금소득공제액과 연금소득금액을 각각 만 원 단위로 입력하세요.',
+   fields:[{label:'연금소득공제액'},{label:'연금소득금액'}],answers:[410,90],
+   solution:'공제액 410만 원 / 연금소득금액 90만 원',
+   explanation:'350만 원에 초과분 150만 원의 40%를 더하면 공제액은 410만 원입니다. 총연금액에서 이를 빼면 90만 원입니다.',
+   reference:selpaIncome(76),articles:['pensionDeduction']
+  },
+  {
+   unit:'연금소득',detail:'수입 시기',topic:'공적연금과 사적연금 · 수입 시기 비교',
+   prompt:'공적연금은 2026년 12월에 지급받기로 했지만 2027년 1월에 받았습니다. 별도로 연금계좌에서도 2027년 1월에 정상적으로 연금을 인출했습니다. 각각 어느 연도의 연금소득인지 고르세요.',
+   fields:[{label:'공적연금 귀속연도',options:years},{label:'연금계좌 연금 귀속연도',options:years}],answers:['2026','2027'],
+   solution:'공적연금 2026년 / 연금계좌 연금 2027년',
+   explanation:'공적연금은 지급받기로 한 날, 연금계좌에서 연금으로 인출한 금액은 수령한 날이 기준입니다.',
+   reference:selpaIncome(76),articles:['pensionTiming']
+  },
+  {
+   unit:'배당소득',detail:'수입 시기',topic:'잉여금 처분 배당 · 기준일',
+   prompt:'일반 기명주식에 대한 잉여금 처분 배당은 어느 날을 수입 시기로 보나요?',
+   choices:[['resolution','잉여금 처분결의일'],['payment','배당금 송금일'],['record','주주명부 기준일']],
+   answers:['resolution'],solution:'잉여금 처분결의일',
+   explanation:'이 배당은 법인이 잉여금 처분을 결의한 날을 기준으로 합니다.',
+   reference:selpaIncome(73),articles:['dividendTiming']
+  },
+  {
+   unit:'사업소득',detail:'소득금액 계산',topic:'사업소득금액 · 금액 입력',
+   prompt:'개인사업자의 총수입금액이 3,600만 원이고 인정되는 필요경비가 1,440만 원입니다. 사업소득금액을 만 원 단위로 입력하세요.',
+   fields:[{label:'사업소득금액'}],answers:[2160],solution:'2,160만 원',
+   explanation:'총수입금액 3,600만 원에서 필요경비 1,440만 원을 뺍니다.',
+   reference:selpaIncome(74),articles:[19]
+  },
+  {
+   unit:'사업소득',detail:'소득금액 계산',topic:'사업소득 · 결손금',
+   prompt:'개인사업자의 연간 총수입금액은 860만 원이고 인정되는 필요경비는 930만 원입니다. 이 사업에서 생긴 결손금의 크기를 만 원 단위로 입력하세요.',
+   fields:[{label:'결손금'}],answers:[70],solution:'70만 원',
+   explanation:'필요경비가 총수입금액을 70만 원 초과하므로 결손금은 70만 원입니다.',
+   reference:selpaIncome(74),articles:[19]
+  }
+ ];
+
+ const incomeApplied=[
+  {
+   unit:'근로소득',detail:'소득금액 계산',topic:'근로소득 · 비과세분 제외 후 공제',
+   prompt:'근로자가 한 해 동안 받은 급여의 합계는 3,180만 원이고, 그중 비과세로 확정된 식대가 180만 원입니다. 총급여액과 근로소득금액을 만 원 단위로 각각 입력하세요.',
+   fields:[{label:'총급여액'},{label:'근로소득금액'}],answers:[3000,2025],
+   solution:'총급여액 3,000만 원 / 근로소득금액 2,025만 원',
+   explanation:'비과세 식대를 빼면 총급여액은 3,000만 원입니다. 여기서 근로소득공제 975만 원을 뺍니다.',
+   reference:selpaIncome(75),articles:[47]
+  },
+  {
+   unit:'연금소득',detail:'소득금액 계산',topic:'연금소득 · 비과세분과 공제 구간',
+   prompt:'받은 연금 합계가 900만 원입니다. 이 중 100만 원은 비과세이고 나머지는 종합과세 대상입니다. 연금소득공제액과 연금소득금액을 만 원 단위로 각각 입력하세요.',
+   fields:[{label:'연금소득공제액'},{label:'연금소득금액'}],answers:[510,290],
+   solution:'공제액 510만 원 / 연금소득금액 290만 원',
+   explanation:'공제 계산의 기준은 800만 원입니다. 490만 원에 700만 원 초과분의 20%를 더한 510만 원을 공제합니다.',
+   reference:selpaIncome(76),articles:['pensionDeduction']
+  },
+  {
+   unit:'기타소득',detail:'소득금액 계산',topic:'강연료 · 실제 필요경비 비교',
+   prompt:'고용관계 없이 한 차례 강연해 500만 원을 받았습니다. 입증된 실제 필요경비는 330만 원입니다. 인정할 필요경비와 기타소득금액을 만 원 단위로 입력하세요.',
+   fields:[{label:'인정 필요경비'},{label:'기타소득금액'}],answers:[330,170],
+   solution:'필요경비 330만 원 / 기타소득금액 170만 원',
+   explanation:'이 강연료에는 수입금액의 60%인 300만 원과 실제 필요경비 330만 원 중 큰 금액을 적용합니다.',
+   book:'park',reference:parkReference(249),articles:[21,'otherExpense']
+  },
+  {
+   unit:'이자소득',detail:'수입 시기',topic:'채권과 정기예금 · 귀속연도 비교',
+   prompt:'기명채권 이자의 약정 지급일은 2026년 12월이고 실제 지급은 2027년 1월입니다. 일반 정기예금 이자는 특약 없이 2027년 1월에 받았습니다. 각각 귀속연도를 고르세요.',
+   fields:[{label:'기명채권 이자',options:years},{label:'정기예금 이자',options:years}],answers:['2026','2027'],
+   solution:'기명채권 2026년 / 정기예금 2027년',
+   explanation:'기명채권 이자는 약정 지급일, 이 사례의 정기예금 이자는 실제 지급일이 기준입니다.',
+   book:'park',reference:parkReference(230),articles:['interestTiming']
+  },
+  {
+   unit:'배당소득',detail:'수입 시기',topic:'기명·무기명주식 배당 · 귀속연도 비교',
+   prompt:'A는 기명주식 잉여금 처분 배당이 2026년 12월에 결의되어 2027년 1월에 받았습니다. B는 무기명주식의 배당을 2027년 1월에 받았습니다. 각 배당소득의 귀속연도를 고르세요.',
+   fields:[{label:'A의 배당소득',options:years},{label:'B의 배당소득',options:years}],answers:['2026','2027'],
+   solution:'A는 2026년 / B는 2027년',
+   explanation:'A는 잉여금 처분결의일, B는 배당금을 실제로 지급받은 날을 기준으로 합니다.',
+   reference:selpaIncome(73),articles:['dividendTiming']
+  },
+  {
+   unit:'사업소득',detail:'수입 시기',topic:'인적용역 · 완료일과 지급약정 비교',
+   prompt:'독립적으로 계속 인적용역을 하는 사업자가 2026년 12월에 용역을 마쳤습니다. 용역대가의 약정 지급일과 실제 입금일은 모두 2027년 1월입니다. 이 대가의 귀속연도를 고르세요.',
+   fields:[{label:'사업소득 귀속연도',options:years}],answers:['2026'],solution:'2026년',
+   explanation:'이 사례의 인적용역 사업소득은 약정 지급일과 용역 완료일 중 앞선 날에 귀속됩니다.',
+   book:'park',reference:parkReference(238),articles:['businessTiming']
+  }
+ ];
+
+ const incomeAdvanced=[
+  {
+   unit:'근로소득',detail:'소득금액 계산',topic:'근로소득 · 공제 한도 적용',
+   prompt:'일반 근로자의 총급여액은 4억 원입니다. 공제 한도를 적용한 뒤의 근로소득공제액과 근로소득금액을 만 원 단위로 입력하세요.',
+   fields:[{label:'한도 적용 후 공제액'},{label:'근로소득금액'}],answers:[2000,38000],
+   solution:'근로소득공제 2,000만 원 / 근로소득금액 38,000만 원',
+   explanation:'구간별 계산 결과는 2,075만 원이지만 공제 한도인 2,000만 원까지만 뺍니다.',
+   book:'park',reference:parkReference(243),articles:[47]
+  },
+  {
+   unit:'연금소득',detail:'소득금액 계산',topic:'연금소득 · 공제 한도 적용',
+   prompt:'비과세분과 분리과세분을 제외한 총연금액이 5,000만 원입니다. 공제 한도를 적용한 연금소득공제액과 연금소득금액을 만 원 단위로 입력하세요.',
+   fields:[{label:'한도 적용 후 공제액'},{label:'연금소득금액'}],answers:[900,4100],
+   solution:'연금소득공제 900만 원 / 연금소득금액 4,100만 원',
+   explanation:'구간별 계산은 630만 원에 초과분 3,600만 원의 10%를 더한 990만 원입니다. 한도인 900만 원까지만 공제합니다.',
+   book:'park',reference:parkReference(246),articles:['pensionDeduction']
+  },
+  {
+   unit:'기타소득',detail:'종합과세·분리과세',topic:'강연료 · 필요경비와 분리과세 선택',
+   prompt:'원천징수된 일회성 강연료 750만 원이 유일한 기타소득입니다. 실제 필요경비 470만 원이 입증됐습니다. 기타소득금액을 만 원 단위로 쓰고 분리과세 선택 가능 여부를 고르세요.',
+   fields:[{label:'기타소득금액'},{label:'분리과세 선택',options:judgment}],answers:[280,'yes'],
+   solution:'기타소득금액 280만 원 / 분리과세 선택 가능',
+   explanation:'정률로 계산한 경비 450만 원보다 실제 경비 470만 원이 큽니다. 이를 빼면 원천징수된 기타소득금액이 300만 원 이하입니다.',
+   book:'park',reference:parkReference(249),articles:[14,'otherExpense']
+  },
+  {
+   unit:'이자소득',detail:'종합과세·분리과세',topic:'금융소득 · 기준금액에서 제외하는 항목',
+   prompt:'거주자가 국내에서 원천징수된 일반 예금 이자 1,700만 원과 직장공제회 초과반환금 500만 원만 받았습니다. 2,000만 원 기준과 비교할 금액을 만 원 단위로 쓰고 일반 예금 이자의 과세방법을 고르세요.',
+   fields:[{label:'기준과 비교할 금액'},{label:'일반 예금 이자의 과세방법',options:method}],
+   answers:[1700,'separate'],solution:'1,700만 원 / 일반 예금 이자는 분리과세',
+   explanation:'직장공제회 초과반환금은 별도로 분리과세하므로 기준과 비교할 합계에 넣지 않습니다.',
+   book:'park',reference:parkReference(233),articles:[14]
+  },
+  {
+   unit:'배당소득',detail:'수입 시기',topic:'실제 배당과 해산 의제배당 · 귀속연도 비교',
+   prompt:'A법인은 2026년 12월에 잉여금 처분 배당을 결의하고 2027년 1월에 지급했습니다. B법인은 2026년에 해산하고 2027년 1월에 잔여재산가액을 확정했습니다. 일반 기명주식 주주가 받은 배당과 해산에 따른 의제배당의 귀속연도를 각각 고르세요.',
+   fields:[{label:'A법인의 배당',options:years},{label:'B법인의 의제배당',options:years}],answers:['2026','2027'],
+   solution:'A는 2026년 / B는 2027년',
+   explanation:'잉여금 처분 배당은 결의일, 해산에 따른 의제배당은 잔여재산가액이 확정된 날이 기준입니다.',
+   book:'park',reference:parkReference(232),articles:['dividendTiming']
+  },
+  {
+   unit:'사업소득',detail:'소득금액 계산',topic:'사업소득 · 필요경비 불산입',
+   prompt:'총수입금액이 5,300만 원입니다. 비용으로 기록한 2,800만 원에는 사업과 무관한 가계 생활비 300만 원과 본인의 소득세 100만 원이 포함됩니다. 나머지는 전부 필요경비로 인정될 때, 인정 필요경비와 사업소득금액을 만 원 단위로 입력하세요.',
+   fields:[{label:'인정 필요경비'},{label:'사업소득금액'}],answers:[2400,2900],
+   solution:'필요경비 2,400만 원 / 사업소득금액 2,900만 원',
+   explanation:'가계 생활비 300만 원과 본인의 소득세 100만 원을 비용에서 제외한 뒤 계산합니다.',
+   book:'park',reference:parkReference(239),articles:[19,33]
+  },
+  {
+   unit:'이자소득',alsoUnits:['배당소득'],detail:'종합과세·분리과세',topic:'국내 배당과 국외 이자 · 합산 판단',
+   prompt:'거주자가 국내에서 원천징수된 일반 배당 1,800만 원과 국내에서 원천징수되지 않은 일반 국외 예금 이자 400만 원만 받았습니다. 2,000만 원 기준과 비교할 금액을 만 원 단위로 쓰고 국내 배당의 과세방법을 고르세요.',
+   fields:[{label:'기준과 비교할 금액'},{label:'국내 배당의 과세방법',options:method}],answers:[2200,'combined'],
+   solution:'2,200만 원 / 국내 배당도 종합과세',
+   explanation:'이 사례의 국외 이자를 합산하면 기준을 넘으므로 국내 배당도 종합과세 대상입니다.',
+   reference:selpaIncome(74),articles:[14]
+  }
+ ];
+
+ const withholdingApplied=[
+  {
+   unit:'급여자료입력',detail:'비과세',topic:'식대·자가운전보조금 · 합계 입력',
+   prompt:'회사 식사를 제공받지 않는 직원이 현금 식대 25만 원과 자가운전보조금 24만 원을 받았습니다. 차량은 직원이 소유하고 직접 운전해 업무에 사용하며, 회사 규정에 따라 실제 출장비 대신 보조금을 받습니다. 두 수당을 합한 비과세 금액과 과세 금액을 만 원 단위로 각각 입력하세요.',
+   fields:[{label:'비과세 수당 합계'},{label:'과세 수당 합계'}],answers:[40,9],
+   solution:'비과세 40만 원 / 과세 9만 원',
+   explanation:'각 수당에 월 20만 원 한도를 따로 적용합니다. 식대 5만 원과 자가운전보조금 4만 원이 과세됩니다.',
+   reference:selpaPractice(129,146),articles:[12,'vehicle']
+  },
+  {
+   unit:'급여자료입력',detail:'비과세',topic:'연간 급여 · 비과세 항목 구분',
+   prompt:'한 직원의 연간 지급액은 과세 기본급 3,000만 원, 상여 300만 원, 비과세로 확인된 식대 180만 원입니다. 지급액 합계와 연말정산에 사용할 총급여액을 만 원 단위로 각각 입력하세요.',
+   fields:[{label:'지급액 합계'},{label:'총급여액'}],answers:[3480,3300],
+   solution:'지급액 합계 3,480만 원 / 총급여액 3,300만 원',
+   explanation:'총급여액에서는 비과세 식대를 제외하되 과세 상여는 포함합니다.',
+   book:'park',reference:parkReference(243),articles:[20]
+  },
+  {
+   unit:'사원등록',detail:'기본공제',topic:'직계존속 · 나이 요건의 예외',
+   prompt:'A와 B는 생계를 같이하는 58세 어머니를 각각 부양합니다. 두 어머니의 연간 소득금액 합계는 각각 80만 원이고 중복공제는 없습니다. A의 어머니만 세법상 장애인이라면 각각 기본공제가 가능한가요?',
+   fields:[{label:'A의 어머니',options:judgment},{label:'B의 어머니',options:judgment}],answers:['yes','no'],
+   solution:'A는 가능 / B는 불가',
+   explanation:'두 사람 모두 소득 요건은 충족합니다. 직계존속의 나이 요건은 60세 이상이지만 세법상 장애인에게는 나이 제한을 적용하지 않습니다.',
+   book:'park',reference:parkReference(270),articles:[50]
+  },
+  {
+   unit:'사원등록',detail:'추가공제',topic:'경로우대 · 기본공제와 추가공제 구분',
+   prompt:'근로자의 69세 아버지와 71세 어머니가 모두 기본공제 대상입니다. 두 분의 기본공제 합계와 경로우대 추가공제 합계를 만 원 단위로 각각 입력하세요.',
+   fields:[{label:'기본공제 합계'},{label:'경로우대 추가공제 합계'}],answers:[300,100],
+   solution:'기본공제 300만 원 / 경로우대 추가공제 100만 원',
+   explanation:'두 분 모두 기본공제 대상이므로 150만 원씩 적용합니다. 경로우대 추가공제는 만 70세 이상인 어머니에게만 적용합니다.',
+   reference:selpaPractice(126,143),articles:[50,51]
+  },
+  {
+   unit:'연말정산 추가자료입력',detail:'보험료 세액공제',topic:'일반 보장성보험료 · 세액공제액',
+   prompt:'근로자가 다른 요건을 충족하는 일반 보장성보험료 75만 원과 저축성보험료 60만 원을 부담했습니다. 보험료 세액공제 대상 납입액과 세액공제액을 각각 만 원 단위로 입력하세요.',
+   fields:[{label:'공제 대상 납입액'},{label:'보험료 세액공제액'}],answers:[75,9],
+   solution:'공제 대상 납입액 75만 원 / 세액공제액 9만 원',
+   explanation:'일반 보장성보험료 75만 원에 12%를 적용합니다. 저축성보험료는 이 공제 대상에서 제외합니다.',
+   reference:selpaPractice(132,149),articles:['insurance']
+  },
+  {
+   unit:'연말정산 추가자료입력',detail:'의료비 세액공제',topic:'시력보정용 안경 · 인별 한도',
+   prompt:'근로자가 본인과 자녀의 시력보정용 안경에 각각 65만 원과 20만 원을 지출했습니다. 두 사람 모두 의료비 공제 대상이고 다른 안경 구입은 없었습니다. 총급여 기준을 차감하기 전, 각 사람에 대해 인정되는 의료비를 만 원 단위로 입력하세요.',
+   fields:[{label:'본인 안경 인정액'},{label:'자녀 안경 인정액'}],answers:[50,20],
+   solution:'본인 50만 원 / 자녀 20만 원',
+   explanation:'시력보정용 안경 한도 50만 원은 가구 합계가 아니라 사람별로 적용합니다.',
+   book:'park',reference:parkReference(287),articles:['glasses']
+  }
+ ];
+
+ const withholdingAdvanced=[
+  {
+   unit:'급여자료입력',detail:'비과세',topic:'자가운전보조금 · 실제 출장비 중복 지급',
+   prompt:'A와 B는 모두 본인 소유 차량을 직접 운전해 회사 업무에 쓰고, 지급 규정에 따라 월 자가운전보조금 23만 원을 받습니다. A는 실제 시내 출장비를 따로 받지 않고 B는 받습니다. 두 직원의 월 보조금 중 과세 금액을 각각 만 원 단위로 입력하세요.',
+   fields:[{label:'A의 과세 보조금'},{label:'B의 과세 보조금'}],answers:[3,23],
+   solution:'A 3만 원 / B 23만 원',
+   explanation:'A는 실제 여비 대신 보조금을 받아 비과세 한도를 적용합니다. B는 출장비를 별도로 받으므로 해당 보조금에 이 비과세를 적용하지 않습니다.',
+   book:'park',reference:parkReference(240),articles:['vehicle']
+  },
+  {
+   unit:'급여자료입력',detail:'원천징수 시기',topic:'미지급 급여 · 11월분과 12월분',
+   prompt:'2026년 11월분과 12월분 일반 급여가 모두 2027년 3월까지 지급되지 않았습니다. 원천징수에서는 각 급여를 언제 지급한 것으로 보나요?',
+   fields:['11월분 급여','12월분 급여'].map(label=>({label,options:[['','선택'],['dec','2026년 12월 31일'],['feb','2027년 2월 말일'],['mar','2027년 3월 말일']]})),
+   answers:['dec','feb'],solution:'11월분은 2026년 12월 31일 / 12월분은 2027년 2월 말일',
+   explanation:'미지급 급여는 1~11월분과 12월분의 지급 간주일을 따로 판단합니다.',
+   book:'park',reference:parkReference(244),articles:[135]
+  },
+  {
+   unit:'사원등록',detail:'추가공제',topic:'한부모·부녀자 · 중복 요건',
+   prompt:'종합소득금액이 2,900만 원인 여성 근로자에게 배우자가 없고, 기본공제 대상 자녀를 부양하는 세대주입니다. 한부모와 부녀자 요건을 모두 충족할 때 실제 적용할 두 추가공제액을 만 원 단위로 입력하세요. 적용하지 않는 항목은 0을 입력하세요.',
+   fields:[{label:'한부모 추가공제액'},{label:'부녀자 추가공제액'}],answers:[100,0],
+   solution:'한부모 100만 원 / 부녀자 0원',
+   explanation:'한부모와 부녀자 공제 요건을 모두 충족하면 한부모 공제만 적용합니다.',
+   book:'park',reference:parkReference(270),articles:[51]
+  },
+  {
+   unit:'연말정산 추가자료입력',detail:'보험료 세액공제',topic:'보장성보험 · 한도와 공제율 구분',
+   prompt:'근로자가 공제 요건을 충족하는 일반 보장성보험료 110만 원과 장애인전용 보장성보험료 120만 원을 납부했습니다. 두 항목의 연간 한도를 각각 적용해 세액공제액을 만 원 단위로 입력하세요.',
+   fields:[{label:'일반 보장성보험 세액공제액'},{label:'장애인전용 보장성보험 세액공제액'}],answers:[12,15],
+   solution:'일반 12만 원 / 장애인전용 15만 원',
+   explanation:'두 보험의 대상 보험료 한도는 각각 100만 원이며, 공제율은 각각 12%와 15%입니다.',
+   book:'park',reference:parkReference(286),articles:['insurance']
+  },
+  {
+   unit:'연말정산 추가자료입력',detail:'의료비 세액공제',topic:'일반 의료비 · 인별 한도와 총급여 기준',
+   prompt:'총급여가 5,000만 원인 근로자가 65세 미만의 일반 의료비 대상 부양가족 두 명을 위해 시력보정용 안경을 각각 60만 원씩 사고, 두 사람의 다른 인정 의료비로 합계 150만 원을 지출했습니다. 본인 의료비나 환급액은 없습니다. 3% 기준을 빼기 전의 인정 의료비와 세액공제액을 만 원 단위로 입력하세요.',
+   fields:[{label:'인정 의료비 합계'},{label:'의료비 세액공제액'}],answers:[250,15],
+   solution:'인정 의료비 250만 원 / 세액공제액 15만 원',
+   explanation:'안경은 두 사람에게 각각 50만 원씩 인정합니다. 합계 250만 원에서 총급여의 3%인 150만 원을 빼고 15%를 적용합니다.',
+   book:'park',reference:parkReference(287),articles:['medical','glasses']
+  },
+  {
+   unit:'연말정산 추가자료입력',detail:'보험료·의료비 구분',topic:'보험료와 의료비 · 입력할 비용 선별',
+   prompt:'연말정산 자료에 공제 요건을 충족하는 일반 보장성보험료 130만 원, 저축성보험료 90만 원, 본인의 시력보정용 안경비 70만 원, 미용 목적 성형비 50만 원이 있습니다. 보험료는 한도 적용 후 금액, 의료비는 총급여 기준을 빼기 전 인정 금액을 만 원 단위로 입력하세요.',
+   fields:[{label:'한도 적용 후 공제 대상 보험료'},{label:'인정 의료비'}],answers:[100,50],
+   solution:'보험료 100만 원 / 의료비 50만 원',
+   explanation:'보장성보험료에는 100만 원 한도, 안경에는 인별 50만 원 한도를 적용합니다. 저축성보험료와 미용 성형비는 각 목록에서 뺍니다.',
+   reference:selpaPractice(132,149),articles:['insurance','glasses']
+  }
+ ];
+
+ function questions(course){
+  const graded=[['basic',basicQuestions(course)],['applied',course==='income'?incomeApplied:withholdingApplied],
+   ['advanced',course==='income'?incomeAdvanced:withholdingAdvanced]];
+  if(course==='income')graded[0][1].push(...extraIncomeBasics);
+  return graded.flatMap(([level,list])=>list.map(question=>({...question,level,book:question.book||course})))
+   .sort((a,b)=>units[course].indexOf(a.unit)-units[course].indexOf(b.unit));
+ }
+
+ function inUnit(question,unit){
+  return !unit||question.unit===unit||Boolean(question.alsoUnits?.includes(unit));
+ }
+
+ function selectQuestions(matching,count,levelId){
+  if(count>=matching.length)return matching;
+  const park=matching.filter(question=>question.book==='park');
+  const selpa=matching.filter(question=>question.book!=='park');
+  const share=levels.find(level=>level.id===levelId).parkShare;
+  // Keep both books in an applied set when the filters and question count allow it.
+  const target=levelId==='applied'?Math.floor(count*share):Math.ceil(count*share);
+  const parkCount=Math.max(count-selpa.length,Math.min(target,park.length));
+  const chosen=new Set([...park.slice(0,parkCount),...selpa.slice(0,count-parkCount)]);
+  return matching.filter(question=>chosen.has(question));
+ }
+
+ const api={units,levels,books,questions,inUnit,selectQuestions};
+ if(typeof module==='object'&&module.exports)module.exports=api;
+ else root.SemuonTaxQuiz=api;
+})(globalThis);

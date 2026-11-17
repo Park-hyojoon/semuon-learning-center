@@ -2,8 +2,8 @@
 globalThis.SemuonDictionaryCatalogs ??= [];
 {
  const books = {
-  selpa: {"name":"셀파 이론서","file":"01. 학습/이론_20261029_OCR.pdf"},
-  practice: {"name":"셀파 실무 교재","file":"01. 학습/목차,실무(셀파)_20261029_OCR.pdf"},
+  selpa: {"name":"셀파 이론서","file":"01. 학습/(셀파)_이론+실무_OCR.pdf"},
+  practice: {"name":"셀파 실무 교재","file":"01. 학습/(셀파)_이론+실무_OCR.pdf","pdfPageShift":94},
   fa: {"name":"박문각 교재","file":"01. 학습/01. 재무회계/재무회계_20261022_OCR.pdf"},
   faStatements: {"name":"박문각 교재","file":"01. 학습/01. 재무회계/박문각_재무회계_20-21쪽.pdf"},
   cost: {"name":"박문각 교재","file":"01. 학습/03. 원가회계/원가회계_20261028_OCR.pdf"},

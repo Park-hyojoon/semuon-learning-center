@@ -5,6 +5,7 @@
  const KEY='semuon-tax2-marks-v1',DAYKEY=KEY+'-day',today=()=>new Date(Date.now()+9*3600000).toISOString().slice(0,10),kinds=['blue','red','green','highlight','bold','underline','strike'],colors=kinds.slice(0,3),idPattern=/^[A-Za-z0-9_-]{1,100}:(title|prompt|exhibit|choice|explanation):\d+$/;
  const blocks=new Map(),encounters=new Map(),retired=new Set(),undo=[],copy=v=>v===undefined?undefined:JSON.parse(JSON.stringify(v));
  let marks={},pending=[],readable=true,popup,status,undoButton,markDay=today(),shortcutProvider=()=>root.SemuonCore.markupShortcuts({});
+ let recordUndo;
  try{if(performance.getEntriesByType('navigation')[0]?.type!=='reload')sessionStorage.removeItem(KEY)}catch(_){}
  function valid(v){return v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).length<=2000&&Object.entries(v).every(([id,e])=>idPattern.test(id)&&e&&typeof e.text==='string'&&e.text.length<=100000&&Array.isArray(e.spans)&&e.spans.length<=3000&&e.spans.every(s=>s&&kinds.includes(s.kind)&&Number.isInteger(s.start)&&Number.isInteger(s.end)&&s.start>=0&&s.end>s.start&&s.end<=e.text.length))}
  function load(){try{markDay=today();if(sessionStorage.getItem(DAYKEY)!==markDay){sessionStorage.removeItem(KEY);sessionStorage.setItem(DAYKEY,markDay)}const raw=sessionStorage.getItem(KEY),v=raw?JSON.parse(raw):{};if(!valid(v))throw Error('format');marks=v;readable=true}catch(_){readable=false}}
@@ -25,7 +26,8 @@
   b.root.replaceChildren(...tpl.childNodes);
  }
  // 화면에 새로 그린 문제를 등록한다. 카드에는 data-problem-id가 있어야 한다.
- function attach(container,{shortcuts}={}){
+ function attach(container,{shortcuts,onUndo}={}){
+  if(typeof onUndo==='function')recordUndo=onUndo;
   if(typeof shortcuts==='function')shortcutProvider=shortcuts;if(!container)return;setup();syncShortcuts();checkDay();for(const [pid,card]of encounters)if(!card.isConnected)encounters.delete(pid);for(const [id,b] of blocks)if(!b.root.isConnected)blocks.delete(id);
   container.querySelectorAll('[data-problem-id]').forEach(card=>{const pid=card.dataset.problemId;if(!/^[A-Za-z0-9_-]{1,100}$/.test(pid))return;if(retired.has(pid)&&encounters.get(pid)!==card){forget(pid);retired.delete(pid)}encounters.set(pid,card);
    for(const [type,selector] of [['title',':scope > h2, :scope > h3, .qhead h2, .qhead h3'],['prompt','.prompt'],['exhibit','.exhibit, .table-scroll'],['choice','.choice > span'],['explanation','.answer-reveal > div']])card.querySelectorAll(selector).forEach((el,i)=>{
@@ -54,9 +56,18 @@
  function trim(spans,sel,kind){return spans.flatMap(s=>{if((kind!=='clear'&&(colors.includes(kind)?!colors.includes(s.kind):s.kind!==kind))||s.end<=sel.start||s.start>=sel.end)return[s];const kept=[];if(s.start<sel.start)kept.push({...s,end:sel.start});if(s.end>sel.end)kept.push({...s,start:sel.end});return kept})}
  function apply(kind){if(checkDay()||!pending.length)return;pending=pending.filter(sel=>blocks.get(sel.id)?.root.isConnected);if(!pending.length){hide();return}const next={...marks},before=new Map(),remove=['underline','strike','highlight'].includes(kind)&&pending.every(sel=>covered(sel,kind));
   for(const sel of pending){const b=blocks.get(sel.id);if(!before.has(sel.id))before.set(sel.id,copy(marks[sel.id]));const spans=trim(spansFor(sel.id),sel,kind);if(kind!=='clear'&&!remove)spans.push({start:sel.start,end:sel.end,kind});if(spans.length)next[sel.id]={text:b.text,spans};else delete next[sel.id]}
-  if(!save(next))return;undo.push(before);if(undo.length>30)undo.shift();undoButton.disabled=false;before.forEach((_,id)=>renderBlock(id));getSelection()?.removeAllRanges();report('');hide()}
+  if(!save(next))return;undo.push(before);if(undo.length>30)undo.shift();recordUndo?.(()=>undoMark(before));undoButton.disabled=false;before.forEach((_,id)=>renderBlock(id));getSelection()?.removeAllRanges();report('');hide()}
+ function undoMark(before=undo.at(-1)){
+  if(checkDay()||!before||before!==undo.at(-1))return false;
+  const next={...marks};
+  before.forEach((value,id)=>{if(value===undefined)delete next[id];else next[id]=copy(value)});
+  if(!save(next))return false;
+  undo.pop();before.forEach((_,id)=>renderBlock(id));undoButton.disabled=!undo.length;
+  getSelection()?.removeAllRanges();hide();
+  return true;
+ }
  function covered(sel,kind){let end=sel.start;for(const s of spansFor(sel.id).filter(s=>s.kind===kind).sort((a,b)=>a.start-b.start)){if(s.start>end)break;if(s.end>end)end=s.end;if(end>=sel.end)return true}return false}
- function syncShortcuts(){if(!popup)return;const shortcuts=shortcutProvider();popup.querySelectorAll('[data-question-mark]').forEach(button=>{const key=shortcuts[button.dataset.questionMark];if(key){button.title=button.getAttribute('aria-label')+' · Alt+'+key;button.setAttribute('aria-keyshortcuts','Alt+'+key)}})}
+ function syncShortcuts(){if(!popup)return;const shortcuts=shortcutProvider();popup.querySelectorAll('[data-question-mark]').forEach(button=>{const key=shortcuts[button.dataset.questionMark];if(key){button.title=button.getAttribute('aria-label')+(key==='+'?' · Alt + 플러스':' · Alt+'+key);button.setAttribute('aria-keyshortcuts','Alt+'+(key==='+'?'Plus':key))}})}
  let ready=false;
  function setup(){if(ready)return;ready=true;load();
   popup=document.createElement('div');popup.className='question-mark-popup';popup.hidden=true;popup.setAttribute('role','toolbar');popup.setAttribute('aria-label','선택한 문제 글자 표시');
@@ -70,10 +81,19 @@
   let selectionFrame=0;document.addEventListener('selectionchange',()=>{if(popup.hidden||selectionFrame)return;selectionFrame=requestAnimationFrame(()=>{selectionFrame=0;if(popup.hidden)return;const found=selected();if(!found.length){hide();return}pending=found;placeSelection()})});
   popup.addEventListener('pointerdown',e=>{if(e.target.closest('button'))e.preventDefault()});
   popup.querySelectorAll('[data-question-mark]').forEach(b=>b.addEventListener('click',()=>apply(b.dataset.questionMark)));
-  undoButton.addEventListener('click',()=>{if(checkDay()||!undo.length)return;const before=undo.at(-1),next={...marks};before.forEach((e,id)=>{if(e===undefined)delete next[id];else next[id]=copy(e)});if(!save(next))return;undo.pop();before.forEach((_,id)=>renderBlock(id));undoButton.disabled=!undo.length;getSelection()?.removeAllRanges();hide()});
+  undoButton.addEventListener('click',()=>undoMark());
   popup.addEventListener('keydown',e=>{if(!['ArrowRight','ArrowLeft','Home','End'].includes(e.key))return;const buttons=[...popup.querySelectorAll('button:not(:disabled)')],i=buttons.indexOf(document.activeElement);e.preventDefault();buttons[e.key==='Home'?0:e.key==='End'?buttons.length-1:(i+(e.key==='ArrowRight'?1:-1)+buttons.length)%buttons.length]?.focus()});
   document.addEventListener('pointerdown',e=>{if(popup&&!popup.hidden&&!popup.contains(e.target))hide()});
-  document.addEventListener('keydown',e=>{if(!e.altKey||e.ctrlKey||e.metaKey||e.shiftKey||e.repeat||e.isComposing||e.target.closest('textarea,select,[contenteditable],input:not([type=radio]):not([type=checkbox])'))return;if(checkDay())return;const kind=Object.entries(shortcutProvider()).find(([,key])=>key===e.key.toUpperCase())?.[0];if(!kind)return;const found=selected();if(!found.length)return;e.preventDefault();e.stopImmediatePropagation();pending=found;apply(kind)},{capture:true});
+  document.addEventListener('keydown',e=>{
+   const key=e.code==='NumpadAdd'?'+':e.key.toUpperCase();
+   if(!e.altKey||e.ctrlKey||e.metaKey||(e.shiftKey&&key!=='+')||e.repeat||e.isComposing||
+      e.target.closest('textarea,select,[contenteditable],input:not([type=radio]):not([type=checkbox])'))return;
+   if(checkDay())return;
+   const kind=Object.entries(shortcutProvider()).find(([,assigned])=>assigned===key)?.[0];
+   if(!kind)return;
+   const found=selected();if(!found.length)return;
+   e.preventDefault();e.stopImmediatePropagation();pending=found;apply(kind);
+  },{capture:true});
   document.addEventListener('focusin',e=>{if(popup&&!popup.hidden&&!popup.contains(e.target))hide()});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&popup&&!popup.hidden){e.preventDefault();hide(true)}});
   addEventListener('scroll',e=>{if(!popup.contains(e.target))hide()},true);addEventListener('resize',hide);

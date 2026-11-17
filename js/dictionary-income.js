@@ -4,7 +4,7 @@ globalThis.SemuonDictionaryCatalogs ??= [];
 globalThis.SemuonDictionaryCatalogs.push({
  subject: '소득세법',
  books: {
-  selpa: { name: '셀파 이론서', pdfOffset: 11, file: '01. 학습/이론_20261029_OCR.pdf' },
+  selpa: { name: '셀파 이론서', pdfOffset: 11, file: '01. 학습/(셀파)_이론+실무_OCR.pdf' },
   park: { name: '박문각 교재', pdfOffset: -220, file: '01. 학습/04. 소득세/소득세_20261028_OCR.pdf' }
  },
  entries: [

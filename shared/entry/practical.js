@@ -83,7 +83,7 @@
 
     function setupAmount(input){
       input.addEventListener('keydown',e=>{
-        if(e.key==='+' || e.code==='NumpadAdd'){
+        if(!e.altKey&&(e.key==='+' || e.code==='NumpadAdd')){
           e.preventDefault();
           const digits=input.value.replace(/\D/g,'');
           input.value=(digits?digits+'000':'000').replace(/\B(?=(\d{3})+(?!\d))/g,',');

@@ -20,9 +20,11 @@
 /* 목록에서 바로 풀기: 문제 카드 간격과 문제별 채점 결과 */
 .theory-slot+.theory-slot{margin-top:20px}.inline-notice:empty{display:none}.inline-notice .feedback{margin:10px 0}
 /* 2026-10-14 사용자 지정: 문제 아래 버튼 4개(통과·다시 연습·채점하기·초기화)는 모두 ‘이 문제 초기화’와 같은 밝은 버튼으로 표시한다. */
-.semuon :is([data-entry-host],.theory-card) :is(.notebook-pass,.notebook-wrong,.check-one){color:var(--primary)!important;background:var(--surface)!important;border-color:var(--line)!important}
-.semuon :is([data-entry-host],.theory-card) :is(.notebook-pass,.notebook-wrong,.check-one):hover{background:var(--soft)!important;border-color:var(--primary)!important}
+.semuon :is([data-entry-host],.theory-card) :is(.notebook-pass,.notebook-wrong){color:var(--primary)!important;background:var(--surface)!important;border-color:var(--line)!important}
+.semuon :is([data-entry-host],.theory-card) :is(.notebook-pass,.notebook-wrong):hover{background:var(--soft)!important;border-color:var(--primary)!important}
 /* 2026-10-14 사용자 지정: ‘초기화’ 버튼은 붉은 계열 */
+.semuon .qactions .btn.check-one{color:#fff!important;background:#155e59!important;border-color:#155e59!important}
+.semuon .qactions .btn.check-one:hover{background:#0f4e4b!important;border-color:#0f4e4b!important}
 .semuon :is([data-entry-host],.theory-card) .reset-one{color:var(--danger)!important;background:#fff5f0!important;border-color:#d9b9ae!important}
 .semuon :is([data-entry-host],.theory-card) .reset-one:hover{background:#ffe6dc!important;border-color:var(--danger)!important}
 /* 2026-10-14 사용자 지정: 이론 계산 자료 3열 목록(좁은 화면 2열·1열). 글자 크기는 본문 그대로 */
@@ -183,9 +185,9 @@ html[data-design-theme]:not([data-design-theme=default]) .semuon .rm-color-2{bac
 html[data-design-theme]:not([data-design-theme=default]) .semuon .rm-color-3{background:var(--theme-c4)}
 html[data-design-theme]:not([data-design-theme=default]) .semuon #rm-time{accent-color:var(--theme-c1)}
 html[data-design-theme]:not([data-design-theme=default]) .semuon .rm-range-calendar td.in-range::before,html[data-design-theme]:not([data-design-theme=default]) .semuon .rm-calendar-key>span>i{background:var(--soft)}
-html[data-design-theme]:not([data-design-theme=default]) .semuon .rm-range-calendar td.range-start time.range-edge{border-color:var(--primary);color:var(--primary);background:var(--surface)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon .rm-range-calendar time.is-today:not(:where(.range-end time)){border-color:var(--primary);color:var(--primary);background:var(--surface)}
 html[data-design-theme]:not([data-design-theme=default]) .semuon .rm-range-calendar td.range-end time.range-edge{border-color:var(--danger);background:var(--danger);color:var(--surface)}
-html[data-design-theme]:not([data-design-theme=default]) .semuon .rm-range-calendar time.is-today{color:var(--primary)}
+
 html[data-design-theme]:not([data-design-theme=default]) .semuon :is(.lm-radar-grid,.ss-radar-grid){stroke:var(--line)}
 html[data-design-theme]:not([data-design-theme=default]) .semuon :is(.lm-radar-fill,.ss-radar-read){fill:var(--soft);stroke:var(--primary)}
 html[data-design-theme]:not([data-design-theme=default]) .semuon :is(.ss-radar-attempt,.ss-radar-solo){stroke:var(--theme-c4)}
@@ -210,14 +212,14 @@ html[data-design-theme]:not([data-design-theme=default]) .semuon .ss-scope-tabs 
 html[data-design-theme=night] .semuon :is(input,textarea)::placeholder{color:var(--muted);opacity:1}
 html[data-design-theme=night] .semuon :is(.menu-icon-panel,.tag-picker-popup,.menu-dialog){background:var(--surface);color:var(--ink)}
 html[data-design-theme=night] .semuon .rm-range-calendar td.range-end time.range-edge{color:#17232f}
-html[data-design-theme]:not([data-design-theme=default]) .semuon .rm-calendar-key .rm-start-key i{border-color:var(--primary);background:var(--surface)}
+html[data-design-theme]:not([data-design-theme=default]) .semuon .rm-calendar-key .rm-today-key i{border-color:var(--primary);background:var(--surface)}
 html[data-design-theme]:not([data-design-theme=default]) .semuon .rm-calendar-key .rm-end-key i{border-color:var(--danger);background:var(--danger)}
 
 html[data-design-theme]:not([data-design-theme=default]) .semuon :is(.tag-picker-trigger,.tag-picker-menu){background:var(--surface);color:var(--ink)}
 html[data-design-theme=night] .semuon .question :is(.prompt,.entry-toggle>summary,.answer-reveal>summary,.answer-reveal>div,.data-box,.balance-panel,.entry-wrap th,.entry-wrap td){background:var(--soft)!important;color:var(--ink)!important;border-color:var(--line)!important}
 html[data-design-theme=night] .semuon .question :is(.tag,.reset-one){color:var(--primary)!important;background:var(--surface)!important}
 html[data-design-theme=night] .semuon .question :is(.answer-reveal,.entry-wrap,.entry-toggle-body){background:var(--surface);color:var(--ink)}
-html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.notebook-wrong):not(.check-one){background:var(--surface);color:var(--primary);border-color:var(--line)}
+html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.notebook-wrong):not(.check-one):where(:not(.problem-report-button)){background:var(--surface);color:var(--primary);border-color:var(--line)}
 
 .settings-layout{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:20px;align-items:start;margin-bottom:20px}.settings-record-stack{display:grid;gap:20px;min-width:0}.settings-layout .card{margin-bottom:0}.settings-layout .font-settings-grid{grid-template-columns:1fr}.settings-layout>.card{min-width:0}@media(max-width:850px){.settings-layout{grid-template-columns:1fr}}
 
@@ -281,6 +283,7 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
  display:inline-flex;align-items:center;justify-content:center;flex:none;min-width:38px;min-height:38px;
  padding:3px 5px;border:1px solid transparent;border-radius:7px;background:transparent;color:var(--primary)
 }
+.evidence-bar button{touch-action:manipulation}
 .evidence-bar button:hover,.evidence-bar button[aria-expanded=true],.evidence-size-bar button:hover{background:var(--soft);border-color:var(--line)}
 .evidence-bar button:focus-visible,.evidence-size-bar button:focus-visible,.evidence-viewport:focus-visible,.evidence-handle:focus-visible{outline-offset:-3px}
 .evidence-mode{font-size:.86em;font-weight:700;white-space:nowrap}
@@ -299,11 +302,31 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
  touch-action:none;overscroll-behavior:contain;user-select:none;-webkit-touch-callout:none
 }
 .evidence-viewport img{display:block;max-width:none;height:auto;margin:0 auto}
+.question-conditions-window .evidence-viewport{
+ background:var(--surface);touch-action:auto;overscroll-behavior:auto;
+ user-select:text;-webkit-touch-callout:default
+}
+.question-conditions-source{
+ padding:12px 14px;font:var(--font-body)/1.65 var(--font-body-family);overflow-wrap:anywhere
+}
+.semuon .question-conditions-source .prompt{line-height:1.65}
+.question-conditions-source .prompt>:last-child{margin-bottom:0}
+.question-conditions-source img{max-width:100%;height:auto}
+.question-conditions-image{display:block;margin:8px auto 0}
+.tax-form-context>[data-question-conditions]:not(.evidence-docked):empty{display:none}
 .evidence-size-bar{display:flex;flex:none;min-height:27px;background:var(--surface);border-top:1px solid var(--line)}
 .evidence-size-bar button{min-height:27px;touch-action:none;border-radius:0}
 .evidence-size-bar .evidence-height{flex:1;min-width:0;cursor:ns-resize}
 .evidence-height::before{content:'';width:34px;height:3px;border-radius:3px;background:currentColor;opacity:.55}
 .evidence-corner{cursor:nwse-resize}
+.evidence-window:has(.evidence-width):not(.evidence-floating){position:relative}
+.evidence-width{
+ position:absolute;z-index:2;inset:20% auto 20% 0;width:14px;min-height:0!important;padding:0!important;
+ border:0;background:transparent;color:var(--primary);cursor:ew-resize;touch-action:none
+}
+.evidence-width::before{content:'';display:block;width:3px;height:34px;margin-inline:auto;border-radius:3px;background:currentColor;opacity:.6}
+.evidence-width:hover,.evidence-width:active{background:var(--soft)}
+@media(max-width:1100px){.evidence-window:not(.evidence-floating)>.evidence-width{display:none}}
 @media(max-width:1100px){
  .semuon [data-entry-host] .exhibit-layout:has(>.prompt+.evidence-preview:last-child:not(.evidence-docked)){grid-template-columns:minmax(0,1fr)}
  .semuon .exhibit-layout>.evidence-docked{order:-1}
@@ -311,3 +334,49 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
 @media(pointer:coarse){
  .evidence-size-bar,.evidence-size-bar button{min-height:36px}
 }
+
+.withholding-quiz{max-width:760px}
+.withholding-quiz-settings{padding:12px 16px;gap:8px 14px}
+.withholding-quiz-settings label{display:flex;align-items:center;gap:7px;font-weight:700;max-width:100%;font-size:var(--font-ui)}
+.withholding-quiz-settings select{
+ min-height:40px;min-width:0;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface)
+}
+.withholding-quiz-total{margin-inline-start:auto}
+.withholding-quiz-question fieldset{min-width:0;margin:14px 0 16px;padding:0;border:0}
+.withholding-quiz-question legend{
+ max-width:100%;padding:0;font-size:calc(var(--font-body)*1.14);font-weight:700;line-height:1.55
+}
+.withholding-quiz-options{display:grid;gap:8px;margin-top:12px}
+.withholding-quiz-options label{
+ display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 12px;
+ border:1px solid var(--line);border-radius:9px;cursor:pointer
+}
+.withholding-quiz-options label:has(input:checked){background:var(--soft);border-color:var(--primary)}
+.withholding-quiz-options input{flex:none;width:18px;height:18px;margin:0;accent-color:var(--primary)}
+.withholding-quiz-fields{
+ display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:10px;margin-top:14px
+}
+.withholding-quiz-fields .field{margin:0;font-size:var(--font-ui)}
+.withholding-quiz-fields .field>span:first-child{font-weight:700}
+.withholding-quiz-fields :is(input,select){background:var(--surface);color:var(--ink)}
+.withholding-quiz-amount{display:flex;align-items:center;gap:8px;white-space:nowrap}
+.withholding-quiz-pagination{justify-content:flex-end;margin-top:16px}
+#withholding-quiz-explanation p{margin:0 0 4px}
+@media(max-width:520px){
+ .withholding-quiz-question{padding:16px}
+}
+
+html .semuon :is(.qactions,.withholding-quiz-question) .btn.secondary.problem-report-button{
+ color:var(--report-ink,#624500);background:var(--report-background,#fff4c9);border-color:var(--report-line,#bf9b41)
+}
+.semuon :is(.qactions,.withholding-quiz-question) .btn.secondary.problem-report-button:hover:not([aria-disabled="true"]){
+ background:var(--report-hover,#ffe69c);border-color:var(--report-ink,#624500)
+}
+.semuon :is(.qactions,.withholding-quiz-question) .btn.secondary.problem-report-button[aria-disabled="true"]{cursor:default}
+html[data-design-theme=night]{
+ --report-ink:#ffe3a1;--report-background:#483617;--report-line:#bd974c;--report-hover:#60481f
+}
+.semuon .problem-report-list{display:grid;gap:8px;margin:10px 0 0;padding:0;list-style:none}
+.semuon .problem-report-list li{padding-block:6px;border-top:1px solid var(--line)}
+.semuon .problem-report-list a{overflow-wrap:anywhere}
+.semuon .problem-report-copy{width:100%;margin-top:8px}

@@ -174,9 +174,10 @@
   const [page, phrase] = Array.isArray(mark) ? mark : [null, mark];
   const target = page == null ? pdfFirst : explicitFirst ? page : page + book.pdfOffset;
   const validTarget = target >= pdfFirst && target <= pdfLast;
+  const shift = book.pdfPageShift || 0;
   return {
-   book: book.name, file: book.file, first, last, pdfFirst, pdfLast,
-   pdfPage: validTarget ? target : pdfFirst, phrase: validTarget ? phrase : null, note
+   book: book.name, file: book.file, first, last, pdfFirst: pdfFirst + shift, pdfLast: pdfLast + shift,
+   pdfPage: (validTarget ? target : pdfFirst) + shift, phrase: validTarget ? phrase : null, note
   };
  }
 

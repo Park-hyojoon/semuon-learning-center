@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-12",
+  "date": "2026-11-17",
   "questions": 1452,
   "activeQuestions": 812,
   "archivedQuestions": 640,
@@ -25,17 +25,17 @@
   ],
   "archivedThroughRound": 105,
   "runtime": {
-    "bankVersion": "bank-77da759da58f",
+    "bankVersion": "bank-2eec2b5427c6",
     "indexVersion": "e19b87fc723d",
-    "bankBytes": 29869095,
+    "bankBytes": 29869806,
     "exhibitGroups": 19
   },
   "storageVersion": 2,
   "sharedHashes": {
     "entry/grading.js": "b4e2573009c602523c9068789dc8fb45274fe66f09c945fece19709dd58e4915",
     "entry/accounts.js": "845b48445b5428859a95e2d2bf0101ed8157e10e2cd411708d0b6495b321875a",
-    "entry/practical.js": "63555d0f226c260317f5ceb23c510ae8480497717b91c59733d3ae918c8cb23b",
-    "entry/voucher.js": "bf7c369471e0c54dd17d5e8247153b0b6a68f7aa4261771dc8548680567d8db7",
+    "entry/practical.js": "ed5c39efe8a3fff15e45cbd68acbb52f03fe9d577dcde230dadab9cae1e20d41",
+    "entry/voucher.js": "49723f0e73828f11e685efe0f8b743d9482770911c6085426c4bf9ac84d2861d",
     "entry/correction.js": "4c1190da34767cdcdd15748afbb8a592b0ac8108f78b55fb2d9435131fac0f3e",
     "entry/correction.css": "e5d92b19c3da9295de1c7716cb0896323be3d767ba94484f8c5108d43c5c921b",
     "entry/common.css": "b27a5a9ae719b1a0765ac94d0f5c8b749bf03d23dae2bac60fbfa9b51499fcbe",

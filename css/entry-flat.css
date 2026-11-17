@@ -22,6 +22,34 @@
 .semuon [data-entry-host] .exhibit-layout>.prompt{margin:0!important;align-self:end}
 .semuon [data-entry-host] .exhibit-layout>.exhibit{margin:0}.semuon [data-entry-host] .exhibit-layout>.exhibit-inv{max-width:none}
 @media(max-width:1100px){.semuon [data-entry-host] .exhibit-layout{grid-template-columns:minmax(0,1fr)}.semuon [data-entry-host] .exhibit-layout>.prompt{align-self:start}}
+.semuon [data-entry-host] .voucher-evidence-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:10px 20px;align-items:start}
+.semuon [data-entry-host] .voucher-evidence-layout>*{min-width:0;margin:0}
+.semuon [data-entry-host] .voucher-evidence-layout>.question-top>.prompt{margin-bottom:0}
+.semuon .voucher-answer{display:grid;gap:10px;min-width:0}
+.semuon .voucher-answer-fields{
+ display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,10ch),1fr));
+ gap:1px;margin:0;border:1px solid var(--line);border-radius:8px;
+ background:var(--line);overflow:hidden
+}
+.semuon .voucher-answer-fields>div{min-width:0;padding:5px 9px;background:var(--surface);overflow-wrap:anywhere}
+.semuon .voucher-answer-fields dt{color:var(--muted);font-size:.88em}
+.semuon .voucher-answer-fields dd{margin:0;font-weight:700}
+.semuon .voucher-answer-journal{width:100%;min-width:0;table-layout:fixed}
+.semuon .voucher-answer-line{display:flex;justify-content:space-between;flex-wrap:wrap;gap:0 8px;overflow-wrap:anywhere}
+.semuon .voucher-answer-line strong{font-variant-numeric:tabular-nums}
+.semuon .voucher-answer-line small{display:block;color:var(--muted)}
+.semuon .voucher-answer :is(.voucher-answer-alternatives,.voucher-answer-note){margin:0}
+.semuon .voucher-answer-alternative{display:grid;gap:6px}
+.semuon .voucher-answer-alternative+.voucher-answer-alternative{margin-top:12px}
+@media(min-width:1101px){
+ .semuon [data-entry-host] .voucher-evidence-layout:has(>.evidence-docked){
+  grid-template-columns:minmax(0,1fr) minmax(0,var(--voucher-evidence-width,1fr));grid-template-rows:auto 1fr;
+  grid-template-areas:"question evidence" "entry evidence"
+ }
+ .semuon [data-entry-host] .voucher-evidence-layout:has(>.evidence-docked)>.question-top{grid-area:question}
+ .semuon [data-entry-host] .voucher-evidence-layout:has(>.evidence-docked)>.kclep-shell{grid-area:entry}
+ .semuon [data-entry-host] .voucher-evidence-layout>.evidence-docked{grid-area:evidence}
+}
 .semuon [data-entry-host] :is(.qnum,.answer-side){background:var(--soft);color:var(--primary)}
 .semuon [data-entry-host] .answer-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .semuon [data-entry-host] .answer-line{display:flex;flex-wrap:wrap;gap:8px;font-size:16px;border-bottom:1px solid var(--line);padding:8px}

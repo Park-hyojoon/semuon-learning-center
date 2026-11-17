@@ -11,6 +11,7 @@
  const icon=name=>`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]}</svg>`;
  const clamp=(value,min,max)=>Math.max(min,Math.min(value,max));
  const preferences={docked:false,floating:null,dockHeight:null,transparency:0};
+ const questionPreferences={floating:null,transparency:0};
  let floating=null,manual=null,sequence=0;
 
  function mountZoom(viewport,img,signal){
@@ -111,8 +112,18 @@
 
  function open(preview,trigger){
   const inline=!trigger;
-  const images=[...preview.querySelector('template').content.querySelectorAll('img')];
-  if(!images.length)return;
+  const source=preview.querySelector('.question-conditions-source');
+  const formContext=source?preview.closest('.tax-form-context'):null;
+  const voucherLayout=preview.closest('.voucher-evidence-layout');
+  const voucherQuestion=voucherLayout?.querySelector('.question-top');
+  const voucherEntry=voucherLayout?.querySelector('.kclep-shell');
+  const topbar=formContext?document.querySelector('.app-topbar'):null;
+  const images=[...(preview.querySelector('template')?.content.querySelectorAll('img')||[])];
+  if(!source&&!images.length)return;
+  const prefs=source?questionPreferences:preferences;
+  const label=source?'문제 조건':'증빙 미리보기';
+  const closeLabel=source?'문제 조건 창 닫기':'증빙 창 닫기';
+  const fitLabel=source?'내용 맞춤':'이미지 맞춤';
   const lifetime=new AbortController(),{signal}=lifetime;
   let docked=inline||preferences.docked,dockHeight=null;
   const panel=document.createElement('section');
@@ -120,40 +131,70 @@
   const transparencyId=panel.id+'-transparency';
   panel.className='evidence-window';
   panel.setAttribute('role','dialog');
-  panel.setAttribute('aria-label','증빙 미리보기');
+  panel.setAttribute('aria-label',label);
   panel.innerHTML=`<header class="evidence-bar">
-    <strong class="evidence-handle">증빙 미리보기</strong>
+    <strong class="evidence-handle">${label}</strong>
     <button type="button" class="evidence-mode"></button>
-    <button type="button" class="evidence-transparency-toggle" aria-label="증빙 투명도 조절" title="증빙 투명도 조절" aria-controls="${transparencyId}" aria-expanded="false">${icon('transparency')}</button>
-    <button type="button" class="evidence-close" aria-label="증빙 창 닫기" title="증빙 창 닫기">${icon('close')}</button>
-    <button type="button" class="evidence-fit" aria-label="이미지 맞춤" title="이미지 맞춤">${icon('fit')}</button>
+    <button type="button" class="evidence-transparency-toggle" aria-label="투명도 조절" title="투명도 조절" aria-controls="${transparencyId}" aria-expanded="false">${icon('transparency')}</button>
+    <button type="button" class="evidence-close" aria-label="${closeLabel}" title="${closeLabel}">${icon('close')}</button>
+    <button type="button" class="evidence-fit" aria-label="${fitLabel}" title="${fitLabel}">${icon('fit')}</button>
     <label id="${transparencyId}" class="evidence-transparency" hidden>투명도 <input type="range" min="0" max="65" step="5"><output></output></label>
    </header>
    <label class="evidence-picker" hidden><span class="sr-only">증빙 선택</span><select></select></label>
-   <div class="evidence-viewport" tabindex="0" aria-label="증빙 이미지"></div>
+   <div class="evidence-viewport" tabindex="0" aria-label="${source?'문제 본문과 자료':'증빙 이미지'}"></div>
    <div class="evidence-size-bar">
     <button type="button" class="evidence-height" aria-label="창 높이 조절" title="아래쪽을 끌어서 높이 조절"></button>
     <button type="button" class="evidence-corner" aria-label="창 너비와 높이 조절" title="모서리를 끌어서 너비와 높이 조절">${icon('corner')}</button>
-   </div>`;
+   </div>
+   ${voucherLayout?`<button type="button" class="evidence-width" aria-label="창 너비 조절" title="왼쪽을 끌어서 창 너비 조절"></button>`:''}`;
   const get=selector=>panel.querySelector(selector);
   const viewport=get('.evidence-viewport'),handle=get('.evidence-handle'),mode=get('.evidence-mode');
-  const picker=get('select'),corner=get('.evidence-corner');
+  const picker=get('select'),corner=get('.evidence-corner'),widthGrip=get('.evidence-width');
   const closeButton=get('.evidence-close');
+  const bar=get('.evidence-bar');
+
+  // Touch controls must still respond after the floating window has been dragged.
+  let buttonTouch=null;
+  bar.addEventListener('touchstart',event=>{
+   const button=event.target.closest('button'),touch=event.changedTouches[0];
+   buttonTouch=button&&event.touches.length===1?{button,touch,at:performance.now()}:null;
+  },{passive:true,signal});
+  bar.addEventListener('touchcancel',()=>{buttonTouch=null},{signal});
+  bar.addEventListener('touchend',event=>{
+   const start=buttonTouch,touch=event.changedTouches[0];
+   buttonTouch=null;
+   if(!start||!event.cancelable||touch.identifier!==start.touch.identifier||
+      performance.now()-start.at>480||Math.hypot(touch.clientX-start.touch.clientX,touch.clientY-start.touch.clientY)>10)return;
+   event.preventDefault();
+   start.button.click();
+  },{passive:false,signal});
   const transparency=get('.evidence-transparency'),slider=transparency.querySelector('input'),opacityButton=get('.evidence-transparency-toggle');
+  let reset;
   const img=document.createElement('img');
-  img.draggable=false;
-  if(inline)img.loading='lazy';
-  viewport.append(img);
-  const reset=mountZoom(viewport,img,signal);
-  images.forEach((image,index)=>picker.add(new Option(image.alt,String(index))));
-  picker.closest('label').hidden=images.length===1;
-  function selectImage(index){
-   reset();
-   img.alt=images[index].alt;
-   img.src=images[index].getAttribute('src');
+  if(source){
+   panel.classList.add('question-conditions-window');
+   viewport.append(source);
+   reset=()=>{
+    if(docked)dockHeight=null;
+    frame(true);
+    viewport.scrollTo(0,0);
+    source.querySelectorAll('.table-scroll').forEach(table=>table.scrollLeft=0);
+   };
+  }else{
+   img.draggable=false;
+   if(inline)img.loading='lazy';
+   viewport.append(img);
+   reset=mountZoom(viewport,img,signal);
+   images.forEach((image,index)=>picker.add(new Option(image.alt,String(index))));
+   picker.closest('label').hidden=images.length===1;
+   function selectImage(index){
+    reset();
+    img.alt=images[index].alt;
+    img.src=images[index].getAttribute('src');
+   }
+   picker.onchange=()=>selectImage(Number(picker.value));
+   selectImage(0);
   }
-  picker.onchange=()=>selectImage(Number(picker.value));
-  selectImage(0);
 
   function showTransparency(show){
    transparency.hidden=!show;
@@ -161,37 +202,61 @@
    if(show)slider.focus({preventScroll:true});
   }
   function setTransparency(){
-   preferences.transparency=slider.valueAsNumber;
-   panel.style.setProperty('--evidence-opacity',String(1-preferences.transparency/100));
-   transparency.querySelector('output').textContent=preferences.transparency+'%';
+   prefs.transparency=slider.valueAsNumber;
+   panel.style.setProperty('--evidence-opacity',String(1-prefs.transparency/100));
+   transparency.querySelector('output').textContent=prefs.transparency+'%';
   }
-  slider.value=preferences.transparency;
+  slider.value=prefs.transparency;
   slider.oninput=setTransparency;
   setTransparency();
   opacityButton.onclick=()=>showTransparency(transparency.hidden);
 
-  function frame(){
+  function frame(fit=false){
    const bounds=screenBounds(),maxWidth=bounds.right-bounds.left,maxHeight=bounds.bottom-bounds.top;
    if(docked){
     let desired=preferences.dockHeight??380;
-    if(inline){
+    let limitHeight=maxHeight;
+    if(source){
+     const sticky=formContext&&getComputedStyle(formContext).position==='sticky';
+     if(sticky){
+      const top=(topbar?.offsetHeight||68)+8;
+      formContext.style.setProperty('--tax-context-top',top+'px');
+      limitHeight=Math.max(1,maxHeight-top);
+     }
+     const chrome=panel.offsetHeight-viewport.offsetHeight;
+     const preferred=sticky?limitHeight:Math.min(400,Math.max(180,maxHeight*.52));
+     desired=dockHeight??Math.min(preferred,chrome+source.offsetHeight+2);
+    }else if(inline){
      const narrow=root.matchMedia('(max-width:1100px)').matches;
      const limit=Math.min(narrow?380:540,maxHeight*(narrow?0.53:0.68));
      const chrome=panel.offsetHeight-viewport.offsetHeight;
      const fitted=img.naturalWidth?chrome+preview.clientWidth*img.naturalHeight/img.naturalWidth:limit;
-     desired=dockHeight??Math.min(limit,fitted);
+     const pairedHeight=voucherEntry&&!narrow
+      ?voucherEntry.getBoundingClientRect().bottom-voucherLayout.getBoundingClientRect().top
+      :Math.min(limit,fitted);
+     desired=dockHeight??pairedHeight;
     }
-    const height=clamp(desired,Math.min(180,maxHeight),maxHeight);
+    const height=clamp(desired,Math.min(source?110:180,limitHeight),limitHeight);
     Object.assign(panel.style,{left:'',top:'',width:'',height:height+'px'});
     return;
    }
    const initialWidth=Math.min(570,maxWidth*.88);
-   const rect=preferences.floating??{left:bounds.right-initialWidth-Math.min(140,maxWidth*.08),
-    top:bounds.top+48,width:initialWidth,height:Math.min(440,maxHeight*.62)};
+   const initialHeight=Math.min(440,maxHeight*.62);
+   if(fit===true&&source){
+    const {left,top}=panel.getBoundingClientRect();
+    prefs.floating={left,top,width:initialWidth,height:initialHeight};
+   }
+   const rect=prefs.floating??{left:bounds.right-initialWidth-Math.min(140,maxWidth*.08),
+    top:bounds.top+48,width:initialWidth,height:initialHeight};
    const width=clamp(rect.width,Math.min(248,maxWidth),maxWidth);
    const height=clamp(rect.height,Math.min(180,maxHeight),maxHeight);
-   Object.assign(panel.style,{left:clamp(rect.left,bounds.left,bounds.right-width)+'px',
-    top:clamp(rect.top,bounds.top,bounds.bottom-height)+'px',width:width+'px',height:height+'px'});
+   panel.style.width=width+'px';
+   panel.style.height=height+'px';
+   const handleInset=handle.offsetLeft,grip=Math.min(48,handle.offsetWidth);
+   const minLeft=bounds.left-handleInset-handle.offsetWidth+grip;
+   const maxLeft=bounds.right-handleInset-grip;
+   panel.style.left=clamp(rect.left,minLeft,maxLeft)+'px';
+   panel.style.top=clamp(rect.top,bounds.top,Math.max(bounds.top,bounds.bottom-bar.offsetHeight))+'px';
   }
   function place(reveal=false){
    if(docked){
@@ -207,13 +272,17 @@
    closeButton.hidden=inline&&docked;
    corner.hidden=docked;
    mode.textContent=docked?'이동':'고정';
-   mode.title=docked?'움직이는 증빙 창으로 전환':'문제에 증빙 고정';
+   mode.title=docked?`움직이는 ${label} 창으로 전환`:`${label} 창을 문제에 고정`;
    handle.tabIndex=docked?-1:0;
    handle.title=docked?'':'제목을 끌거나 방향키로 창 이동';
    frame();
    if(docked&&reveal)panel.scrollIntoView({block:'nearest',inline:'nearest'});
   }
   mode.onclick=()=>{
+   if(docked&&formContext&&!prefs.floating&&getComputedStyle(formContext).position==='sticky'){
+    const rect=panel.getBoundingClientRect();
+    prefs.floating={left:rect.left,top:rect.top,width:rect.width,height:Math.min(rect.height,440)};
+   }
    docked=!docked;
    if(!inline)preferences.docked=docked;
    place(true);
@@ -224,15 +293,20 @@
   function adjust(action,rect,dx,dy){
    const bounds=screenBounds();
    if(docked){
-    if(inline)dockHeight=rect.height+dy;
+    if(action==='left'){
+     const width=voucherLayout.clientWidth-parseFloat(getComputedStyle(voucherLayout).columnGap);
+     const share=clamp((rect.width-dx)/width,.30,.66);
+     voucherLayout.style.setProperty('--voucher-evidence-width',share/(1-share)+'fr');
+    }else if(inline)dockHeight=rect.height+dy;
     else preferences.dockHeight=rect.height+dy;
    }else if(action==='move'){
-    preferences.floating={left:rect.left+dx,top:rect.top+dy,width:rect.width,height:rect.height};
+    prefs.floating={left:rect.left+dx,top:rect.top+dy,width:rect.width,height:rect.height};
    }else{
-    const maxWidth=bounds.right-rect.left,maxHeight=bounds.bottom-rect.top;
-    preferences.floating={left:rect.left,top:rect.top,
-     width:action==='corner'?clamp(rect.width+dx,Math.min(248,maxWidth),maxWidth):rect.width,
-     height:clamp(rect.height+dy,Math.min(180,maxHeight),maxHeight)};
+    const maxWidth=bounds.right-bounds.left,maxHeight=bounds.bottom-bounds.top;
+    const width=action==='left'||action==='corner'
+     ?clamp(rect.width+(action==='left'?-dx:dx),Math.min(248,maxWidth),maxWidth):rect.width;
+    prefs.floating={left:action==='left'?rect.right-width:rect.left,top:rect.top,width,
+     height:action==='left'?rect.height:clamp(rect.height+dy,Math.min(180,maxHeight),maxHeight)};
    }
    frame();
   }
@@ -252,7 +326,7 @@
    });
    grip.addEventListener('keydown',event=>{
     const delta={ArrowLeft:[-16,0],ArrowRight:[16,0],ArrowUp:[0,-16],ArrowDown:[0,16]}[event.key];
-    if(!delta||action==='height'&&delta[0]||action==='move'&&docked)return;
+    if(!delta||action==='height'&&delta[0]||action==='left'&&delta[1]||action==='move'&&docked)return;
     event.preventDefault();
     adjust(action,panel.getBoundingClientRect(),...delta);
    });
@@ -260,6 +334,7 @@
   bindGrip(handle,'move');
   bindGrip(get('.evidence-height'),'height');
   bindGrip(corner,'corner');
+  if(widthGrip)bindGrip(widthGrip,'left');
 
   function destroy(restoreFocus=true){
    lifetime.abort();
@@ -283,7 +358,20 @@
   const viewer={preview,dismiss};
   const observer=new MutationObserver(()=>{if(!preview.isConnected)destroy(false)});
   observer.observe(preview.closest('#content')||document.body,{childList:true,subtree:true});
-  if(inline)img.addEventListener('load',()=>{if(docked)frame()});
+  if(source){
+   const sizeObserver=new ResizeObserver(()=>{if(docked)frame()});
+   sizeObserver.observe(source);
+   if(topbar)sizeObserver.observe(topbar);
+   signal.addEventListener('abort',()=>sizeObserver.disconnect(),{once:true});
+  }else if(inline){
+   img.addEventListener('load',()=>{if(docked)frame()},{signal});
+   if(voucherLayout){
+    const sizeObserver=new ResizeObserver(()=>{if(docked)frame()});
+    sizeObserver.observe(voucherQuestion);
+    sizeObserver.observe(voucherEntry);
+    signal.addEventListener('abort',()=>sizeObserver.disconnect(),{once:true});
+   }
+  }
   root.addEventListener('resize',frame,{signal});
   root.visualViewport?.addEventListener('resize',frame,{signal});
   root.visualViewport?.addEventListener('scroll',frame,{signal});
@@ -313,7 +401,7 @@
   open(preview,trigger);
  }
  function mountInline(container){
-  for(const preview of container.querySelectorAll('[data-evidence-inline]')){
+  for(const preview of container.querySelectorAll('[data-evidence-inline],[data-question-conditions]')){
    if(!preview.classList.contains('evidence-docked')&&floating?.preview!==preview)open(preview);
   }
  }
