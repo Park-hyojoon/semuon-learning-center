@@ -1,7 +1,10 @@
 /* Isolated tax2 state + adapters for the shared accounting input/grade/review modules. */
 (async function(){
  'use strict';const C=SemuonCore,R=TrainingReview,V=SemuonReviewPlan,$=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)],page=document.body.dataset.page||'home';
- const rootURL=new URL(page==='home'?'./':'../',location.href),legacyURL=new URL('shared/',rootURL),store=SemuonStore.open();
+ const rootURL=new URL(page==='home'?'./':'../',location.href),legacyURL=new URL('shared/',rootURL);
+ const resume=globalThis.SemuonResume?.open(rootURL,page);
+ if(resume?.redirected)return;
+ const store=SemuonStore.open();
  if(page==='roadmap'){location.replace(new URL(location.hash==='#rm-add'?'pages/journal.html#rm-add':'index.html',rootURL));return}
  const href=path=>new URL(path,rootURL).href,esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),nl=v=>esc(v).replace(/\r?\n/g,'<br>');
  // Retired exams remain in storage and complete backups; every learning view uses only available items.
@@ -531,6 +534,19 @@
   const bank=quiz.questions(course),attempts=new Map();
   const today=()=>SemuonProgress.day(Date.now());
   const quizState=()=>Q.analyze(storedSnapshot().quizReviewEvents);
+  const session=globalThis.SemuonResume?.readQuiz(course);
+  const restoreQuiz=session?.url===location.href?session:null;
+  const drafts=new Map();
+  let initialQuiz=true;
+  for(const q of bank){
+   const saved=restoreQuiz?.drafts?.[q.id],event=restoreQuiz?.attempts?.[q.id];
+   if((!event||restoreQuiz.day===today()&&event.signature===C.stable(q.answers))&&Array.isArray(saved)&&saved.length===q.answers.length&&saved.every(value=>typeof value==='string'&&value.length<=100))drafts.set(q,saved);
+   if(restoreQuiz?.day!==today()||!event||event.signature!==C.stable(q.answers)||!Array.isArray(event.values))continue;
+   const recorded=(storedSnapshot().quizReviewEvents||[]).find(e=>e.kind==='attempt'&&e.id===event.id&&e.questionId===q.id);
+   if(recorded&&event.values.length===q.answers.length&&event.values.every(value=>typeof value==='string'&&value.length<=100)){
+    attempts.set(q,{...event,correct:recorded.correct,missed:[]});
+   }
+  }
   const lawLinks={
    12:['소득세법 제12조','https://www.law.go.kr/LSW/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1001059372'],
    14:['소득세법 제14조','https://law.go.kr/lsLinkCommonInfo.do?lsJoLnkSeq=1019371607'],
@@ -559,7 +575,7 @@
   let daily='5';
   let preferredLevel;
   try{
-   const saved=localStorage.getItem(countKey);
+   const saved=params.get('count')||localStorage.getItem(countKey);
    if(allowed.includes(saved))daily=saved;
    preferredLevel=localStorage.getItem(levelKey);
   }catch(_){}
@@ -625,6 +641,17 @@
     (!detail.value||question.detail===detail.value));
    questions=dueMode?Q.due(bank,quizState(),today()):count.value==='all'?matching:quiz.selectQuestions(matching,Number(count.value),level.value);
    position=0;
+   if(initialQuiz&&restoreQuiz){
+    const allowed=new Map((dueMode?questions:matching).map(q=>[q.id,q]));
+    const ids=restoreQuiz.ids;
+    if(restoreQuiz.day===today()&&Array.isArray(ids)&&ids.length&&new Set(ids).size===ids.length&&ids.every(id=>allowed.has(id))){
+     questions=ids.map(id=>allowed.get(id));
+    }
+    const index=questions.findIndex(q=>q.id===restoreQuiz.current);
+    if(index>=0)position=index;
+   }
+   initialQuiz=false;
+   rememberQuiz();
    total.textContent=questions.length===matching.length?`${matching.length}문제`:`${matching.length}문제 중 ${questions.length}문제`;
    if(!questions.length){
     ink?.show(null);
@@ -632,6 +659,7 @@
      ${detail.value?'<button type="button" class="btn secondary" id="quiz-clear-detail">전체 주제 보기</button>':''}`;
     const clear=$('#quiz-clear-detail');
     if(clear)clear.onclick=()=>{detail.value='';selectQuestions();detail.focus()};
+    resume?.ready();
     return;
    }
    renderQuestion();
@@ -639,6 +667,19 @@
   function updateTopics(selected){
    setOptions(detail,bank.filter(question=>quiz.inUnit(question,unit.value)).map(question=>question.detail),'전체 주제',selected);
    selectQuestions();
+  }
+  function rememberQuiz(){
+   const url=new URL(location.href);
+   for(const [key,value] of [['unit',unit.value],['detail',detail.value],['level',level.value],['count',count.value]]){
+    if(value)url.searchParams.set(key,value);else url.searchParams.delete(key);
+   }
+   history.replaceState(null,'',url);
+   globalThis.SemuonResume?.saveQuiz(course,{
+    url:url.href,day:today(),ids:questions.map(q=>q.id),current:questions[position]?.id,
+    drafts:Object.fromEntries([...drafts].map(([q,values])=>[q.id,values])),
+    attempts:Object.fromEntries([...attempts].map(([q,attempt])=>[q.id,{...attempt,signature:C.stable(q.answers)}]))
+   });
+   resume?.remember();
   }
   setOptions(unit,quiz.units[course],'전체 단원',params.get('unit'));
   unit.onchange=()=>updateTopics(detail.value);
@@ -753,7 +794,18 @@
      field.value=value;
     });
     showResult(attempt);
+   }else if(drafts.has(question)){
+    drafts.get(question).forEach((value,i)=>{
+     const field=form.elements.namedItem('answer-'+i);
+     if(field)field.value=value;
+    });
    }
+   const saveQuizInputs=()=>{
+    drafts.set(question,question.answers.map((_,i)=>String(new FormData(form).get('answer-'+i)??'')));
+    rememberQuiz();
+   };
+   form.addEventListener('input',saveQuizInputs);
+   form.addEventListener('change',saveQuizInputs);
    form.onsubmit=event=>{
     event.preventDefault();
     if(grade.disabled)return;
@@ -774,21 +826,27 @@
      id:answer.id,kind:'attempt',course,questionId:question.id,correct:answer.correct,at:new Date().toISOString()
     }));
     attempts.set(question,answer);
+    drafts.set(question,values);
+    rememberQuiz();
     showResult(answer);
     result.focus();
     });
    };
    reset.onclick=()=>{
     attempts.delete(question);
+    drafts.delete(question);
+    rememberQuiz();
     ink?.reset();
     renderQuestion();
     card.querySelector('input,select').focus();
    };
    card.querySelectorAll('[data-quiz-step]').forEach(button=>button.onclick=()=>{
     position+=Number(button.dataset.quizStep);
+    rememberQuiz();
     renderQuestion(true);
    });
    if(focus)$('#withholding-question').focus();
+   resume?.ready();
   }
   document.addEventListener('keydown',event=>{
    if(event.defaultPrevented||event.repeat||event.isComposing||event.ctrlKey||event.altKey||event.metaKey||event.shiftKey||
@@ -1032,7 +1090,8 @@
   const tab=conceptGuide.querySelector(`[data-concept-tab="${selectedConcept?.dataset.conceptSubject}"]`);
   tab?.setAttribute('aria-current','page');
   content.append(conceptGuide);
+  resume?.ready();
   return;
  }
- try{if(page==='home')home();else if(C.SUBJECTS.includes(page)){const id=new URLSearchParams(location.search).get('id'),p=snapshot().items.find(p=>p.id===id&&p.subject===page);if(TrainingComboReview.active(comboKey))await solveCombo();else if(p)await solve(p);else{problemList(page);if(id&&storedSnapshot().items.some(p=>p.id===id&&!available(p)))toast('105회 이하 기출문제는 보관 중이며 학습 대상에서 제외했습니다.');}}else if(page==='topic'||page==='forms')problemList(page);else if(page==='quiz')withholdingQuiz(quizCourse);else if(page==='review')review();else if(page==='map')learningMap();else if(page==='roadmap')SemuonRoadmap.mount(content,{getState:storedSnapshot,save:fn=>store.update(fn),href,notify:toast});else if(page==='journal')journalPage();else if(page==='register'){location.replace(href('index.html'));return}else if(page==='database'){await script(new URL('js/database.js?v=20261029-3',rootURL));SemuonDatabase.mount(content,storedSnapshot().items,href)}else if(page==='settings')settings();else if(page==='guide')guide();else content.innerHTML=head('실무 훈련','일반전표 또는 매입매출전표를 선택하세요.')+`<div class="row"><a class="btn" href="${href('pages/general.html')}">일반전표 입력</a><a class="btn" href="${href('pages/voucher.html')}">매입매출전표 입력</a></div>`}catch(e){fail(e)}
+ try{if(page==='home')home();else if(C.SUBJECTS.includes(page)){const id=new URLSearchParams(location.search).get('id'),p=snapshot().items.find(p=>p.id===id&&p.subject===page);if(TrainingComboReview.active(comboKey))await solveCombo();else if(p)await solve(p);else{problemList(page);if(id&&storedSnapshot().items.some(p=>p.id===id&&!available(p)))toast('105회 이하 기출문제는 보관 중이며 학습 대상에서 제외했습니다.');}}else if(page==='topic'||page==='forms')problemList(page);else if(page==='quiz')withholdingQuiz(quizCourse);else if(page==='review')review();else if(page==='map')learningMap();else if(page==='roadmap')SemuonRoadmap.mount(content,{getState:storedSnapshot,save:fn=>store.update(fn),href,notify:toast});else if(page==='journal')journalPage();else if(page==='register'){location.replace(href('index.html'));return}else if(page==='database'){await script(new URL('js/database.js?v=20261029-3',rootURL));SemuonDatabase.mount(content,storedSnapshot().items,href)}else if(page==='settings')settings();else if(page==='guide')guide();else content.innerHTML=head('실무 훈련','일반전표 또는 매입매출전표를 선택하세요.')+`<div class="row"><a class="btn" href="${href('pages/general.html')}">일반전표 입력</a><a class="btn" href="${href('pages/voucher.html')}">매입매출전표 입력</a></div>`}catch(e){fail(e)}finally{resume?.ready()}
 })();
