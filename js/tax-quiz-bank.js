@@ -647,7 +647,7 @@
   const rows=familyPeople.map((row,i)=>({...row,key:row.role+'-'+(i+1),start:basicFields.length+i*columns.length,
    age:year-Number(registrationBirthDate(row.rrn).slice(0,4))}));
   const relations=[['parent','부친','1'],['mother','모친','1'],['in-law','배우자의 직계존속','2'],['spouse','배우자','3'],
-   ['child','자녀','4'],['descendant','기타 직계비속','5'],['sibling','형제자매','6'],['recipient','수급자','7'],['foster','위탁아동','8']];
+   ['child',detailed?'자녀·손자녀·입양자':'자녀','4'],['descendant','기타 직계비속','5'],['sibling','형제자매','6'],['recipient','수급자','7'],['foster','위탁아동','8']];
   const relationOptions=choice(...relations.map(([value,label,code])=>[value,code+' '+label]));
   const basicOptions=detailed?coded('부','본인','배우자','20세 이하','60세 이상','장애인','기초생활대상 등','자녀장려금 대상'):choice(['yes','공제 가능'],['no','공제 불가']);
   const fields=[

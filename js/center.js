@@ -566,12 +566,12 @@
   const {year,employee,rows,basicCount,columns,detailed}=question.registration;
   const control=(index,label,source=false)=>{
    const field=question.fields[index],attrs=`name="answer-${index}" data-klab-criterion="${esc(field.criterion)}" aria-label="${esc(field.label)}"${source?' data-childcare-source':''}`;
-   const compact=detailed&&(field.key.endsWith('id-type')?'number':
+   const compact=detailed&&(/(?:id-type|:disability|self-disability|:birth-adoption)$/.test(field.key)?'number':
     field.key==='self-basic'||field.key.endsWith(':deduction')?'label':
     field.options?.length===3&&field.options.some(([,text])=>text==='0 부')&&field.options.some(([,text])=>text==='1 여')?'mark':'');
    const input=field.options? `<select ${attrs}${field.relationCodes?' title="관계 코드 1~8 · 1을 반복하면 부친/모친 전환"':''}>${field.options.map(([value,text])=>`<option value="${esc(value)}">${esc(text)}</option>`).join('')}</select>`:
     `<input ${attrs} type="${field.input==='date'?'date':'text'}" autocomplete="off"${field.input==='code'?' maxlength="3" inputmode="numeric"':field.input==='rrn'?' maxlength="14" autocapitalize="characters"':' maxlength="32"'}>`;
-   const displayed=compact?`<div class="klab-compact-choice" data-klab-display="${compact}">${input}<span aria-hidden="true"></span></div>`:input;
+   const displayed=compact?`<span class="klab-compact-choice" data-klab-display="${compact}">${input}<span aria-hidden="true"></span></span>`:input;
    return `<label><span data-klab-text>${esc(label)}</span>${displayed}</label>`;
   };
   const ownField=(key,label)=>control(question.fields.findIndex(field=>field.key===key),label);
@@ -643,26 +643,35 @@
  }
  function bindRegistration(form,question){
   const quiz=SemuonTaxQuiz,fields=question.fields.map((_,i)=>form.elements.namedItem('answer-'+i));
+  const {detailed,rows,year}=question.registration;
   const imported=fields.at(-1),output=form.querySelector('#klab-childcare-count'),load=form.querySelector('#klab-import-family');
   const tabs=[...form.querySelectorAll('.klab-tabs [role=tab]')];
   const selfNationality=form.querySelector('[data-klab-self-nationality]');
-  const values=()=>question.fields.map((field,i)=>quiz.registrationAnswer(field,fields[i].value));
+  const unavailable=new Map();
+  const draftValues=()=>question.fields.map((field,i)=>quiz.registrationAnswer(field,fields[i].value));
+  const values=()=>draftValues().map((value,i)=>unavailable.get(fields[i])??value);
   const compactChoices=[...form.querySelectorAll('[data-klab-display]')];
   function showCompactChoices(){
    for(const container of compactChoices){
     const select=container.querySelector('select'),output=container.querySelector('span');
     const selected=select.value?select.selectedOptions[0]?.textContent||'':'';
-    container.title=selected;
-    output.textContent=container.dataset.klabDisplay==='mark'?(selected==='1 여'?'○':''):
-     container.dataset.klabDisplay==='number'?select.value:selected.replace(/^\d /,'');
+    const locked=unavailable.has(select);
+    container.title=locked?'해당 없음':[selected,'숫자 키로 선택'].filter(Boolean).join(' · ');
+    output.textContent=locked?'':container.dataset.klabDisplay==='mark'?(selected==='1 여'?'○':''):
+     container.dataset.klabDisplay==='number'?selected.charAt(0):selected.replace(/^\d /,'');
    }
   }
-  form.addEventListener('change',showCompactChoices);
   function bindCodes(select,field){
    if(!field.options?.some(([,label])=>/^\d /.test(label)))return;
+   if(select.closest('.klab-compact-choice'))select.addEventListener('mousedown',event=>{
+    if(event.button!==0||document.activeElement===select||event.sourceCapabilities?.firesTouchEvents||
+     !matchMedia('(any-pointer: fine)').matches)return;
+    event.preventDefault();
+    select.focus();
+   });
    select.addEventListener('keydown',event=>{
-    if(event.ctrlKey||event.altKey||event.metaKey||event.shiftKey||event.isComposing||event.repeat)return;
-    const matches=field.options.filter(([,label])=>label.startsWith(event.key+' ')&&/^\d$/.test(event.key)).map(([value])=>value);
+    if(event.ctrlKey||event.altKey||event.metaKey||event.shiftKey||event.isComposing||event.repeat||!/^\d$/.test(event.key))return;
+    const matches=field.options.filter(([,label])=>label.startsWith(event.key+' ')).map(([value])=>value);
     if(!matches.length)return;
     event.preventDefault();
     select.value=matches[(matches.indexOf(select.value)+1)%matches.length];
@@ -715,18 +724,55 @@
    output.textContent=imported.value===''?'미반영':imported.value+'명';
   }
   function showEmployee(){
-   if(!question.registration.detailed)return;
+   if(!detailed)return;
    for(const [i,key] of ['code','name','number'].entries()){
     const value=quiz.registrationAnswer(question.fields[i],fields[i].value)||'—';
     form.querySelectorAll('[data-klab-self-'+key+']').forEach(el=>{el.textContent=value});
    }
    selfNationality.value=fields[5].value;
   }
+  function ageAtYearEnd(index){
+   const date=quiz.registrationBirthDate(fields[index].value);
+   const age=year-Number(date.slice(0,4));
+   return date&&age>=0?age:null;
+  }
   function showFamilyAges(){
    for(const cell of form.querySelectorAll('[data-klab-age]')){
-    const date=quiz.registrationBirthDate(fields[Number(cell.dataset.klabAge)].value);
-    const age=question.registration.year-Number(date.slice(0,4));
-    cell.textContent=date&&age>=0?age:'—';
+    cell.textContent=ageAtYearEnd(Number(cell.dataset.klabAge))??'—';
+   }
+  }
+  const ownIndex=Object.fromEntries(question.fields.map(({key},i)=>[key,i]));
+  function refreshFamilyAvailability(){
+   if(!detailed)return;
+   const update=(index,locked,negative)=>{
+    const field=fields[index];
+    field.disabled=locked;
+    field.closest('td').classList.toggle('klab-unavailable',locked);
+    if(locked)unavailable.set(field,negative);
+    else unavailable.delete(field);
+   };
+   const employeeAge=ageAtYearEnd(2);
+   const employeeNumber=quiz.registrationAnswer(question.fields[2],fields[2].value);
+   const spouseEntered=rows.some(({start})=>fields[start].value==='spouse');
+   update(ownIndex['women-deduction'],employeeAge!==null&&/^[13]$/.test(employeeNumber[7]),'no');
+   update(ownIndex['single-parent'],spouseEntered,'no');
+   update(ownIndex['self-senior'],employeeAge!==null&&employeeAge<70,'no');
+   update(ownIndex['self-child-credit'],true,'no');
+   for(const {start} of rows){
+    const relation=fields[start].value;
+    const child=relation==='child',foster=relation==='foster';
+    const age=ageAtYearEnd(start+2),hasAge=age!==null;
+    const excluded=['0','7'].includes(fields[start+3].value);
+    const disability=fields[start+5].value;
+    const unrelatedToChildCredit=Boolean(relation&&!child&&!foster);
+    // 2017 births follow the permanent minimum instead of the 2026–2029 transition.
+    const childTaxMinAge=year<2026?8:year-age===2017?13:Math.min(13,year-2017);
+    update(start+4,excluded||(hasAge&&age<70),'no');
+    update(start+5,excluded,'0');
+    update(start+6,excluded||Boolean(relation&&!child),'none');
+    update(start+7,excluded||unrelatedToChildCredit||
+     (hasAge&&(age<childTaxMinAge||(age>20&&disability==='0'))),'no');
+    update(start+10,excluded||unrelatedToChildCredit||(hasAge&&(age<8||age>20)),'0');
    }
   }
   const totalGroups={
@@ -738,7 +784,7 @@
   function showDeductionTotals(){
    for(const total of form.querySelectorAll('[data-klab-total]')){
     const includes=totalGroups[total.dataset.klabTotal];
-    total.textContent=question.fields.filter((field,i)=>includes(field)&&/^(yes|[1-6])$/.test(fields[i].value)).length+'명';
+    total.textContent=question.fields.filter((field,i)=>includes(field)&&!unavailable.has(fields[i])&&/^(yes|[1-6])$/.test(fields[i].value)).length+'명';
    }
   }
   load.onclick=()=>{
@@ -748,16 +794,22 @@
   };
   const invalidateImport=event=>{
    if(fields.slice(0,3).includes(event.target)||event.target===fields[5])showEmployee();
-   if(event.target.matches('input[maxlength="14"]'))showFamilyAges();
-   if(event.target.matches('select[name^="answer-"]'))showDeductionTotals();
+   if(event.target.matches('input[maxlength="14"],select[name^="answer-"]')){
+    if(event.target.matches('input'))showFamilyAges();
+    refreshFamilyAvailability();
+    showDeductionTotals();
+    showCompactChoices();
+   }
    if(!event.target.hasAttribute('data-childcare-source'))return;
    imported.value='';
    showCount();
   };
   form.addEventListener('input',invalidateImport);
   form.addEventListener('change',invalidateImport);
+  refreshFamilyAvailability();
+  showCompactChoices();
   return {
-   values,restore(){showCount();showEmployee();showFamilyAges();showDeductionTotals();showCompactChoices()},
+   values,draftValues,restore(){showCount();showEmployee();showFamilyAges();refreshFamilyAvailability();showDeductionTotals();showCompactChoices()},
    showResult(results){
     fields.forEach((field,i)=>{
      field.disabled=true;
@@ -1259,7 +1311,7 @@
    };
    const saveQuizInputs=()=>{
     if(grade.disabled)return;
-    drafts.set(question,answerValues());
+    drafts.set(question,registrationUI?registrationUI.draftValues():answerValues());
     rememberQuiz();
    };
    form.addEventListener('input',saveQuizInputs);
