@@ -444,9 +444,20 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
 .withholding-quiz-fields :is(input,select){background:var(--surface);color:var(--ink)}
 .withholding-quiz-amount{display:flex;align-items:center;gap:8px;white-space:nowrap}
 .withholding-quiz-pagination{justify-content:flex-end;margin-top:16px}
+.quiz-question-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:10px;margin:16px 0 10px}
+.quiz-question-facts>div{padding:10px 12px;background:var(--soft);border:1px solid var(--line);border-radius:9px}
+.quiz-question-facts dt{font-size:var(--font-ui);font-weight:700;color:var(--muted)}
+.quiz-question-facts dd{margin:4px 0 0;font-weight:700}
+.quiz-question-condition{margin:0;font-size:var(--font-ui);line-height:1.6}
+.quiz-memo{margin-top:14px;border:1px solid var(--line);border-radius:9px;padding:12px}
+.quiz-saved-note{white-space:pre-wrap;overflow-wrap:anywhere}
 #withholding-quiz-explanation p{margin:0 0 4px}
 @media(max-width:520px){
  .withholding-quiz-question{padding:16px}
+ .quiz-question-facts{grid-template-columns:minmax(0,1fr);gap:0;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+ .quiz-question-facts>div{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);align-items:center;gap:8px;padding:8px 10px;border:0;border-radius:0}
+ .quiz-question-facts>div+div{border-top:1px solid var(--line)}
+ .quiz-question-facts dd{margin:0}
 }
 
 html .semuon :is(.qactions,.withholding-quiz-question) .btn.secondary.problem-report-button{

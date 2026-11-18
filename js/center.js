@@ -17,6 +17,7 @@
   ['forms','신고서 · 급여','pages/forms.html']
  ];
  const quizCourse=new URLSearchParams(location.search).get('course')==='income'?'income':'withholding';
+ const employeeSample=quizCourse==='withholding'&&new URLSearchParams(location.search).get('sample')==='employee';
  const conceptGuide=$('#concept-guide-template')?.content;
  const conceptSubjects=[['fa','재무회계'],['vat','부가가치세법'],['cost','원가회계'],['income','소득세법']];
  const conceptArticles=conceptGuide?[...conceptGuide.querySelectorAll('[data-concept-subject]')]:[];
@@ -33,7 +34,7 @@
   const links=practiceMenu.map(([id,name,path])=>`<a data-sub-menu-id="${id}" href="${href(path)}" ${page===id?'class="active" aria-current="page"':''}>${name}</a>`);
   return `<details class="app-nav-group" data-menu-id="practice-learning" open>
    <summary><span aria-hidden="true">${icon}</span><span>${label}</span></summary>
-   <div class="app-subnav">${links.join('')}<a data-sub-menu-id="sub:quiz:withholding" href="${href('pages/quiz.html?course=withholding')}" ${page==='quiz'&&quizCourse==='withholding'?'class="active" aria-current="page"':''}>원천징수 핵심 퀴즈</a></div>
+   <div class="app-subnav">${links.join('')}<a data-sub-menu-id="sub:quiz:withholding" href="${href('pages/quiz.html?course=withholding')}" ${page==='quiz'&&quizCourse==='withholding'&&!employeeSample?'class="active" aria-current="page"':''}>원천징수 핵심 퀴즈</a><a data-sub-menu-id="sub:quiz:employee" data-menu-parent-id="sub:quiz:withholding" href="${href('pages/quiz.html?course=withholding&sample=employee')}" ${page==='quiz'&&employeeSample?'class="active" aria-current="page"':''}>사원 등록</a></div>
   </details>`;
  }
  document.body.classList.add('semuon');document.body.innerHTML=`<aside class="app-sidebar"><a class="app-brand" href="${href('index.html')}"><img src="${href('assets/favicon.svg')}" alt=""><span>세무온<small>전산세무 2급 학습센터</small></span></a><button class="btn secondary mobile-menu" aria-expanded="false" aria-controls="app-nav" type="button">☰<span class="sr-only">메뉴 열기</span></button><nav id="app-nav" class="app-nav" aria-label="주 메뉴">${nav.map(([key,icon,label,path])=>key==='theory'?theoryNavigation(icon,label,path):key==='practice-learning'?practiceNavigation(icon,label):key==='settings'?`<details class="app-nav-group ${['settings','database'].includes(page)?'is-active':''}" data-menu-id="settings" open><summary><span>⚙</span><span>설정 · 백업</span></summary><div class="app-subnav"><a href="${href('pages/settings.html')}" ${page==='settings'?'class="active"':''}>설정 · 백업</a><a href="${href('pages/database.html')}" ${page==='database'?'class="active" aria-current="page"':''}>데이터베이스 현황</a></div></details>`:key==='status'?`<details class="app-nav-group ${['progress','map','journal','roadmap'].includes(page)?'is-active':''}" data-menu-id="status" open><summary><span aria-hidden="true">${icon}</span><span>${label}</span></summary><div class="app-subnav"><a href="${href('pages/learning-map.html')}" ${page==='map'?'class="active" aria-current="page"':''}>나의 학습 지도</a><a href="${href('pages/journal.html')}" ${page==='journal'?'class="active" aria-current="page"':''}>학습 기록</a></div></details>`:`<a data-menu-id="${key}" href="${href(path)}" ${key===page?'class="active" aria-current="page"':''}><span aria-hidden="true">${icon}</span><span>${label}</span></a>`).join('')}</nav></aside><main class="app-main"><header class="app-topbar"><p class="app-date">${new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',dateStyle:'full'}).format(new Date())}</p>${SemuonFullscreen.button()}</header><div id="save-status" class="notice error" role="alert" hidden></div><div id="content"></div><footer class="app-footer">세무온 · 전산세무 2급 전용 · <a href="${href('pages/settings.html')}">백업 · 설정</a></footer></main><div class="toast" role="status" hidden></div>`;
@@ -176,7 +177,16 @@
 
 
  function repeatedFieldsHTML(){const rows=V.analyze(snapshot()).filter(g=>g.fields.length);return `<section class="card" id="journal-repeated-fields"><h2>반복해서 틀린 입력 항목</h2>${rows.map(g=>`<p>${esc(g.label)}: ${g.fields.map(([name,n])=>esc(name)+' '+n+'학습일').join(' · ')}</p>`).join('')||'<p class="help">실제 채점한 서로 다른 학습일이 쌓이면 표시합니다.</p>'}</section>`}
- function problemNotesHTML(){const state=storedSnapshot(),notes=[...C.problemNotes(state).values()].filter(n=>n.text);return `<section class="card"><div class="row spread"><h2>문제별 취약점 메모</h2><button id="export-problem-notes" class="btn secondary" ${notes.length?'':'disabled'}>GPT용 메모 내보내기</button></div><details><summary>${notes.length}문제</summary>${notes.map(n=>{const p=state.items.find(p=>p.id===n.problemId);return `<article><a class="btn secondary" href="${href('pages/'+(p.subject==='theory'?'theory':p.subject==='voucher'?'voucher':'general')+'.html?id='+encodeURIComponent(p.id))}">${esc(p.title)}</a><p style="white-space:pre-wrap">${esc(n.text)}</p></article>`}).join('')}</details></section>`}
+ function problemNotesHTML(){
+  const state=storedSnapshot(),notes=[...C.problemNotes(state).values()].filter(n=>n.text);
+  const quizNotes=[...C.quizNotes(state).values()].filter(n=>n.text);
+  const bank=new Map(Object.keys(SemuonQuizReview.courses).flatMap(course=>SemuonTaxQuiz.questions(course).map(q=>[q.id,q])));
+  const count=notes.length+quizNotes.length;
+  return `<section class="card"><div class="row spread"><h2>문제별 취약점 메모</h2><button id="export-problem-notes" class="btn secondary" ${count?'':'disabled'}>GPT용 메모 내보내기</button></div><details><summary>${count}문제</summary>
+   ${notes.map(n=>{const p=state.items.find(p=>p.id===n.problemId);return `<article><a class="btn secondary" href="${href('pages/'+(p.subject==='theory'?'theory':p.subject==='voucher'?'voucher':'general')+'.html?id='+encodeURIComponent(p.id))}">${esc(p.title)}</a><p class="quiz-saved-note">${esc(n.text)}</p></article>`}).join('')}
+   ${quizNotes.map(n=>{const q=bank.get(n.questionId);return `<article><a class="btn secondary" href="${quizQuestionPage(q,n.course)}">${esc(q?.topic||n.questionId)}</a><p class="quiz-saved-note">${esc(n.text)}</p></article>`}).join('')}
+  </details></section>`;
+ }
  function mountProblemReports(host){
   function render(){
    const queue=[...pendingProblemReports().values()], state=storedSnapshot();
@@ -524,20 +534,31 @@
     ${esc(bank.get(e.questionId)?.topic||e.questionId)} · ${e.correct?'정답':'오답'}${selected.has(e.id)?' · '+esc(ratings.get(selected.get(e.id))):''}</li>`).join('')}</ul>`:'<p class="help">기록된 핵심 퀴즈 풀이가 없습니다.</p>'}
   </div></details>`;
  }
+ function quizQuestionPage(question,course){
+  const url=new URL(quizPage(course));
+  if(question){
+   url.searchParams.set('question',question.id);
+   url.searchParams.set('unit',question.unit);
+   url.searchParams.set('level',question.level);
+   if(question.sample)url.searchParams.set('sample',question.sample);
+  }
+  return url.href;
+ }
  function withholdingQuiz(course){
   const params=new URLSearchParams(location.search),income=course==='income';
+  const employee=!income&&params.get('sample')==='employee';
   const dueMode=params.get('review')==='due',Q=SemuonQuizReview;
   const countKey='semuon-withholding-quiz-preview-count';
   const levelKey='semuon-tax-quiz-level-'+course;
   const allowed=['3','5','10','all'];
   const quiz=globalThis.SemuonTaxQuiz;
-  const bank=quiz.questions(course),attempts=new Map();
+  const bank=quiz.questions(course).filter(q=>!employee||q.sample==='employee'),attempts=new Map();
   const today=()=>SemuonProgress.day(Date.now());
   const quizState=()=>Q.analyze(storedSnapshot().quizReviewEvents);
   const session=globalThis.SemuonResume?.readQuiz(course);
   const restoreQuiz=session?.url===location.href?session:null;
   const drafts=new Map();
-  let initialQuiz=true;
+  let initialQuiz=true,flushQuizMemo=()=>true;
   for(const q of bank){
    const saved=restoreQuiz?.drafts?.[q.id],event=restoreQuiz?.attempts?.[q.id];
    if((!event||restoreQuiz.day===today()&&event.signature===C.stable(q.answers))&&Array.isArray(saved)&&saved.length===q.answers.length&&saved.every(value=>typeof value==='string'&&value.length<=100))drafts.set(q,saved);
@@ -579,16 +600,16 @@
    if(allowed.includes(saved))daily=saved;
    preferredLevel=localStorage.getItem(levelKey);
   }catch(_){}
-  const initialLevel=quiz.levels.find(level=>level.id===params.get('level'))||
+  const initialLevel=employee?quiz.levels[0]:quiz.levels.find(level=>level.id===params.get('level'))||
    quiz.levels.find(level=>level.id===preferredLevel)||quiz.levels[0];
   const back=income?'pages/concepts.html?subject=income':'pages/forms.html?practice=withholding';
-  const title=income?'소득세법 핵심 퀴즈':'원천징수 핵심 퀴즈';
+  const title=employee?'사원 등록':income?'소득세법 핵심 퀴즈':'원천징수 핵심 퀴즈';
   document.title=title+' · 전산세무 2급';
   content.innerHTML=head(title,'',`<div class="row quiz-heading-actions">${dueMode?`<a class="btn secondary" href="${quizPage(course)}">전체 퀴즈</a>`:''}${income?'':'<div class="quiz-ink-tools" role="group" aria-label="필기 도구"></div>'}<a class="btn secondary" href="${href(back)}">${income?'소득세법 개념':'원천징수 실무'}</a></div>`)+`
    <div class="${income?'':'quiz-ink-layout'}">
    <div class="withholding-quiz">
     ${dueMode?'<p class="quiz-due-heading"><strong>오늘 복습</strong></p>':''}
-    <section class="card withholding-quiz-settings row" aria-label="퀴즈 조건"${dueMode?' hidden':''}>
+    <section class="card withholding-quiz-settings row" aria-label="퀴즈 조건"${dueMode||employee?' hidden':''}>
      <label><span id="quiz-unit-label">단원</span><select id="withholding-quiz-unit" aria-labelledby="quiz-unit-label"></select></label>
      <label><span id="quiz-detail-label">세부 주제</span><select id="withholding-quiz-detail" aria-labelledby="quiz-detail-label"></select></label>
      <label><span id="quiz-level-label">난이도</span><select id="withholding-quiz-level" aria-labelledby="quiz-level-label">${quiz.levels.map(level=>
@@ -637,10 +658,17 @@
    if([...select.options].some(option=>option.value===selected))select.value=selected;
   }
   function selectQuestions(){
+   if(!flushQuizMemo())return;
    const matching=bank.filter(question=>question.level===level.value&&quiz.inUnit(question,unit.value)&&
     (!detail.value||question.detail===detail.value));
    questions=dueMode?Q.due(bank,quizState(),today()):count.value==='all'?matching:quiz.selectQuestions(matching,Number(count.value),level.value);
    position=0;
+   if(initialQuiz&&params.get('question')){
+    const chosen=matching.find(q=>q.id===params.get('question'));
+    if(chosen&&!questions.includes(chosen))questions=[chosen,...questions].slice(0,count.value==='all'?matching.length:Number(count.value));
+    const index=questions.findIndex(q=>q.id===params.get('question'));
+    if(index>=0)position=index;
+   }
    if(initialQuiz&&restoreQuiz){
     const allowed=new Map((dueMode?questions:matching).map(q=>[q.id,q]));
     const ids=restoreQuiz.ids;
@@ -670,6 +698,7 @@
   }
   function rememberQuiz(){
    const url=new URL(location.href);
+   if(url.searchParams.has('question')&&questions[position])url.searchParams.set('question',questions[position].id);
    for(const [key,value] of [['unit',unit.value],['detail',detail.value],['level',level.value],['count',count.value]]){
     if(value)url.searchParams.set(key,value);else url.searchParams.delete(key);
    }
@@ -681,7 +710,7 @@
    });
    resume?.remember();
   }
-  setOptions(unit,quiz.units[course],'전체 단원',params.get('unit'));
+  setOptions(unit,quiz.units[course],'전체 단원',employee?'사원등록':params.get('unit'));
   unit.onchange=()=>updateTopics(detail.value);
   detail.onchange=selectQuestions;
   level.onchange=()=>{
@@ -711,6 +740,7 @@
   }
   function renderQuestion(focus=false){
    const question=questions[position],attempt=attempts.get(question);
+   const savedMemo=C.quizNotes(storedSnapshot()).get(question.id)?.text||'';
    ink?.show(question);
    const difficulty=quiz.levels.find(option=>option.id===question.level);
    const book=quiz.books[question.book];
@@ -721,10 +751,12 @@
     ?`<a href="${esc(href(book.file+'#page='+pdfPage))}" target="_blank" rel="noopener">${referenceLabel}</a>`
     :referenceLabel;
    card.innerHTML=`
-    <div class="row spread"><span class="pill">${income?'이론':'실무'} · ${esc(question.topic)}</span><span class="help">${esc(difficulty.label)} · ${position+1} / ${questions.length}</span></div>
+    <div class="row spread"><span class="pill">${income?'이론':'실무'} · ${esc(question.topic)}</span><span class="help">${employee?'샘플':esc(difficulty.label)} · ${position+1} / ${questions.length}</span></div>
      <form id="withholding-quiz-form">
       <fieldset>
        <legend id="withholding-question" tabindex="-1">${esc(question.prompt)}</legend>
+       ${question.facts?`<dl class="quiz-question-facts">${question.facts.map(([label,value])=>`<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join('')}</dl>`:''}
+       ${question.condition?`<p class="quiz-question-condition">${esc(question.condition)}</p>`:''}
        ${answerFields(question)}
       </fieldset>
       <div class="row">
@@ -740,6 +772,11 @@
         :''}</p>
       </div>
      </form>
+     <form class="problem-note quiz-memo" hidden>
+      <div class="problem-note-heading"><label for="quiz-memo">학습 메모</label><button class="btn secondary" type="submit">메모 저장</button></div>
+      <textarea id="quiz-memo" maxlength="4000" rows="2" placeholder="헷갈린 요건이나 기억할 내용을 적으세요.">${esc(savedMemo)}</textarea>
+      <span class="help" role="status"></span>
+     </form>
      <section class="quiz-review-rating" aria-label="다음 복습 평가" hidden></section>
      ${questions.length>1?`<nav class="row withholding-quiz-pagination" aria-label="퀴즈 문제 이동">
       <button type="button" class="btn secondary" data-quiz-step="-1"${position===0?' disabled':''}>이전 문제</button>
@@ -748,11 +785,29 @@
    const form=$('#withholding-quiz-form'),grade=form.querySelector('[type=submit]');
    const options=form.querySelector('fieldset'),reset=$('#withholding-quiz-reset');
    const quizReport={course,title:title+" · "+question.topic,prompt:question.prompt,
-    conditions:question.choices?.map(([,label],i)=>(i+1)+". "+label).join("\n")||question.fields.map(field=>field.label+(field.options?" · "+field.options.filter(([value])=>value).map(([,label])=>label).join(" / "):"")).join("\n"),
+    conditions:[...(question.facts||[]).map(([label,value])=>label+": "+value),question.condition||'',question.choices?.map(([,label],i)=>(i+1)+". "+label).join("\n")||question.fields.map(field=>field.label+(field.options?" · "+field.options.filter(([value])=>value).map(([,label])=>label).join(" / "):"")).join("\n")].filter(Boolean).join("\n"),
     answer:[question.solution,question.explanation,referenceLabel].filter(Boolean).join("\n")};
    reset.after(problemReportButton("quiz:"+course+":"+question.prompt,quizReport));
    const result=$('#withholding-quiz-result'),explanation=$('#withholding-quiz-explanation');
    const ratingBox=card.querySelector('.quiz-review-rating');
+   const memoForm=card.querySelector('.quiz-memo'),memoInput=memoForm.querySelector('textarea'),memoStatus=memoForm.querySelector('[role=status]');
+   flushQuizMemo=(beforeSync=false)=>{
+    if(memoForm.dataset.dirty!=='true')return true;
+    try{
+     if(problemReportsSyncing&&!beforeSync)throw new Error('동기화가 끝난 뒤 메모를 저장해 주세요.');
+     const text=memoInput.value.trim(),latest=C.quizNotes(storedSnapshot()).get(question.id);
+     if(text!==(latest?.text||''))store.update(state=>(state.quizNotes||(state.quizNotes=[])).push({
+      id:crypto.randomUUID(),course,questionId:question.id,text,
+      at:new Date(Math.max(Date.now(),(Date.parse(latest?.at)||0)+1)).toISOString()
+     }));
+     delete memoForm.dataset.dirty;
+     memoStatus.textContent='저장됨';
+     return true;
+    }catch(error){memoStatus.textContent='저장하지 못했습니다. 다시 저장해 주세요.';fail(error);return false}
+   };
+   memoInput.oninput=()=>{memoForm.dataset.dirty='true';memoStatus.textContent='작성 중'};
+   memoInput.onchange=memoInput.onblur=()=>flushQuizMemo();
+   memoForm.onsubmit=event=>{event.preventDefault();flushQuizMemo()};
 
    function showRatings(attempt){
     const state=quizState().get(question.id),date=today();
@@ -781,6 +836,7 @@
     const {correct,missed}=attempt;
     options.disabled=grade.disabled=true;
     reset.hidden=result.hidden=explanation.hidden=false;
+    memoForm.hidden=false;
     result.classList.toggle('good',correct);
     result.classList.toggle('wrong',!correct);
     result.textContent=correct?'정답입니다.':missed.length
@@ -833,6 +889,7 @@
     });
    };
    reset.onclick=()=>{
+    if(!flushQuizMemo())return;
     attempts.delete(question);
     drafts.delete(question);
     rememberQuiz();
@@ -841,6 +898,7 @@
     card.querySelector('input,select').focus();
    };
    card.querySelectorAll('[data-quiz-step]').forEach(button=>button.onclick=()=>{
+    if(!flushQuizMemo())return;
     position+=Number(button.dataset.quizStep);
     rememberQuiz();
     renderQuestion(true);
@@ -856,6 +914,17 @@
    event.preventDefault();
    button.click();
   });
+  document.addEventListener('semuon-before-sync',event=>{
+   if(event.defaultPrevented)return;
+   if(!flushQuizMemo(true)){event.preventDefault();problemReportsSyncing=false;return}
+   card.querySelectorAll('.quiz-memo textarea,.quiz-memo button').forEach(el=>el.disabled=true);
+  });
+  document.addEventListener('semuon-sync-finished',event=>{
+   if(!event.detail.succeeded)card.querySelectorAll('.quiz-memo textarea,.quiz-memo button').forEach(el=>el.disabled=false);
+  });
+  window.addEventListener('beforeunload',event=>{if(!flushQuizMemo()){event.preventDefault();event.returnValue=''}});
+  window.addEventListener('pagehide',()=>flushQuizMemo());
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushQuizMemo()});
   updateTopics(params.get('detail'));
  }
  function review(){

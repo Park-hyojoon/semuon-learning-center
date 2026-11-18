@@ -13,7 +13,28 @@
   const needs=[...groups.values()].filter(g=>['reference','blocked'].includes(g.latest.outcome)).map(g=>({...g.latest,repeatDays:g.days.size,due:P.add(g.latest.date,1)})).sort((a,b)=>b.repeatDays-a.repeatDays||a.due.localeCompare(b.due));
   return{entries,daily,needs,today,dates:[...new Set([...entries.map(e=>e.date),...daily.keys()])].sort().reverse()};
  }
- function problemNotesMarkdown(state,{start='0000-00-00',end='9999-12-31'}={}){const notes=[...Core.problemNotes(state).values()].filter(n=>n.text&&P.day(n.at)>=start&&P.day(n.at)<=end),lines=['# 세무온 문제별 취약점 메모','','아래 원문과 메모를 참고해 숫자·날짜·조건을 조금씩 바꾼 응용문제를 만들고, 정답과 해설을 따로 확인할 수 있게 준비해 주세요.',''];for(const n of notes){const p=state.items.find(p=>p.id===n.problemId);lines.push('## '+p.title,'- 문제 ID: '+p.id,'- 분류: '+(p.subject==='theory'?'이론':'실무')+' / '+p.type+' / '+(p.tags||[]).join(', '),'- 기록일: '+P.day(n.at),'','### 학습자 메모',n.text,'','### 원문',p.prompt,'','### 정답·해설',p.subject==='theory'?(p.acceptedAnswers||[p.answer]).map(i=>(i+1)+'번: '+p.choices[i]).join(' / '):JSON.stringify(p.answers||p.variants||p.form?.fields||[]),p.explanation,'')}return lines.join('\n')}
+ function problemNotesMarkdown(state,{start='0000-00-00',end='9999-12-31'}={}){const notes=[...Core.problemNotes(state).values()].filter(n=>n.text&&P.day(n.at)>=start&&P.day(n.at)<=end),lines=['# 세무온 문제별 취약점 메모','','아래 원문과 메모를 참고해 숫자·날짜·조건을 조금씩 바꾼 응용문제를 만들고, 정답과 해설을 따로 확인할 수 있게 준비해 주세요.',''];for(const n of notes){const p=state.items.find(p=>p.id===n.problemId);lines.push('## '+p.title,'- 문제 ID: '+p.id,'- 분류: '+(p.subject==='theory'?'이론':'실무')+' / '+p.type+' / '+(p.tags||[]).join(', '),'- 기록일: '+P.day(n.at),'','### 학습자 메모',n.text,'','### 원문',p.prompt,'','### 정답·해설',p.subject==='theory'?(p.acceptedAnswers||[p.answer]).map(i=>(i+1)+'번: '+p.choices[i]).join(' / '):JSON.stringify(p.answers||p.variants||p.form?.fields||[]),p.explanation,'')}const quiz=quizNotesMarkdown(state,{start,end});if(quiz)lines.push('',quiz);return lines.join('\n')}
+ function quizNotesMarkdown(state,{start='0000-00-00',end='9999-12-31'}={}){
+  const notes=[...Core.quizNotes(state).values()].filter(n=>n.text&&P.day(n.at)>=start&&P.day(n.at)<=end);
+  if(!notes.length)return '';
+  const bank=typeof module==='object'&&module.exports?require('./tax-quiz-bank.js'):globalThis.SemuonTaxQuiz;
+  const lines=['## 핵심 퀴즈 학습 메모',''];
+  for(const n of notes){
+   const q=bank.questions(n.course).find(q=>q.id===n.questionId);
+   lines.push('### '+(q?.topic||n.questionId),'- 문제 ID: '+n.questionId,'- 분류: '+(n.course==='income'?'이론 / 소득세법':'실무 / 원천징수')+(q?' / '+q.unit+' / '+q.detail:''),'- 기록일: '+P.day(n.at),'','#### 학습자 메모',n.text);
+   if(q){
+    lines.push('','#### 문제',q.prompt,...(q.facts||[]).map(([label,value])=>label+': '+value));
+    if(q.condition)lines.push(q.condition);
+    if(q.choices)lines.push(...q.choices.map(([,label],i)=>(i+1)+'. '+label));
+    else lines.push(...q.fields.map(field=>field.label+(field.options?' / '+field.options.filter(([value])=>value).map(([,label])=>label).join(' · '):' / 만 원')));
+    lines.push('','#### 정답·해설',q.solution,q.explanation);
+    const ref=q.reference||{bookPage:126,pdfPage:143};
+    lines.push(bank.books[q.book].label+' '+ref.bookPage+'쪽 (PDF '+ref.pdfPage+'쪽)');
+   }
+   lines.push('');
+  }
+  return lines.join('\n');
+ }
  function problemReportTitle(p){
   const source=p.source,number=source.questionNo;
   return [source.round?source.round+"회":source.name,number===undefined?"":"문항 "+number,p.type].filter(Boolean).join(" · ");
@@ -71,6 +92,7 @@
   }
   if(weekly)lines.push('','## 학습센터 자동 기록',P.weeklySummary(state,end),'','요청: 기록된 범위·첫 채점·외부 실습 자기평가를 구별하여, 다음 진도와 구체적인 복습 우선순위 3가지를 짧게 제안해 주세요.');
   if([...Core.problemNotes(state).values()].some(n=>n.text&&P.day(n.at)>=start&&P.day(n.at)<=end))lines.push('',problemNotesMarkdown(state,{start,end}));
+  else if(state.quizNotes?.length)lines.push('',quizNotesMarkdown(state,{start,end}));
   return lines.join('\n');
  }
  // Escape first. Only the small Markdown/HTML subset offered by the toolbar is rendered.
@@ -148,5 +170,5 @@
   addEventListener('beforeunload',e=>{if(!flushDaily()||[...sessions.values()].some(s=>!s.flush())){e.preventDefault();e.returnValue=''}});render();const editEntry=a.entries.find(e=>e.entryId===params.get('entry'));if(editEntry)openEntry(editEntry.lane,editEntry);const bookRef=T.get(params.get('book'));if(bookRef)openEntry(bookRef.unitId.startsWith('unit:')?'theory':'practice',null,null,{unitId:bookRef.unitId,bookActivity:bookRef.kind==='concept'?'concept':'exercise',bookRefs:[bookRef.id]});const unit=byUnit.get(params.get('unit'));if(unit){openEntry(unit.id.startsWith('unit:')?'theory':'practice',null,null,{unitId:unit.id,focus:params.get('focus')||'',problemId:params.get('problem')||''});}
   return{refresh:render};
  }
- return{analyze,event,problemNotesMarkdown,problemReportsMarkdown,problemReportTitle,markdown,preview,mount,defaultTools};
+ return{analyze,event,problemNotesMarkdown,quizNotesMarkdown,problemReportsMarkdown,problemReportTitle,markdown,preview,mount,defaultTools};
 });

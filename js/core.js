@@ -200,6 +200,16 @@
         seen.add(e.id);
       }
     }
+    if(s.quizNotes!==undefined){
+      assert(Array.isArray(s.quizNotes),'핵심 퀴즈 메모를 확인해 주세요.');
+      const seen=new Set();
+      for(const e of s.quizNotes){
+        assert(e&&typeof e.id==='string'&&e.id.length>0&&e.id.length<=100&&!seen.has(e.id)&&
+          /^taxquiz-\d{3,}$/.test(e.questionId)&&['income','withholding'].includes(e.course)&&
+          Number.isFinite(Date.parse(e.at))&&typeof e.text==='string'&&e.text.length<=4000,'핵심 퀴즈 메모의 내용·날짜를 확인해 주세요.');
+        seen.add(e.id);
+      }
+    }
     if(s.quizReviewEvents!==undefined){
       assert(Array.isArray(s.quizReviewEvents),'핵심 퀴즈 기록을 확인해 주세요.');
       const events=new Map();
@@ -224,6 +234,11 @@
     if(s.syncMeta!==undefined){assert(s.syncMeta&&typeof s.syncMeta==='object'&&!Array.isArray(s.syncMeta),'동기화 변경 정보를 확인해 주세요.');for(const[key,values]of Object.entries(s.syncMeta)){assert(['drafts','studyDrafts','studyDraft','settings'].includes(key)&&values&&typeof values==='object'&&!Array.isArray(values),'동기화 변경 정보가 올바르지 않습니다.');for(const[id,v]of Object.entries(values))assert(!['__proto__','constructor','prototype'].includes(id)&&v&&typeof v.at==='string'&&Number.isFinite(Date.parse(v.at))&&typeof v.deleted==='boolean','동기화 변경 시각을 확인해 주세요.');}}
     return s;
   }
+  function quizNotes(s,now=Date.now()){
+    const notes=new Map();
+    for(const e of (s.quizNotes||[]).filter(e=>Date.parse(e.at)<=now).slice().sort((a,b)=>Date.parse(a.at)-Date.parse(b.at)||a.id.localeCompare(b.id)))notes.set(e.questionId,e);
+    return notes;
+  }
   function stateValidator(){const cache=new Map();return s=>validateState(s,cache)}
   function merge(current,incoming){
     validateState(incoming);const next=clone(current),planned=incoming.items.length?plan(current.items,{examId:EXAM,schemaVersion:VERSION,items:incoming.items}):{add:[],duplicates:[]};next.items.push(...planned.add);
@@ -233,6 +248,15 @@
     if(incoming.progressEvents?.length){const progress=new Map((next.progressEvents||[]).map(e=>[e.id,e]));for(const e of incoming.progressEvents){const old=progress.get(e.id);if(old)assert(stable(old)===stable(e),'같은 진도 기록의 내용이 충돌합니다.');else progress.set(e.id,clone(e))}next.progressEvents=[...progress.values()]}
     if(incoming.roadmapTaskEvents?.length){const tasks=new Map((next.roadmapTaskEvents||[]).map(e=>[e.id,e]));for(const e of incoming.roadmapTaskEvents){const old=tasks.get(e.id);if(old)assert(stable(old)===stable(e),'같은 로드맵 과제 기록의 내용이 충돌합니다.');else tasks.set(e.id,clone(e))}next.roadmapTaskEvents=[...tasks.values()]}
     if(incoming.problemNotes?.length){const notes=new Map((next.problemNotes||[]).map(e=>[e.id,e]));for(const raw of incoming.problemNotes){const e={...clone(raw),problemId:remap.get(raw.problemId)},old=notes.get(e.id);if(old)assert(stable(old)===stable(e),'같은 문제 메모의 내용이 충돌합니다.');else notes.set(e.id,e)}next.problemNotes=[...notes.values()]}
+    if(incoming.quizNotes?.length){
+      const notes=new Map((next.quizNotes||[]).map(e=>[e.id,e]));
+      for(const e of incoming.quizNotes){
+        const old=notes.get(e.id);
+        if(old)assert(stable(old)===stable(e),'같은 핵심 퀴즈 메모의 내용이 충돌합니다.');
+        else notes.set(e.id,clone(e));
+      }
+      next.quizNotes=[...notes.values()];
+    }
     if(incoming.quizReviewEvents?.length){
       const events=new Map((next.quizReviewEvents||[]).map(e=>[e.id,e]));
       for(const e of incoming.quizReviewEvents){
@@ -265,5 +289,5 @@
     if(incoming.mockExams){const exams=new Map((next.mockExams||[]).map(e=>[e.id,e]));for(const e of incoming.mockExams){const old=exams.get(e.id);if(old){const a={...old},b={...e};delete a.deleted;delete b.deleted;assert(stable(a)===stable(b),'같은 실전 성적의 내용이 충돌합니다.');if(e.deleted)old.deleted=true}else exams.set(e.id,clone(e))}next.mockExams=[...exams.values()]}
     return next;
   }
-  return{EXAM,KEY,VERSION,SUBJECTS,labels,STUDY_RESULTS,STUDY_METHODS,STUDY_DIFFICULTIES,JOURNAL_TOOL_IDS,validStudyDate,validStudyUnit,MARKUP_TOOLS,MARKUP_SHORTCUT_DEFAULTS,markupShortcuts,validateMarkupShortcuts,FONT_DEFAULTS,FONT_FAMILIES,fontPreferences,clone,norm,stable,assert,validateItem,immutableItem,stateValidator,plan,fresh,problemNotes,pendingProblemReports,grade,active,uncertainties,uncertaintyReasons,questionSchedules,reviewStates,stats,validateState,merge,identity,fingerprint,answerSignature,broadTopics};
+  return{EXAM,KEY,VERSION,SUBJECTS,labels,STUDY_RESULTS,STUDY_METHODS,STUDY_DIFFICULTIES,JOURNAL_TOOL_IDS,validStudyDate,validStudyUnit,MARKUP_TOOLS,MARKUP_SHORTCUT_DEFAULTS,markupShortcuts,validateMarkupShortcuts,FONT_DEFAULTS,FONT_FAMILIES,fontPreferences,clone,norm,stable,assert,validateItem,immutableItem,stateValidator,plan,fresh,problemNotes,quizNotes,pendingProblemReports,grade,active,uncertainties,uncertaintyReasons,questionSchedules,reviewStates,stats,validateState,merge,identity,fingerprint,answerSignature,broadTopics};
 });
