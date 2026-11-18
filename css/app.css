@@ -501,8 +501,10 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
 .klab-detailed .klab-material-body{display:grid;grid-template-columns:minmax(0,.75fr) minmax(0,1.25fr);gap:12px;align-items:start}
 .klab-detailed .klab-material .klab-employee{grid-template-columns:minmax(0,1fr);margin:0}
 .klab-roster{min-width:0;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:10px}
+.klab-detailed>.klab-roster{align-self:stretch}
 .klab-roster h3{margin:0 0 6px;font-size:var(--font-ui);color:var(--primary)}
 .klab-roster tbody tr{background:var(--soft);font-weight:700}
+.klab-roster td:nth-child(3){font-size:.9em}
 .klab-family-scroll{max-width:100%;overflow:auto}
 .semuon .klab-family-grid{min-width:920px;width:100%;table-layout:auto;font-size:var(--font-ui);line-height:1.4}
 .klab-family-grid :is(th,td){padding:4px;vertical-align:middle;white-space:nowrap;text-align:center}
@@ -537,6 +539,15 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
 .klab-childcare{gap:8px;margin-top:6px;padding:8px;border-radius:7px;background:var(--soft);font-size:var(--font-ui)}
 .klab-childcare output{display:inline-block;margin-left:4px;color:var(--primary);font-weight:700}
 .klab-childcare output.klab-count-wrong{color:var(--danger)}
+.klab-deduction-summary{margin-top:10px;padding-top:8px;border-top:1px solid var(--line);font-size:var(--font-ui)}
+.klab-deduction-summary h3{margin:0 0 6px;font-size:inherit}
+.klab-deduction-summary dl{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px 10px;margin:0}
+.klab-deduction-summary dl>div{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 6px}
+.klab-deduction-summary dd{margin:0;color:var(--primary);font-weight:700;white-space:nowrap}
+.semuon.klab-window :is(.app-sidebar,.app-topbar,.app-footer){display:none}
+.semuon.klab-window .app-main{margin:0 auto;padding:14px 20px;max-width:1700px}
+.klab-window .klab-workspace .withholding-quiz-question{margin-top:0}
+.klab-window .page-head{margin-bottom:12px}
 .klab-field-results ul{margin:6px 0;padding-inline-start:1.3em;overflow-wrap:anywhere}
 @container quiz-question (max-width:1050px){.klab-family-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @container quiz-question (max-width:830px){.klab-layout{grid-template-columns:minmax(0,1fr)}}
@@ -553,6 +564,7 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
 }
 @container quiz-question (max-width:410px){
  .klab-entry{padding:8px}
+ .klab-deduction-summary dl{grid-template-columns:repeat(2,minmax(0,1fr))}
  .klab-basic-grid>label:has(input[maxlength="14"]),.klab-family-row>label:nth-child(n+3){grid-column:1/-1}
  .klab-source-table :is(th,td){padding:4px}
 }
