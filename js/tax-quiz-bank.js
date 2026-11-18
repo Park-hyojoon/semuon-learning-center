@@ -705,6 +705,11 @@
   if(!question.family)return [...(question.facts||[]).map(([label,value])=>label+': '+value),question.condition||''].filter(Boolean).join('\n');
   return ['가상 연습자료 · '+question.family.year+'년 귀속 · 자료번호 '+question.variant,'자료 1',...question.family.employee.map(([label,value])=>label+': '+value),'자료 2',...question.family.rows.map(row=>[row.label,row.name,row.rrn,row.remarks].join(' | ')),question.condition].join('\n');
  }
+ function adultDisabledChildren(question){
+  return (question.registration?.rows||question.family?.rows||[]).filter(row=>
+   (row.role==='child'||row.relation==='자녀')&&row.age>20&&row.eligible==='yes'&&
+   (['1','2','3'].includes(row.disabled)||row.reason==='disability'));
+ }
  function fieldResults(question,values){
   if(question.registration)return question.fields.map((field,i)=>{
    const display=value=>field.input==='import'?value===''?'불러오지 않음':value+'명':
@@ -745,7 +750,7 @@
   return matching.filter(question=>chosen.has(question));
  }
 
- const api={units,levels,books,questions,inUnit,selectQuestions,employeeFamily,registrationAnswer,registrationBirthDate,childcareCount,caseText,fieldResults};
+ const api={units,levels,books,questions,inUnit,selectQuestions,employeeFamily,registrationAnswer,registrationBirthDate,childcareCount,caseText,fieldResults,adultDisabledChildren};
  if(typeof module==='object'&&module.exports)module.exports=api;
  else root.SemuonTaxQuiz=api;
 })(globalThis);

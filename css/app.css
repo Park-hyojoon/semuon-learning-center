@@ -552,6 +552,7 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
 .klab-window .klab-workspace .withholding-quiz-question{margin-top:0}
 .klab-window .page-head{margin-bottom:12px}
 .klab-field-results ul{margin:6px 0;padding-inline-start:1.3em;overflow-wrap:anywhere}
+.semuon .quiz-adult-disability-note{padding:10px 12px;margin-top:10px!important;border:1px solid #cf837a;border-radius:8px;background:#fff0ed;color:#972e28;font-weight:700}
 @container quiz-question (max-width:1050px){.klab-family-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @container quiz-question (max-width:830px){.klab-layout{grid-template-columns:minmax(0,1fr)}}
 @container quiz-question (max-width:830px){.klab-detailed .klab-material-body{grid-template-columns:minmax(0,1fr)}}

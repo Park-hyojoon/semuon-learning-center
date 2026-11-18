@@ -1184,6 +1184,15 @@
     if(!registrationUI)options.disabled=true;
     reset.hidden=result.hidden=explanation.hidden=false;
     memoForm.hidden=false;
+    const special=quiz.adultDisabledChildren(question);
+    if(special.length&&!explanation.querySelector('.quiz-adult-disability-note')){
+     const note=document.createElement('p');
+     note.className='quiz-adult-disability-note';
+     note.setAttribute('data-mark-text','feedback');
+     note.textContent=special.map(row=>row.name).join(' · ')+
+      ' · 20세 초과 장애인 자녀입니다. 소득 등 기본공제 요건을 충족하면 나이 상한을 적용하지 않습니다. 자녀(세액)의 적용 여부를 직접 확인하세요. 자녀(간이)는 8세 이상 20세 이하 기준이므로 부로 구분합니다.';
+     explanation.append(note);
+    }
     result.classList.toggle('good',correct);
     result.classList.toggle('wrong',!correct);
     result.textContent=correct?'정답입니다.':missed.length
