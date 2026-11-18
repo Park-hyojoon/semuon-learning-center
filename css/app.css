@@ -451,6 +451,36 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
 .quiz-question-condition{margin:0;font-size:var(--font-ui);line-height:1.6}
 .quiz-memo{margin-top:14px;border:1px solid var(--line);border-radius:9px;padding:12px}
 .quiz-saved-note{white-space:pre-wrap;overflow-wrap:anywhere}
+.employee-family-layout>.withholding-quiz{max-width:none}
+.employee-source{margin:16px 0}
+.employee-source h3,.employee-family-heading h3{margin:0;font-weight:700}
+.employee-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin:8px 0 0;padding:4px 12px;border:1px solid var(--line);border-radius:9px;background:var(--soft)}
+.employee-meta>div{display:flex;align-items:baseline;gap:10px;min-width:0;padding:8px}
+.employee-meta dt{font-size:var(--font-ui);font-weight:700;flex-shrink:0}
+.employee-meta dd{margin:0;overflow-wrap:anywhere}
+.employee-family-heading{gap:8px}
+.employee-family-heading+.quiz-question-condition{margin:8px 0 12px}
+.semuon .employee-family-table{table-layout:fixed;width:100%;min-width:0;max-width:100%;font-size:var(--font-ui)}
+.employee-family-table col:nth-child(1){width:5%}.employee-family-table col:nth-child(2){width:7%}.employee-family-table col:nth-child(3){width:16%}.employee-family-table col:nth-child(4){width:23%}.employee-family-table col:nth-child(5){width:15%}.employee-family-table col:nth-child(6){width:34%}
+.employee-family-table :is(th,td){padding:10px 8px;vertical-align:top;overflow-wrap:anywhere}
+.employee-family-table select{display:block;width:100%;max-width:100%;min-width:0;padding:8px 6px;background:var(--surface);font:inherit;color:var(--ink)}
+.employee-rrn{white-space:nowrap;font-variant-numeric:tabular-nums}
+.employee-feedback{margin:8px 0 0;line-height:1.6}
+.employee-family-table [data-result=wrong]{background:color-mix(in srgb,#c25c43 7%,var(--surface))}
+.employee-family-table [data-result=wrong] select[aria-invalid=true]{border:2px solid #b94b34}
+.employee-family-table [data-result=correct] .employee-feedback{color:var(--primary)}
+.employee-attempt-details{margin-top:12px}.employee-attempt-details summary{font-weight:700}
+@media(max-width:1050px){
+ .employee-meta{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .employee-family-table,.employee-family-table tbody{display:block}
+ .employee-family-table colgroup,.employee-family-table thead{display:none}
+ .employee-family-table tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border:1px solid var(--line);border-radius:9px;margin:12px 0;overflow:hidden}
+ .employee-family-table :is(th,td){display:block;border:0;padding:8px 10px;text-align:left;min-width:0}
+ .employee-family-table :is(th,td)::before{content:attr(data-label);display:block;font-weight:700;color:var(--muted);margin-bottom:4px}
+ .employee-family-table td:nth-child(3),.employee-family-table td:nth-child(4),.employee-family-table td:nth-child(6){grid-column:1/-1}
+ .employee-family-table td:nth-child(5){grid-column:1/-1}
+}
+@media(max-width:520px){.employee-meta{grid-template-columns:minmax(0,1fr)}.employee-meta>div{padding:6px 0}}
 #withholding-quiz-explanation p{margin:0 0 4px}
 @media(max-width:520px){
  .withholding-quiz-question{padding:16px}

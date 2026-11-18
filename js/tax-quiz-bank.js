@@ -466,10 +466,72 @@
   }
  ];
 
+ function employeeFamily(seed=20261118){
+  const variant=Number(seed)>>>0;
+  let state=variant;
+  const random=()=>{state+=0x6D2B79F5;let t=state;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return ((t^t>>>14)>>>0)/4294967296};
+  const integer=(min,max)=>min+Math.floor(random()*(max-min+1)),pick=values=>values[integer(0,values.length-1)];
+  const year=2026,pad=n=>String(n).padStart(2,'0'),surname=pick(['김','이','박','정']);
+  const names=['지훈','민서','수현','예린','도윤','서연','하준','지우','현우','다은','성민','유진'];
+  const name=family=> (family?surname:pick(['최','한','오','신']))+names.splice(integer(0,names.length-1),1)[0];
+  const birth=(base,female)=>{
+   const y=base+integer(-1,1),m=integer(1,12),d=integer(1,28);
+   // A literal X makes this an unusable identity number while keeping the birth date and century readable.
+   return {rrn:String(y).slice(-2)+pad(m)+pad(d)+'-'+(y>=2000?(female?'4':'3'):(female?'2':'1'))+String(integer(0,99999)).padStart(5,'0')+'X',age:year-y};
+  };
+  const wage=pick([480,500]),business=pick([101,120]),daily=pick([800,820,900]),disabledWage=pick([501,600]);
+  const rows=[
+   {key:'self',relation:'본인',label:'본인',name:name(true),...birth(1974,false),remarks:'세대주 · 근로소득자',eligible:'yes',reason:'self',criterion:'self',
+    reasonOptions:[['self','본인은 나이·소득 제한 없음'],['income','본인도 소득 한도 적용'],['household','세대주만 기본공제 가능']],
+    explanation:'본인 기본공제에는 부양가족의 나이·소득 한도를 적용하지 않습니다.'},
+   {key:'spouse',relation:'배우자',label:'배우자',name:name(false),...birth(1976,true),remarks:'일반 근로소득만 · 연간 총급여 '+wage+'만 원',eligible:'yes',reason:'spouse',criterion:'spouse-wage',
+    reasonOptions:[['spouse','나이 제한 없음 · 소득 요건 충족'],['age','배우자의 나이 요건 미충족'],['income','총급여 '+wage+'만 원은 한도 초과']],
+    explanation:'배우자에게는 나이 제한이 없고, 일반 근로소득만 있으며 총급여가 500만 원 이하이므로 가능합니다.'},
+   {key:'child-disabled',relation:'자녀',label:'첫째 자녀',name:name(true),...birth(2000,true),remarks:'첫째 · 소득 없음 · 세법상 장애인',eligible:'yes',reason:'disability',criterion:'disability-age',
+    reasonOptions:[['disability','장애인의 나이 제한 예외'],['age','자녀의 나이 요건 미충족'],['unlimited','장애인은 소득 제한도 없음']],
+    explanation:'세법상 장애인은 나이 제한을 적용하지 않습니다. 소득이 없으므로 소득 요건도 충족합니다.'},
+   {key:'child-adult',relation:'자녀',label:'둘째 자녀',name:name(true),...birth(2003,false),remarks:'둘째 · 소득 없음 · 장애인 아님',eligible:'no',reason:'age',criterion:'child-age',
+    reasonOptions:[['age','자녀의 나이 요건 미충족'],['noage','자녀는 나이 제한 없음'],['noincome','소득이 없으면 나이 무관']],
+    explanation:'장애인이 아닌 직계비속은 나이 요건을 충족해야 합니다. 이 자녀는 해당 연도의 나이 요건을 초과합니다.'},
+   {key:'father',relation:'부친',label:'부친',name:name(true),...birth(1947,false),remarks:'사업소득금액 '+business+'만 원 · 다른 소득 없음',eligible:'no',reason:'income',criterion:'income-amount',
+    reasonOptions:[['income','연간 소득금액 100만 원 초과'],['sales','사업 매출액으로만 판단'],['excluded','사업소득은 소득 한도에서 제외']],
+    explanation:'직계존속의 나이 요건은 충족하지만, 필요경비를 뺀 사업소득금액이 100만 원을 초과하므로 불가합니다.'},
+   {key:'mother',relation:'모친',label:'모친',name:name(false),...birth(1950,true),remarks:'일용근로소득 '+daily+'만 원 · 다른 소득 없음',eligible:'yes',reason:'daily',criterion:'daily-income',
+    reasonOptions:[['daily','일용근로소득은 소득금액 합산 제외'],['wage','일용근로소득에도 총급여 500만 원 적용'],['any','소득이 있으면 무조건 공제 불가']],
+    explanation:'일용근로소득은 분리과세되어 기본공제 소득금액 합계에 포함하지 않습니다. 나머지 요건도 충족하므로 가능합니다.'},
+   {key:'sibling',relation:'형제',label:'동생',name:name(true),...birth(1989,false),remarks:'동생 · 세법상 장애인 · 일반 근로소득만 · 총급여 '+disabledWage+'만 원',eligible:'no',reason:'income',criterion:'disability-income',
+    reasonOptions:[['income','장애인도 소득 제한 적용 · 한도 초과'],['unlimited','장애인은 소득 제한 없음'],['age','장애인 형제도 나이 제한 적용']],
+    explanation:'장애인의 예외는 나이 제한에 대한 것입니다. 일반 근로소득만 있어도 총급여가 500만 원을 초과하면 불가합니다.'}
+  ];
+  const judgment=[['','선택'],['yes','공제 가능'],['no','공제 불가']];
+  const fields=rows.flatMap(row=>[
+   {key:row.key+':eligibility',member:row.label,criterion:row.criterion,label:row.label+' · 기본공제 여부',options:judgment},
+   {key:row.key+':reason',member:row.label,criterion:row.criterion,label:row.label+' · 판단 이유',options:[['','선택'],...row.reasonOptions]}
+  ]);
+  return {id:'taxquiz-046',sample:'employee-family',level:'basic',book:'withholding',variant,
+   unit:'사원등록',detail:'가족별 기본공제 판단',topic:'사원등록 · 가족별 기본공제 판단',
+   prompt:'가족별 기본공제 대상 여부와 판단 이유를 선택하세요.',
+   condition:'2026년 귀속 · 생계·부양·중복공제 등 명시되지 않은 요건은 충족합니다. 총급여는 비과세 급여를 제외한 금액이며, 장애인은 세법상 장애인입니다.',
+   family:{year,employee:[['사원번호',String(integer(100,999))],['성명',rows[0].name],['입사일자',year+'-'+pad(integer(1,9))+'-'+pad(integer(1,28))],['근무부서',pick(['관리부','회계부','총무부'])],['월정급여',pick(['4,500,000원','5,000,000원','5,500,000원'])],['기타정보','내국인 · 거주자 · 세대주']],rows},
+   fields,answers:rows.flatMap(row=>[row.eligible,row.reason]),
+   solution:'가족별 판정 결과는 자료 2의 각 행에서 확인하세요.',explanation:'나이는 주민등록번호의 생년월일과 출생 세기를 기준으로 판단합니다.',
+   reference:{bookPage:126,pdfPage:143},articles:[50]};
+ }
+ function caseText(question){
+  if(!question.family)return [...(question.facts||[]).map(([label,value])=>label+': '+value),question.condition||''].filter(Boolean).join('\n');
+  return ['가상 연습자료 · '+question.family.year+'년 귀속 · 자료번호 '+question.variant,'자료 1',...question.family.employee.map(([label,value])=>label+': '+value),'자료 2',...question.family.rows.map(row=>[row.label,row.name,row.rrn,row.remarks].join(' | ')),question.condition].join('\n');
+ }
+ function fieldResults(question,values){
+  if(!question.family)return undefined;
+  return question.fields.map((field,i)=>({key:field.key,member:field.member,criterion:field.criterion,label:field.label,
+   value:field.options.find(([value])=>value===values[i])?.[1]||String(values[i]??''),
+   expected:field.options.find(([value])=>value===question.answers[i])[1],correct:values[i]===question.answers[i]}));
+ }
  function questions(course){
   const graded=[['basic',basicQuestions(course)],['applied',course==='income'?incomeApplied:withholdingApplied],
    ['advanced',course==='income'?incomeAdvanced:withholdingAdvanced]];
   if(course==='income')graded[0][1].push(...extraIncomeBasics);
+  else graded[0][1].push(employeeFamily());
   return graded.flatMap(([level,list])=>list.map(question=>({...question,level,book:question.book||course})))
    .sort((a,b)=>units[course].indexOf(a.unit)-units[course].indexOf(b.unit));
  }
@@ -490,7 +552,7 @@
   return matching.filter(question=>chosen.has(question));
  }
 
- const api={units,levels,books,questions,inUnit,selectQuestions};
+ const api={units,levels,books,questions,inUnit,selectQuestions,employeeFamily,caseText,fieldResults};
  if(typeof module==='object'&&module.exports)module.exports=api;
  else root.SemuonTaxQuiz=api;
 })(globalThis);

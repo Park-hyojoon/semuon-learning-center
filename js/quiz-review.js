@@ -68,5 +68,23 @@
   }
   return [...firsts.values()].reverse();
  }
- return {courses,ratings,stages,nextPlan,analyze,distribution,due,recent};
+ const criteria={'self':'본인 공제','spouse-wage':'배우자 · 근로소득 한도','disability-age':'장애인 · 나이 예외','child-age':'자녀 · 나이 요건','income-amount':'연간 소득금액 한도','daily-income':'일용근로소득 구분','disability-income':'장애인 · 소득 요건'};
+ function weaknesses(events=[],start='0000-00-00',end='9999-12-31',now=Date.now()){
+  const groups=new Map();
+  for(const event of recent(events.filter(e=>Date.parse(e.at)<=now),start,end)){
+   const members=new Map();
+   for(const result of event.fieldResults||[]){
+    const key=result.criterion+'|'+result.member;
+    if(!members.has(key))members.set(key,{criterion:result.criterion,wrong:false});
+    if(!result.correct)members.get(key).wrong=true;
+   }
+   for(const member of members.values()){
+    if(!groups.has(member.criterion))groups.set(member.criterion,{criterion:member.criterion,label:criteria[member.criterion]||member.criterion,total:0,wrong:0,days:new Set()});
+    const group=groups.get(member.criterion);group.total++;
+    if(member.wrong){group.wrong++;group.days.add(P.day(event.at))}
+   }
+  }
+  return [...groups.values()].map(({days,...row})=>({...row,wrongDays:days.size})).filter(row=>row.wrong).sort((a,b)=>b.wrongDays-a.wrongDays||b.wrong-a.wrong||a.criterion.localeCompare(b.criterion));
+ }
+ return {courses,ratings,stages,nextPlan,analyze,distribution,due,recent,criteria,weaknesses};
 });

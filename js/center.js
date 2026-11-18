@@ -17,7 +17,7 @@
   ['forms','신고서 · 급여','pages/forms.html']
  ];
  const quizCourse=new URLSearchParams(location.search).get('course')==='income'?'income':'withholding';
- const employeeSample=quizCourse==='withholding'&&new URLSearchParams(location.search).get('sample')==='employee';
+ const employeeSample=quizCourse==='withholding'&&['employee','employee-family'].includes(new URLSearchParams(location.search).get('sample'));
  const conceptGuide=$('#concept-guide-template')?.content;
  const conceptSubjects=[['fa','재무회계'],['vat','부가가치세법'],['cost','원가회계'],['income','소득세법']];
  const conceptArticles=conceptGuide?[...conceptGuide.querySelectorAll('[data-concept-subject]')]:[];
@@ -184,7 +184,7 @@
   const count=notes.length+quizNotes.length;
   return `<section class="card"><div class="row spread"><h2>문제별 취약점 메모</h2><button id="export-problem-notes" class="btn secondary" ${count?'':'disabled'}>GPT용 메모 내보내기</button></div><details><summary>${count}문제</summary>
    ${notes.map(n=>{const p=state.items.find(p=>p.id===n.problemId);return `<article><a class="btn secondary" href="${href('pages/'+(p.subject==='theory'?'theory':p.subject==='voucher'?'voucher':'general')+'.html?id='+encodeURIComponent(p.id))}">${esc(p.title)}</a><p class="quiz-saved-note">${esc(n.text)}</p></article>`}).join('')}
-   ${quizNotes.map(n=>{const q=bank.get(n.questionId);return `<article><a class="btn secondary" href="${quizQuestionPage(q,n.course)}">${esc(q?.topic||n.questionId)}</a><p class="quiz-saved-note">${esc(n.text)}</p></article>`}).join('')}
+   ${quizNotes.map(n=>{const q=bank.get(n.questionId),attempt=(state.quizReviewEvents||[]).filter(e=>e.questionId===n.questionId&&e.caseText&&Date.parse(e.at)<=Date.parse(n.at)).sort((a,b)=>Date.parse(b.at)-Date.parse(a.at)||b.id.localeCompare(a.id))[0];return `<article><a class="btn secondary" href="${quizQuestionPage(q,n.course,attempt?.variant)}">${esc(q?.topic||n.questionId)}</a><p class="quiz-saved-note">${esc(n.text)}</p></article>`}).join('')}
   </details></section>`;
  }
  function mountProblemReports(host){
@@ -528,31 +528,42 @@
   const today=SemuonProgress.day(Date.now()),recent=Q.recent(events,SemuonProgress.add(today,-6),today);
   const bank=new Map(Object.keys(Q.courses).flatMap(course=>SemuonTaxQuiz.questions(course).map(q=>[q.id,q])));
   const ratings=new Map(Q.ratings.map(([id,label])=>[id,label]));
+  const weaknesses=Q.weaknesses(events,SemuonProgress.add(today,-6),today);
   const selected=new Map(events.filter(e=>e.kind==='rating').slice().sort((a,b)=>a.at.localeCompare(b.at)||a.id.localeCompare(b.id)).reverse().map(e=>[e.attemptId,e.rating]));
   return `<details class="card quiz-records"><summary>핵심 퀴즈 · 최근 7일 첫 풀이 ${recent.length}건</summary><div>
    ${recent.length?`<ul>${recent.slice(0,12).map(e=>`<li><time>${esc(SemuonProgress.day(e.at))}</time> · ${esc(Q.courses[e.course])} ·
     ${esc(bank.get(e.questionId)?.topic||e.questionId)} · ${e.correct?'정답':'오답'}${selected.has(e.id)?' · '+esc(ratings.get(selected.get(e.id))):''}</li>`).join('')}</ul>`:'<p class="help">기록된 핵심 퀴즈 풀이가 없습니다.</p>'}
+   ${weaknesses.length?`<h3>사원 등록 · 재확인할 요건</h3><ul>${weaknesses.map(w=>`<li>${esc(w.label)} · 오답 ${w.wrongDays}일 / ${w.total}명 판정</li>`).join('')}</ul>`:''}
+   ${recent.filter(e=>e.fieldResults).slice(0,5).map(e=>`<details class="employee-attempt-details"><summary>${esc(SemuonProgress.day(e.at))} · 가족별 선택 답안</summary><p class="quiz-saved-note">${esc(e.caseText)}</p><div class="table-scroll"><table><thead><tr><th>항목</th><th>선택</th><th>정답</th></tr></thead><tbody>${e.fieldResults.map(r=>`<tr><th>${esc(r.label)}</th><td>${esc(r.value)}${r.correct?'':' · 오답'}</td><td>${esc(r.expected)}</td></tr>`).join('')}</tbody></table></div></details>`).join('')}
   </div></details>`;
  }
- function quizQuestionPage(question,course){
+ function quizQuestionPage(question,course,variant){
   const url=new URL(quizPage(course));
   if(question){
    url.searchParams.set('question',question.id);
    url.searchParams.set('unit',question.unit);
    url.searchParams.set('level',question.level);
    if(question.sample)url.searchParams.set('sample',question.sample);
+   if(question.family&&Number.isInteger(variant))url.searchParams.set('variant',variant);
   }
   return url.href;
  }
  function withholdingQuiz(course){
   const params=new URLSearchParams(location.search),income=course==='income';
-  const employee=!income&&params.get('sample')==='employee';
+  const employee=!income&&['employee','employee-family'].includes(params.get('sample'));
+  const family=employee&&params.get('sample')==='employee-family';
   const dueMode=params.get('review')==='due',Q=SemuonQuizReview;
   const countKey='semuon-withholding-quiz-preview-count';
   const levelKey='semuon-tax-quiz-level-'+course;
   const allowed=['3','5','10','all'];
   const quiz=globalThis.SemuonTaxQuiz;
-  const bank=quiz.questions(course).filter(q=>!employee||q.sample==='employee'),attempts=new Map();
+  let familySeed;
+  if(family){
+   const raw=params.get('variant');
+   familySeed=raw!==null&&/^\d{1,10}$/.test(raw)&&Number(raw)<=4294967295?Number(raw):crypto.getRandomValues(new Uint32Array(1))[0];
+   const url=new URL(location.href);url.searchParams.set('variant',familySeed);history.replaceState(null,'',url);
+  }
+  const bank=quiz.questions(course).filter(q=>!employee||q.sample===params.get('sample')).map(q=>q.family&&family?quiz.employeeFamily(familySeed):q),attempts=new Map();
   const today=()=>SemuonProgress.day(Date.now());
   const quizState=()=>Q.analyze(storedSnapshot().quizReviewEvents);
   const session=globalThis.SemuonResume?.readQuiz(course);
@@ -603,10 +614,10 @@
   const initialLevel=employee?quiz.levels[0]:quiz.levels.find(level=>level.id===params.get('level'))||
    quiz.levels.find(level=>level.id===preferredLevel)||quiz.levels[0];
   const back=income?'pages/concepts.html?subject=income':'pages/forms.html?practice=withholding';
-  const title=employee?'사원 등록':income?'소득세법 핵심 퀴즈':'원천징수 핵심 퀴즈';
+  const title=family?'사원 등록 · 샘플 2':employee?'사원 등록':income?'소득세법 핵심 퀴즈':'원천징수 핵심 퀴즈';
   document.title=title+' · 전산세무 2급';
-  content.innerHTML=head(title,'',`<div class="row quiz-heading-actions">${dueMode?`<a class="btn secondary" href="${quizPage(course)}">전체 퀴즈</a>`:''}${income?'':'<div class="quiz-ink-tools" role="group" aria-label="필기 도구"></div>'}<a class="btn secondary" href="${href(back)}">${income?'소득세법 개념':'원천징수 실무'}</a></div>`)+`
-   <div class="${income?'':'quiz-ink-layout'}">
+  content.innerHTML=head(title,'',`<div class="row quiz-heading-actions">${employee?`<a class="btn secondary" href="${href('pages/quiz.html?course=withholding&sample=employee')}"${family?'':' aria-current="page"'}>샘플 1</a><a class="btn secondary" href="${href('pages/quiz.html?course=withholding&sample=employee-family')}"${family?' aria-current="page"':''}>샘플 2 · 가족 자료</a>`:''}${dueMode?`<a class="btn secondary" href="${quizPage(course)}">전체 퀴즈</a>`:''}${income||family?'':'<div class="quiz-ink-tools" role="group" aria-label="필기 도구"></div>'}<a class="btn secondary" href="${href(back)}">${income?'소득세법 개념':'원천징수 실무'}</a></div>`)+`
+   <div class="${family?'employee-family-layout':income?'':'quiz-ink-layout'}">
    <div class="withholding-quiz">
     ${dueMode?'<p class="quiz-due-heading"><strong>오늘 복습</strong></p>':''}
     <section class="card withholding-quiz-settings row" aria-label="퀴즈 조건"${dueMode||employee?' hidden':''}>
@@ -619,7 +630,7 @@
     </section>
     <section class="card withholding-quiz-question" id="withholding-quiz-card" aria-labelledby="withholding-question"></section>
    </div>
-   ${income?'':`<section id="quiz-ink-paper" class="quiz-ink-paper" aria-label="퀴즈 필기 공간" tabindex="0">
+   ${income||family?'':`<section id="quiz-ink-paper" class="quiz-ink-paper" aria-label="퀴즈 필기 공간" tabindex="0">
     <span class="quiz-ink-label" aria-hidden="true">필기</span>
     <div class="quiz-ink-images"></div><canvas aria-label="펜과 마우스로 그리는 필기 영역"></canvas>
    </section>`}</div>
@@ -649,7 +660,7 @@
     <p class="help quiz-stats-note">성숙 문제는 복습 간격이 21일 이상인 문제입니다.</p>`;
    dialog.showModal();
   };
-  const ink=income?null:globalThis.SemuonQuizInk?.mount($('.quiz-ink-tools'),$('#quiz-ink-paper'));
+  const ink=income||family?null:globalThis.SemuonQuizInk?.mount($('.quiz-ink-tools'),$('#quiz-ink-paper'));
   const count=$('#withholding-quiz-count'),card=$('#withholding-quiz-card');
   const unit=$('#withholding-quiz-unit'),detail=$('#withholding-quiz-detail'),level=$('#withholding-quiz-level');
   const total=$('.withholding-quiz-total');
@@ -728,6 +739,17 @@
   };
 
   function answerFields(question){
+   if(question.family){
+    const control=i=>`<select name="answer-${i}" required aria-label="${esc(question.fields[i].label)}">${question.fields[i].options.map(([value,label])=>`<option value="${esc(value)}">${esc(label)}</option>`).join('')}</select>`;
+    return `<section class="employee-source" aria-labelledby="employee-source-title"><h3 id="employee-source-title">자료 1 · 사원 정보</h3><dl class="employee-meta">${question.family.employee.map(([label,value])=>`<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join('')}</dl></section>
+     <div class="row spread employee-family-heading"><h3>자료 2 · 가족 정보</h3><span class="help">가상 주민등록번호 · 끝자리 X</span></div>
+     <p class="quiz-question-condition">${esc(question.condition)}</p>
+     <table class="employee-family-table"><caption class="sr-only">가족별 기본공제 대상 여부와 판단 이유</caption>
+      <colgroup><col><col><col><col><col><col></colgroup>
+      <thead><tr><th scope="col">관계</th><th scope="col">성명</th><th scope="col">주민등록번호</th><th scope="col">비고</th><th scope="col">기본공제</th><th scope="col">판단의 결정적인 이유</th></tr></thead>
+      <tbody>${question.family.rows.map((row,i)=>`<tr data-employee-row="${i}"><th scope="row" data-label="관계">${esc(row.relation)}</th><td data-label="성명">${esc(row.name)}</td><td data-label="주민등록번호"><span class="employee-rrn">${esc(row.rrn)}</span></td><td data-label="비고">${esc(row.remarks)}</td><td data-label="기본공제">${control(i*2)}</td><td data-label="판단 이유">${control(i*2+1)}<p class="employee-feedback" hidden></p></td></tr>`).join('')}</tbody>
+     </table>`;
+   }
    if(question.choices)return `<div class="withholding-quiz-options">${question.choices.map(([value,label])=>
     `<label><input type="radio" name="answer-0" value="${value}" required> ${esc(label)}</label>`).join('')}</div>`;
    return `<div class="withholding-quiz-fields">${question.fields.map(({label,options},i)=>`
@@ -740,6 +762,12 @@
   }
   function renderQuestion(focus=false){
    const question=questions[position],attempt=attempts.get(question);
+   const layout=card.parentElement.parentElement;
+   layout.classList.toggle('employee-family-layout',Boolean(question.family));
+   layout.classList.toggle('quiz-ink-layout',!income&&!question.family);
+   const paper=$('#quiz-ink-paper'),tools=$('.quiz-ink-tools');
+   if(paper)paper.hidden=Boolean(question.family);
+   if(tools)tools.hidden=Boolean(question.family);
    const savedMemo=C.quizNotes(storedSnapshot()).get(question.id)?.text||'';
    ink?.show(question);
    const difficulty=quiz.levels.find(option=>option.id===question.level);
@@ -756,7 +784,7 @@
       <fieldset>
        <legend id="withholding-question" tabindex="-1">${esc(question.prompt)}</legend>
        ${question.facts?`<dl class="quiz-question-facts">${question.facts.map(([label,value])=>`<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join('')}</dl>`:''}
-       ${question.condition?`<p class="quiz-question-condition">${esc(question.condition)}</p>`:''}
+       ${question.condition&&!question.family?`<p class="quiz-question-condition">${esc(question.condition)}</p>`:''}
        ${answerFields(question)}
       </fieldset>
       <div class="row">
@@ -765,7 +793,7 @@
       </div>
       <p id="withholding-quiz-result" class="feedback" role="status" tabindex="-1" hidden></p>
       <div id="withholding-quiz-explanation" hidden>
-       <p><strong>정답</strong> ${esc(question.solution)}</p>
+       ${question.family?'':`<p><strong>정답</strong> ${esc(question.solution)}</p>`}
        <p>${esc(question.explanation)}</p>
        <p class="help">${reference}${question.articles
         ?' · '+question.articles.map(n=>`<a href="${esc(lawLinks[n][1])}" target="_blank" rel="noopener">${esc(lawLinks[n][0])}</a>`).join(' · ')
@@ -785,8 +813,8 @@
    const form=$('#withholding-quiz-form'),grade=form.querySelector('[type=submit]');
    const options=form.querySelector('fieldset'),reset=$('#withholding-quiz-reset');
    const quizReport={course,title:title+" · "+question.topic,prompt:question.prompt,
-    conditions:[...(question.facts||[]).map(([label,value])=>label+": "+value),question.condition||'',question.choices?.map(([,label],i)=>(i+1)+". "+label).join("\n")||question.fields.map(field=>field.label+(field.options?" · "+field.options.filter(([value])=>value).map(([,label])=>label).join(" / "):"")).join("\n")].filter(Boolean).join("\n"),
-    answer:[question.solution,question.explanation,referenceLabel].filter(Boolean).join("\n")};
+    conditions:[quiz.caseText(question),question.choices?.map(([,label],i)=>(i+1)+". "+label).join("\n")||question.fields.map(field=>field.label+(field.options?" · "+field.options.filter(([value])=>value).map(([,label])=>label).join(" / "):"")).join("\n")].filter(Boolean).join("\n"),
+    answer:[question.family?question.family.rows.map(row=>row.label+': '+(row.eligible==='yes'?'공제 가능':'공제 불가')+' · '+row.explanation).join('\n'):question.solution,question.explanation,referenceLabel].filter(Boolean).join("\n")};
    reset.after(problemReportButton("quiz:"+course+":"+question.prompt,quizReport));
    const result=$('#withholding-quiz-result'),explanation=$('#withholding-quiz-explanation');
    const ratingBox=card.querySelector('.quiz-review-rating');
@@ -842,6 +870,19 @@
     result.textContent=correct?'정답입니다.':missed.length
      ?'다시 볼 항목 · '+missed.join(', ')
      :'해설을 확인해 보세요.';
+    if(question.family){
+     let complete=0;
+     question.family.rows.forEach((row,i)=>{
+      const correctRow=attempt.values[i*2]===row.eligible&&attempt.values[i*2+1]===row.reason;
+      if(correctRow)complete++;
+      const line=card.querySelector('[data-employee-row="'+i+'"]'),feedback=line.querySelector('.employee-feedback');
+      line.dataset.result=correctRow?'correct':'wrong';
+      feedback.hidden=false;
+      feedback.textContent=(correctRow?'정답':'정답: '+(row.eligible==='yes'?'공제 가능':'공제 불가'))+' · '+question.family.year+'년 말 만 '+row.age+'세. '+row.explanation;
+      for(const index of [i*2,i*2+1])form.elements.namedItem('answer-'+index).setAttribute('aria-invalid',String(attempt.values[index]!==question.answers[index]));
+     });
+     result.textContent=complete===question.family.rows.length?complete+'명 모두 정확합니다.':question.family.rows.length+'명 중 '+complete+'명 정확 · '+(question.family.rows.length-complete)+'명 재확인';
+    }
     showRatings(attempt);
    }
    if(attempt){
@@ -879,7 +920,8 @@
      missed:question.fields?.filter((_,i)=>!matches[i]).map(field=>field.label)||[]
     };
     store.update(state=>(state.quizReviewEvents||(state.quizReviewEvents=[])).push({
-     id:answer.id,kind:'attempt',course,questionId:question.id,correct:answer.correct,at:new Date().toISOString()
+     id:answer.id,kind:'attempt',course,questionId:question.id,correct:answer.correct,at:new Date().toISOString(),
+     ...(question.family?{caseText:quiz.caseText(question),variant:question.variant,fieldResults:quiz.fieldResults(question,values)}:{})
     }));
     attempts.set(question,answer);
     drafts.set(question,values);

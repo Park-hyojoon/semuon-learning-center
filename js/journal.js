@@ -23,11 +23,12 @@
    const q=bank.questions(n.course).find(q=>q.id===n.questionId);
    lines.push('### '+(q?.topic||n.questionId),'- 문제 ID: '+n.questionId,'- 분류: '+(n.course==='income'?'이론 / 소득세법':'실무 / 원천징수')+(q?' / '+q.unit+' / '+q.detail:''),'- 기록일: '+P.day(n.at),'','#### 학습자 메모',n.text);
    if(q){
-    lines.push('','#### 문제',q.prompt,...(q.facts||[]).map(([label,value])=>label+': '+value));
-    if(q.condition)lines.push(q.condition);
+    const attempt=(state.quizReviewEvents||[]).filter(e=>e.questionId===q.id&&e.kind==='attempt'&&e.caseText&&Date.parse(e.at)<=Date.parse(n.at)).sort((a,b)=>Date.parse(b.at)-Date.parse(a.at)||b.id.localeCompare(a.id))[0];
+    lines.push('','#### 문제',q.prompt,attempt?.caseText||bank.caseText(q));
     if(q.choices)lines.push(...q.choices.map(([,label],i)=>(i+1)+'. '+label));
     else lines.push(...q.fields.map(field=>field.label+(field.options?' / '+field.options.filter(([value])=>value).map(([,label])=>label).join(' · '):' / 만 원')));
     lines.push('','#### 정답·해설',q.solution,q.explanation);
+    if(attempt?.fieldResults)for(const r of attempt.fieldResults)lines.push('- '+r.label+': 선택 '+r.value+' / 정답 '+r.expected+' / '+(r.correct?'정답':'오답'));
     const ref=q.reference||{bookPage:126,pdfPage:143};
     lines.push(bank.books[q.book].label+' '+ref.bookPage+'쪽 (PDF '+ref.pdfPage+'쪽)');
    }
@@ -90,9 +91,25 @@
     }
    }
   }
+  const family=quizFamilyMarkdown(state,{start,end});if(family)lines.push('',family);
   if(weekly)lines.push('','## 학습센터 자동 기록',P.weeklySummary(state,end),'','요청: 기록된 범위·첫 채점·외부 실습 자기평가를 구별하여, 다음 진도와 구체적인 복습 우선순위 3가지를 짧게 제안해 주세요.');
   if([...Core.problemNotes(state).values()].some(n=>n.text&&P.day(n.at)>=start&&P.day(n.at)<=end))lines.push('',problemNotesMarkdown(state,{start,end}));
   else if(state.quizNotes?.length)lines.push('',quizNotesMarkdown(state,{start,end}));
+  return lines.join('\n');
+ }
+ function quizFamilyMarkdown(state,{start='0000-00-00',end='9999-12-31'}={}){
+  const events=(state.quizReviewEvents||[]).filter(e=>e.kind==='attempt'&&e.fieldResults&&Date.parse(e.at)<=Date.now()&&P.day(e.at)>=start&&P.day(e.at)<=end).sort((a,b)=>Date.parse(a.at)-Date.parse(b.at)||a.id.localeCompare(b.id));
+  if(!events.length)return '';
+  const Q=typeof module==='object'&&module.exports?require('./quiz-review.js'):globalThis.SemuonQuizReview;
+  const firsts=new Set(Q.recent(events,start,end).map(e=>e.id));
+  const lines=['## 사원등록 · 가족별 판단 기록','','반복 오답은 문제별·날짜별 첫 풀이로 집계합니다. 같은 날 고쳐 맞힌 결과는 첫 오답을 덮지 않습니다.',''];
+  const weaknesses=Q.weaknesses(state.quizReviewEvents,start,end);
+  for(const w of weaknesses)lines.push('- '+w.label+': 오답 '+w.wrongDays+'일 / '+w.total+'명 판정 중 '+w.wrong+'명 오답');
+  for(const e of events){
+   lines.push('','### '+P.day(e.at)+' · '+(firsts.has(e.id)?'당일 첫 풀이':'당일 재풀이'),'- 풀이 ID: '+e.id+' / 문제: '+e.questionId+' / 자료번호: '+e.variant,'',e.caseText,'','| 항목 | 선택 | 정답 | 결과 |','| --- | --- | --- | --- |');
+   const cell=s=>s.replace(/\|/g,' / ').replace(/[\r\n]+/g,' ');
+   for(const r of e.fieldResults)lines.push('| '+[r.label,r.value,r.expected,r.correct?'정답':'오답'].map(cell).join(' | ')+' |');
+  }
   return lines.join('\n');
  }
  // Escape first. Only the small Markdown/HTML subset offered by the toolbar is rendered.
@@ -170,5 +187,5 @@
   addEventListener('beforeunload',e=>{if(!flushDaily()||[...sessions.values()].some(s=>!s.flush())){e.preventDefault();e.returnValue=''}});render();const editEntry=a.entries.find(e=>e.entryId===params.get('entry'));if(editEntry)openEntry(editEntry.lane,editEntry);const bookRef=T.get(params.get('book'));if(bookRef)openEntry(bookRef.unitId.startsWith('unit:')?'theory':'practice',null,null,{unitId:bookRef.unitId,bookActivity:bookRef.kind==='concept'?'concept':'exercise',bookRefs:[bookRef.id]});const unit=byUnit.get(params.get('unit'));if(unit){openEntry(unit.id.startsWith('unit:')?'theory':'practice',null,null,{unitId:unit.id,focus:params.get('focus')||'',problemId:params.get('problem')||''});}
   return{refresh:render};
  }
- return{analyze,event,problemNotesMarkdown,quizNotesMarkdown,problemReportsMarkdown,problemReportTitle,markdown,preview,mount,defaultTools};
+ return{analyze,event,problemNotesMarkdown,quizNotesMarkdown,quizFamilyMarkdown,problemReportsMarkdown,problemReportTitle,markdown,preview,mount,defaultTools};
 });
