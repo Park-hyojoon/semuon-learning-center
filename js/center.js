@@ -17,7 +17,11 @@
   ['forms','신고서 · 급여','pages/forms.html']
  ];
  const quizCourse=new URLSearchParams(location.search).get('course')==='income'?'income':'withholding';
- const employeeSample=quizCourse==='withholding'&&['employee','employee-family'].includes(new URLSearchParams(location.search).get('sample'));
+ const quizSample=quizCourse==='withholding'?new URLSearchParams(location.search).get('sample'):'';
+ const registrationSample=quizSample==='employee-klab';
+ const employeeSample=['employee','employee-family'].includes(quizSample);
+ const employeePath='pages/quiz.html?course=withholding&sample=employee-family';
+ const registrationPath='pages/quiz.html?course=withholding&sample=employee-klab';
  const conceptGuide=$('#concept-guide-template')?.content;
  const conceptSubjects=[['fa','재무회계'],['vat','부가가치세법'],['cost','원가회계'],['income','소득세법']];
  const conceptArticles=conceptGuide?[...conceptGuide.querySelectorAll('[data-concept-subject]')]:[];
@@ -34,7 +38,7 @@
   const links=practiceMenu.map(([id,name,path])=>`<a data-sub-menu-id="${id}" href="${href(path)}" ${page===id?'class="active" aria-current="page"':''}>${name}</a>`);
   return `<details class="app-nav-group" data-menu-id="practice-learning" open>
    <summary><span aria-hidden="true">${icon}</span><span>${label}</span></summary>
-   <div class="app-subnav">${links.join('')}<a data-sub-menu-id="sub:quiz:withholding" href="${href('pages/quiz.html?course=withholding')}" ${page==='quiz'&&quizCourse==='withholding'&&!employeeSample?'class="active" aria-current="page"':''}>원천징수 핵심 퀴즈</a><a data-sub-menu-id="sub:quiz:employee" href="${href('pages/quiz.html?course=withholding&sample=employee-family')}" ${page==='quiz'&&employeeSample?'class="active" aria-current="page"':''}>사원 등록</a></div>
+   <div class="app-subnav">${links.join('')}<a data-sub-menu-id="sub:quiz:withholding" href="${href('pages/quiz.html?course=withholding')}" ${page==='quiz'&&quizCourse==='withholding'&&!employeeSample&&!registrationSample?'class="active" aria-current="page"':''}>원천징수 핵심 퀴즈</a><a data-sub-menu-id="sub:quiz:employee" href="${href(employeePath)}" ${page==='quiz'&&employeeSample?'class="active" aria-current="page"':''}>사원 등록</a><a data-sub-menu-id="sub:quiz:employee-klab" data-menu-parent-id="sub:quiz:employee" href="${href(registrationPath)}" ${page==='quiz'&&registrationSample?'class="active" aria-current="page"':''}>K랩</a></div>
   </details>`;
  }
  document.body.classList.add('semuon');document.body.innerHTML=`<aside class="app-sidebar"><a class="app-brand" href="${href('index.html')}"><img src="${href('assets/favicon.svg')}" alt=""><span>세무온<small>전산세무 2급 학습센터</small></span></a><button class="btn secondary mobile-menu" aria-expanded="false" aria-controls="app-nav" type="button">☰<span class="sr-only">메뉴 열기</span></button><nav id="app-nav" class="app-nav" aria-label="주 메뉴">${nav.map(([key,icon,label,path])=>key==='theory'?theoryNavigation(icon,label,path):key==='practice-learning'?practiceNavigation(icon,label):key==='settings'?`<details class="app-nav-group ${['settings','database'].includes(page)?'is-active':''}" data-menu-id="settings" open><summary><span>⚙</span><span>설정 · 백업</span></summary><div class="app-subnav"><a href="${href('pages/settings.html')}" ${page==='settings'?'class="active"':''}>설정 · 백업</a><a href="${href('pages/database.html')}" ${page==='database'?'class="active" aria-current="page"':''}>데이터베이스 현황</a></div></details>`:key==='status'?`<details class="app-nav-group ${['progress','map','journal','roadmap'].includes(page)?'is-active':''}" data-menu-id="status" open><summary><span aria-hidden="true">${icon}</span><span>${label}</span></summary><div class="app-subnav"><a href="${href('pages/learning-map.html')}" ${page==='map'?'class="active" aria-current="page"':''}>나의 학습 지도</a><a href="${href('pages/journal.html')}" ${page==='journal'?'class="active" aria-current="page"':''}>학습 기록</a></div></details>`:`<a data-menu-id="${key}" href="${href(path)}" ${key===page?'class="active" aria-current="page"':''}><span aria-hidden="true">${icon}</span><span>${label}</span></a>`).join('')}</nav></aside><main class="app-main"><header class="app-topbar"><p class="app-date">${new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',dateStyle:'full'}).format(new Date())}</p>${SemuonFullscreen.button()}</header><div id="save-status" class="notice error" role="alert" hidden></div><div id="content"></div><footer class="app-footer">세무온 · 전산세무 2급 전용 · <a href="${href('pages/settings.html')}">백업 · 설정</a></footer></main><div class="toast" role="status" hidden></div>`;
@@ -556,9 +560,104 @@
   }
   return url.href;
  }
+ function registrationFieldsHTML(question){
+  const {year,employee,rows,basicCount}=question.registration;
+  const control=(index,label,source=false)=>{
+   const field=question.fields[index],attrs=`name="answer-${index}" aria-label="${esc(field.label)}"${source?' data-childcare-source':''}`;
+   const input=field.options? `<select ${attrs}>${field.options.map(([value,text])=>`<option value="${esc(value)}">${esc(text)}</option>`).join('')}</select>`:
+    `<input ${attrs} type="${field.input==='date'?'date':'text'}" autocomplete="off"${field.input==='code'?' maxlength="3" inputmode="numeric"':field.input==='rrn'?' maxlength="14" autocapitalize="characters"':' maxlength="32"'}>`;
+   return `<label><span data-klab-text>${esc(label)}</span>${input}</label>`;
+  };
+  return `<div class="klab-layout">
+   <details class="klab-material" open>
+    <summary data-klab-text>연습 자료 · ${year}년 귀속</summary>
+    <div class="klab-material-body">
+     <dl class="klab-employee">${employee.map(([label,value])=>`<div><dt data-klab-text>${esc(label)}</dt><dd data-klab-text>${esc(value)}</dd></div>`).join('')}</dl>
+     <div class="table-scroll"><table class="klab-source-table">
+      <caption class="sr-only">연습용 부양가족 자료</caption>
+      <thead><tr>${['관계','성명','가상 주민등록번호','비고'].map(label=>`<th scope="col" data-klab-text>${label}</th>`).join('')}</tr></thead>
+      <tbody>${rows.map(row=>`<tr>${[row.relation,row.name,row.rrn,row.remarks].map(value=>`<td data-klab-text>${esc(value)}</td>`).join('')}</tr>`).join('')}</tbody>
+     </table></div>
+    </div>
+   </details>
+   <section class="klab-entry" aria-label="사원 등록 입력">
+    <div class="klab-tabs" role="tablist" aria-label="사원 등록 탭">
+     <button type="button" id="klab-basic-tab" role="tab" aria-selected="true" aria-controls="klab-basic">기본사항</button>
+     <button type="button" id="klab-family-tab" role="tab" aria-selected="false" aria-controls="klab-family" tabindex="-1">부양가족명세</button>
+    </div>
+    <div id="klab-basic" role="tabpanel" aria-labelledby="klab-basic-tab">
+     <div class="klab-basic-grid">${question.fields.slice(0,basicCount).map((field,i)=>control(i,field.label)).join('')}</div>
+    </div>
+    <div id="klab-family" role="tabpanel" aria-labelledby="klab-family-tab" hidden>
+     <div class="klab-family-entries">${rows.map(({start},i)=>`<div class="klab-family-row" role="group" aria-label="가족 ${i+1}">
+      ${control(start,'관계',true)}${control(start+1,'성명')}${control(start+2,'주민등록번호',true)}${control(start+3,'기본공제')}
+     </div>`).join('')}</div>
+     <div class="row spread klab-childcare">
+      <div><strong data-klab-text>6세 이하 보육수당 대상자</strong> <output role="status" id="klab-childcare-count">미반영</output></div>
+      <input type="hidden" name="answer-${question.fields.length-1}">
+      <button type="button" class="btn secondary" id="klab-import-family" aria-describedby="klab-childcare-count">부양가족 불러오기</button>
+     </div>
+    </div>
+   </section>
+  </div>`;
+ }
+ function bindRegistration(form,question){
+  const quiz=SemuonTaxQuiz,fields=question.fields.map((_,i)=>form.elements.namedItem('answer-'+i));
+  const imported=fields.at(-1),output=form.querySelector('#klab-childcare-count'),load=form.querySelector('#klab-import-family');
+  const tabs=[...form.querySelectorAll('.klab-tabs [role=tab]')];
+  const values=()=>question.fields.map((field,i)=>quiz.registrationAnswer(field,fields[i].value));
+  function selectTab(index,focus=false){
+   tabs.forEach((tab,i)=>{
+    tab.setAttribute('aria-selected',String(i===index));
+    tab.tabIndex=i===index?0:-1;
+    form.querySelector('#'+tab.getAttribute('aria-controls')).hidden=i!==index;
+   });
+   if(focus)tabs[index].focus();
+  }
+  tabs.forEach((tab,i)=>{
+   tab.onclick=()=>selectTab(i);
+   tab.onkeydown=event=>{
+    const next={ArrowLeft:1-i,ArrowRight:1-i,Home:0,End:1}[event.key];
+    if(next===undefined)return;
+    event.preventDefault();
+    selectTab(next,true);
+   };
+  });
+  function showCount(){
+   output.textContent=imported.value===''?'미반영':imported.value+'명';
+  }
+  load.onclick=()=>{
+   imported.value=String(quiz.childcareCount(question.registration,values()));
+   showCount();
+   imported.dispatchEvent(new Event('change',{bubbles:true}));
+  };
+  const invalidateImport=event=>{
+   if(!event.target.hasAttribute('data-childcare-source'))return;
+   imported.value='';
+   showCount();
+  };
+  form.addEventListener('input',invalidateImport);
+  form.addEventListener('change',invalidateImport);
+  return {
+   values,showCount,
+   showResult(results){
+    fields.forEach((field,i)=>{
+     field.disabled=true;
+     if(!results[i].correct)field.setAttribute('aria-invalid','true');
+    });
+    load.disabled=true;
+    output.classList.toggle('klab-count-wrong',!results.at(-1).correct);
+    const missed=results.filter(result=>!result.correct),feedback=form.querySelector('.klab-field-results');
+    feedback.innerHTML=missed.length?`<ul>${missed.map(result=>`<li><strong>${esc(result.label)}</strong> · 입력 ${esc(result.value)} · 정답 ${esc(result.expected)}</li>`).join('')}</ul>`:'';
+    const firstWrong=results.findIndex(result=>!result.correct);
+    selectTab(firstWrong===-1||firstWrong>=question.registration.basicCount?1:0);
+    return results.length-missed.length;
+   }
+  };
+ }
  function withholdingQuiz(course){
   const params=new URLSearchParams(location.search),income=course==='income';
-  const employee=!income&&['employee','employee-family'].includes(params.get('sample'));
+  const registration=registrationSample,employee=employeeSample||registration;
   const family=employee&&params.get('sample')==='employee-family';
   const dueMode=params.get('review')==='due',Q=SemuonQuizReview;
   const countKey='semuon-withholding-quiz-preview-count';
@@ -571,10 +670,11 @@
    familySeed=raw!==null&&/^\d{1,10}$/.test(raw)&&Number(raw)<=4294967295?Number(raw):crypto.getRandomValues(new Uint32Array(1))[0];
    const url=new URL(location.href);url.searchParams.set('variant',familySeed);history.replaceState(null,'',url);
   }
-  const bank=quiz.questions(course).filter(q=>!employee||q.sample===params.get('sample')).map(q=>q.family&&family?quiz.employeeFamily(familySeed,q.scenario):q),attempts=new Map();
+  const bank=quiz.questions(course).filter(q=>employee?q.sample===quizSample:!q.registration).map(q=>q.family&&family?quiz.employeeFamily(familySeed,q.scenario):q),attempts=new Map();
   const today=()=>SemuonProgress.day(Date.now());
   const quizState=()=>Q.analyze(storedSnapshot().quizReviewEvents);
-  const session=globalThis.SemuonResume?.readQuiz(course);
+  const resumeCourse=registration?'employee-klab':course;
+  const session=globalThis.SemuonResume?.readQuiz(resumeCourse);
   const restoreQuiz=session?.url===location.href?session:null;
   const drafts=new Map();
   let initialQuiz=true,flushQuizMemo=()=>true;
@@ -589,6 +689,7 @@
   }
   const lawLinks={
    12:['소득세법 제12조','https://www.law.go.kr/LSW/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1001059372'],
+   childcare:['보육수당 연령 기준 · 법제처 해석','https://www.law.go.kr/expcInfoP.do?expcSeq=341115'],
    14:['소득세법 제14조','https://law.go.kr/lsLinkCommonInfo.do?lsJoLnkSeq=1019371607'],
    21:['소득세법 제21조','https://www.law.go.kr/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1026500583'],
    50:['소득세법 제50조','https://www.law.go.kr/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1031985573'],
@@ -621,12 +722,12 @@
   }catch(_){}
   const initialLevel=employee?quiz.levels[0]:quiz.levels.find(level=>level.id===params.get('level'))||
    quiz.levels.find(level=>level.id===preferredLevel)||quiz.levels[0];
-  const back=income?'pages/concepts.html?subject=income':'pages/forms.html?practice=withholding';
-  const desktopInk=!matchMedia('(max-width:760px), (pointer:coarse)').matches;
-  const title=employee?'사원 등록':income?'소득세법 핵심 퀴즈':'원천징수 핵심 퀴즈';
+  const back=registration?employeePath:income?'pages/concepts.html?subject=income':'pages/forms.html?practice=withholding';
+  const desktopInk=!registration&&!matchMedia('(max-width:760px), (pointer:coarse)').matches;
+  const title=registration?'K랩 · 사원 등록':employee?'사원 등록':income?'소득세법 핵심 퀴즈':'원천징수 핵심 퀴즈';
   document.title=title+' · 전산세무 2급';
-  content.innerHTML=head(title,'',`<div class="row quiz-heading-actions">${dueMode?`<a class="btn secondary" href="${quizPage(course)}">전체 퀴즈</a>`:''}<a class="btn secondary" href="${href(back)}">${income?'소득세법 개념':'원천징수 실무'}</a></div>`)+`
-   <div class="quiz-workspace ${desktopInk?'quiz-ink-layout':''}">
+  content.innerHTML=head(title,'',`<div class="row quiz-heading-actions">${dueMode?`<a class="btn secondary" href="${registration?href(registrationPath):quizPage(course)}">${registration?'사원 등록 연습':'전체 퀴즈'}</a>`:''}<a class="btn secondary" href="${href(back)}">${registration?'사원 등록 퀴즈':income?'소득세법 개념':'원천징수 실무'}</a></div>`)+`
+   <div class="quiz-workspace ${desktopInk?'quiz-ink-layout':''}${registration?' klab-workspace':''}">
    <div class="withholding-quiz">
     ${dueMode?'<p class="quiz-due-heading"><strong>오늘 복습</strong></p>':''}
     <section class="card withholding-quiz-settings row" aria-label="퀴즈 조건"${dueMode||employee?' hidden':''}>
@@ -736,7 +837,7 @@
     if(value)url.searchParams.set(key,value);else url.searchParams.delete(key);
    }
    history.replaceState(null,'',url);
-   globalThis.SemuonResume?.saveQuiz(course,{
+   globalThis.SemuonResume?.saveQuiz(resumeCourse,{
     url:url.href,day:today(),ids:questions.map(q=>q.id),current:questions[position]?.id,
     drafts:Object.fromEntries([...drafts].map(([q,values])=>[q.id,values])),
     attempts:Object.fromEntries([...attempts].map(([q,attempt])=>[q.id,{...attempt,signature:C.stable(q.answers)}]))
@@ -761,6 +862,7 @@
   };
 
   function answerFields(question){
+   if(question.registration)return registrationFieldsHTML(question);
    if(question.family){
     const control=i=>`<select name="answer-${i}" required aria-label="${esc(question.fields[i].label)}">${question.fields[i].options.map(([value,label])=>`<option value="${esc(value)}">${esc(label)}</option>`).join('')}</select>`;
     return `<section class="employee-source" aria-labelledby="employee-source-title"><h3 id="employee-source-title">자료 1 · 사원 정보</h3><dl class="employee-meta">${question.family.employee.map(([label,value])=>`<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join('')}</dl></section>
@@ -792,9 +894,9 @@
    const difficulty=quiz.levels.find(option=>option.id===question.level);
    const book=quiz.books[question.book];
    const {bookPage,pdfPage}=question.reference||{bookPage:126,pdfPage:143};
-   const referenceLabel=`${book.label} ${bookPage}쪽 (PDF ${pdfPage}쪽)`;
+   const referenceLabel=registration?'':`${book.label} ${bookPage}쪽 (PDF ${pdfPage}쪽)`;
    const localPdf=location.protocol==='file:'&&!rootURL.pathname.includes('/github-publish/site/');
-   const reference=localPdf
+   const reference=localPdf&&referenceLabel
     ?`<a href="${esc(href(book.file+'#page='+pdfPage))}" target="_blank" rel="noopener">${referenceLabel}</a>`
     :referenceLabel;
    card.innerHTML=`<div data-problem-id="${esc(markId)}">
@@ -807,15 +909,16 @@
        ${answerFields(question)}
       </fieldset>
       <div class="row">
-       <button type="submit" class="btn">정답 확인</button>
+       <button type="submit" class="btn">${registration?'채점하기':'정답 확인'}</button>
        <button type="button" class="btn secondary" id="withholding-quiz-reset" hidden>다시 풀기</button>
       </div>
       <p id="withholding-quiz-result" class="feedback" role="status" tabindex="-1" hidden></p>
       <div id="withholding-quiz-explanation" hidden>
        ${question.family?'':`<p><strong>정답</strong> ${esc(question.solution)}</p>`}
        <p>${esc(question.explanation)}</p>
+       ${registration?'<div class="klab-field-results"></div>':''}
        <p class="help">${reference}${question.articles
-        ?' · '+question.articles.map(n=>`<a href="${esc(lawLinks[n][1])}" target="_blank" rel="noopener">${esc(lawLinks[n][0])}</a>`).join(' · ')
+        ?(reference?' · ':'')+question.articles.map(n=>`<a href="${esc(lawLinks[n][1])}" target="_blank" rel="noopener">${esc(lawLinks[n][0])}</a>`).join(' · ')
         :''}</p>
       </div>
      </form>
@@ -837,7 +940,7 @@
      '.withholding-quiz-options label > span','.withholding-quiz-fields label > span:first-child',
      '.employee-source h3','.employee-family-heading h3','.employee-meta dt','.employee-meta dd',
      '.employee-family-table thead th','.employee-family-table tbody tr > :nth-child(-n+4)',
-     '#withholding-quiz-explanation p'
+     '#withholding-quiz-explanation p','.klab-field-results li','[data-klab-text]'
     ].join(',')).forEach(el=>el.setAttribute('data-mark-text',''));
     card.querySelectorAll('.employee-feedback summary,.employee-feedback details p').forEach(el=>el.setAttribute('data-mark-text','feedback'));
     markup.attach(card,{shortcuts:()=>C.markupShortcuts(snapshot().settings),onUndo:recordScreenUndo});
@@ -845,6 +948,7 @@
    attachQuizMarkup();
    const form=$('#withholding-quiz-form'),grade=form.querySelector('[type=submit]');
    const options=form.querySelector('fieldset'),reset=$('#withholding-quiz-reset');
+   const registrationUI=registration?bindRegistration(form,question):null;
    const quizReport={course,title:title+" · "+question.topic,prompt:question.prompt,
     conditions:[quiz.caseText(question),question.choices?.map(([,label],i)=>(i+1)+". "+label).join("\n")||question.fields.map(field=>field.label+(field.options?" · "+field.options.filter(([value])=>value).map(([,label])=>label).join(" / "):"")).join("\n")].filter(Boolean).join("\n"),
     answer:[question.family?question.family.rows.map(row=>row.label+': '+(row.eligible==='yes'?'공제 가능':'공제 불가')+' · '+row.explanation).join('\n'):question.solution,question.explanation,referenceLabel].filter(Boolean).join("\n")};
@@ -895,7 +999,8 @@
    }
    function showResult(attempt){
     const {correct,missed}=attempt;
-    options.disabled=grade.disabled=true;
+    grade.disabled=true;
+    if(!registrationUI)options.disabled=true;
     reset.hidden=result.hidden=explanation.hidden=false;
     memoForm.hidden=false;
     result.classList.toggle('good',correct);
@@ -918,6 +1023,11 @@
      });
      result.textContent=complete===question.family.rows.length?complete+'명 모두 정확합니다.':question.family.rows.length+'명 중 '+complete+'명 정확 · '+(question.family.rows.length-complete)+'명 재확인';
     }
+    if(registrationUI){
+     const results=quiz.fieldResults(question,attempt.values),matched=registrationUI.showResult(results);
+     const importMissed=!results.at(-1).correct&&attempt.values.at(-1)==='';
+     result.textContent=matched+'/'+results.length+'항목 정확'+(importMissed?' · 부양가족 불러오기가 누락되었습니다.':'');
+    }
     showRatings(attempt);
     attachQuizMarkup();
     globalThis.SemuonMarkup?.retire(markId);
@@ -927,15 +1037,23 @@
      const field=form.elements.namedItem('answer-'+i);
      field.value=value;
     });
+    registrationUI?.showCount();
     showResult(attempt);
    }else if(drafts.has(question)){
     drafts.get(question).forEach((value,i)=>{
      const field=form.elements.namedItem('answer-'+i);
      if(field)field.value=value;
     });
+    registrationUI?.showCount();
    }
+   const answerValues=()=>{
+    if(registrationUI)return registrationUI.values();
+    const data=new FormData(form);
+    return question.answers.map((_,i)=>String(data.get('answer-'+i)??''));
+   };
    const saveQuizInputs=()=>{
-    drafts.set(question,question.answers.map((_,i)=>String(new FormData(form).get('answer-'+i)??'')));
+    if(grade.disabled)return;
+    drafts.set(question,answerValues());
     rememberQuiz();
    };
    form.addEventListener('input',saveQuizInputs);
@@ -945,9 +1063,9 @@
     if(grade.disabled)return;
     act(()=>{
     if(problemReportsSyncing){toast('동기화가 끝난 뒤 다시 눌러 주세요.');return}
-    const fields=new FormData(form);
-    const values=question.answers.map((_,i)=>fields.get('answer-'+i));
-    const matches=question.answers.map((expected,i)=>typeof expected==='number'
+    const values=answerValues();
+    const fieldResults=quiz.fieldResults(question,values);
+    const matches=registrationUI?fieldResults.map(field=>field.correct):question.answers.map((expected,i)=>typeof expected==='number'
      ?Number(values[i].replaceAll(',',''))===expected
      :values[i]===expected);
     const answer={
@@ -958,7 +1076,7 @@
     };
     store.update(state=>(state.quizReviewEvents||(state.quizReviewEvents=[])).push({
      id:answer.id,kind:'attempt',course,questionId:question.id,correct:answer.correct,at:new Date().toISOString(),
-     ...(question.family?{caseText:quiz.caseText(question),variant:question.variant,fieldResults:quiz.fieldResults(question,values)}:{})
+     ...(fieldResults?{caseText:quiz.caseText(question),variant:question.variant,fieldResults}:{})
     }));
     attempts.set(question,answer);
     drafts.set(question,values);
@@ -1024,16 +1142,20 @@
   content.innerHTML=head('오늘 복습','핵심 개념을 확인한 뒤 분야와 세부 유형을 고르게 복습합니다.')+statsCards()+`<section class="card rv-unit-section"><div class="row spread"><h2>단원 복습 · 무엇을 볼까요?</h2><a class="btn secondary" href="${href('pages/learning-map.html')}">학습 지도 →</a></div><div id="rv-unit-plans"></div></section>${external.length?`<section class="card"><h2>교재·외부 실습 재확인</h2><p class="help">사용자가 기록한 어려움입니다. 실제 채점 점수와 별도로 확인하세요.</p>${external.slice(0,4).map(e=>`<p><a href="${href('pages/journal.html?date='+e.date+'&entry='+encodeURIComponent(e.entryId))}">${esc([...SemuonCurriculum.units,...SemuonCurriculum.practiceUnits].find(u=>u.id===e.unitId)?.title||'학습 기록')}${e.focus?' · '+esc(e.focus):''}</a> · ${esc(C.STUDY_RESULTS[e.outcome])}</p>`).join('')}</section>`:''}<div class="toolbar rv-filter-toolbar"><button class="btn" id="combo-start" type="button" title="세 분야 3문제씩 바로 복습" aria-label="세 분야 3문제씩 바로 복습">3문제씩 복습</button><label class="field"><span>분야</span><select id="review-subject"><option value="">세 분야 골고루</option>${V.fields.map(([id,name])=>`<option value="${id}">${name}</option>`).join('')}<option value="all">모든 영역 골고루</option></select></label><label class="field"><span>하루 목표</span><select id="review-limit">${[6,9,12].map(n=>`<option value="${n}" ${settings.reviewLimit===n?'selected':''}>${n}유형</option>`).join('')}</select></label><label class="field"><span>방식</span><select id="review-mode"><option value="balanced">오늘 복습</option><option value="focus">집중훈련 · 직접 선택</option></select></label><label class="field" id="review-type-label" hidden><span>집중할 유형</span><select id="review-type"><option value="">최근 오답 유형</option></select></label><label class="field rv-date-field"><span>추천 날짜</span><span class="rv-date-controls"><button type="button" class="btn secondary" data-review-day="-1" aria-label="이전 날짜">‹</button><input id="review-date" type="date" value="${viewDate}" aria-label="추천 날짜"><button type="button" class="btn secondary" data-review-day="1" aria-label="다음 날짜">›</button><button type="button" class="btn secondary" id="review-today">오늘</button></span></label></div><p id="review-date-notice" class="rv-preview-notice" hidden></p><div class="rv-review-layout"><section aria-label="추천 복습 문제"><div id="review-list"></div></section></div>`;
 
   $('.rv-unit-section').insertAdjacentHTML('beforebegin','<section class="card quiz-due-card"><h2>핵심 퀴즈 복습</h2><div class="row" id="quiz-due-courses"></div></section>');
-  const quizBanks=Object.entries(SemuonQuizReview.courses).map(([course,label])=>({course,label,bank:SemuonTaxQuiz.questions(course)}));
+  const quizBanks=Object.entries(SemuonQuizReview.courses).map(([course,label])=>{
+   const all=SemuonTaxQuiz.questions(course),standard={label,bank:all.filter(q=>!q.registration),url:quizPage(course,true)};
+   return course==='withholding'?[standard,{label:'K랩 · 사원 등록',bank:all.filter(q=>q.registration),url:href(registrationPath+'&review=due'),onlyDue:true}]:[standard];
+  }).flat();
   {const h1=$('.page-head h1'),row=document.createElement('div');row.className='title-row';h1.before(row);row.append(h1,$('#combo-start'))}
   if([...$('#review-subject').options].some(o=>o.value===params.get('field')))$('#review-subject').value=params.get('field');
   $('#combo-start').onclick=()=>act(startCombo);
   function render(){
    const future=viewDate>today,now=viewDate===today?Date.now():Date.parse(viewDate+'T23:59:59+09:00'),gs=V.analyze(snapshot(),{now}),field=$('#review-subject').value,mode=$('#review-mode').value,limit=Number($('#review-limit').value),scope=gs.filter(g=>V.matchesField(g,field)),selected=$('#review-type').value;
    const cards=SemuonQuizReview.analyze(storedSnapshot().quizReviewEvents,now);
-   $('#quiz-due-courses').innerHTML=quizBanks.map(({course,label,bank})=>{
+   $('#quiz-due-courses').innerHTML=quizBanks.map(({label,bank,url,onlyDue})=>{
     const n=SemuonQuizReview.due(bank,cards,viewDate).length;
-    return n&&!future?`<a class="btn secondary" href="${quizPage(course,true)}">${label} · ${n}문제</a>`:
+    if(onlyDue&&!n)return '';
+    return n&&!future?`<a class="btn secondary" href="${url}">${label} · ${n}문제</a>`:
      `<span class="pill">${label} · ${n}문제</span>`;
    }).join('');
    $('#review-type').innerHTML='<option value="">최근 오답 유형</option>'+scope.map(g=>`<option value="${esc(g.key)}">${esc(g.label)}</option>`).join('');$('#review-type').value=scope.some(g=>g.key===selected)?selected:'';$('#review-type-label').hidden=mode!=='focus';

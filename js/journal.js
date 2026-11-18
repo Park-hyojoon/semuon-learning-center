@@ -26,11 +26,12 @@
     const attempt=(state.quizReviewEvents||[]).filter(e=>e.questionId===q.id&&e.kind==='attempt'&&e.caseText&&Date.parse(e.at)<=Date.parse(n.at)).sort((a,b)=>Date.parse(b.at)-Date.parse(a.at)||b.id.localeCompare(a.id))[0];
     lines.push('','#### 문제',q.prompt,attempt?.caseText||bank.caseText(q));
     if(q.choices)lines.push(...q.choices.map(([,label],i)=>(i+1)+'. '+label));
-    else lines.push(...q.fields.map(field=>field.label+(field.options?' / '+field.options.filter(([value])=>value).map(([,label])=>label).join(' · '):' / 만 원')));
+    else lines.push(...q.fields.map(field=>field.label+(field.options?' / '+field.options.filter(([value])=>value).map(([,label])=>label).join(' · '):q.registration?'':' / 만 원')));
     lines.push('','#### 정답·해설',q.solution,q.explanation);
     if(attempt?.fieldResults)for(const r of attempt.fieldResults)lines.push('- '+r.label+': 선택 '+r.value+' / 정답 '+r.expected+' / '+(r.correct?'정답':'오답'));
     const ref=q.reference||{bookPage:126,pdfPage:143};
-    lines.push(bank.books[q.book].label+' '+ref.bookPage+'쪽 (PDF '+ref.pdfPage+'쪽)');
+    if(q.registration)lines.push('참고: https://www.law.go.kr/expcInfoP.do?expcSeq=341115');
+    else lines.push(bank.books[q.book].label+' '+ref.bookPage+'쪽 (PDF '+ref.pdfPage+'쪽)');
    }
    lines.push('');
   }

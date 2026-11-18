@@ -584,11 +584,98 @@
    solution:'가족별 판정 결과는 자료 2의 각 행에서 확인하세요.',explanation:'나이는 주민등록번호의 생년월일과 출생 세기를 기준으로 판단합니다.',
    reference:{bookPage:126,pdfPage:143},articles:[50]};
  }
+ function registrationAnswer(field,value){
+  const text=String(value??'').trim();
+  if(field.input==='rrn'){
+   const digits=text.replace(/[\s-]/g,'').toUpperCase();
+   return /^\d{6}[1-4]\d{5}X$/.test(digits)?digits.slice(0,6)+'-'+digits.slice(6):'';
+  }
+  if(field.input==='import')return /^\d{1,2}$/.test(text)?String(Number(text)):'';
+  if(field.options&&!field.options.some(([option])=>option===text))return '';
+  return text.slice(0,field.input==='code'?3:32);
+ }
+ function registrationBirthDate(number){
+  const masked=registrationAnswer({input:'rrn'},number);
+  if(!masked)return '';
+  const year=(Number(masked[7])<=2?1900:2000)+Number(masked.slice(0,2));
+  const date=year+'-'+masked.slice(2,4)+'-'+masked.slice(4,6);
+  const parsed=new Date(date+'T00:00:00Z');
+  return Number.isFinite(parsed.valueOf())&&parsed.toISOString().slice(0,10)===date?date:'';
+ }
+ function childcareCount(registration,values){
+  const earliest=(registration.year-6)+'-01-01',start=registration.year+'-01-01',children=new Set();
+  for(const {start:offset} of registration.rows){
+   if(values[offset]!=='child')continue;
+   const number=registrationAnswer({input:'rrn'},values[offset+2]),date=registrationBirthDate(number);
+   if(date>=earliest&&date<=start)children.add(number);
+  }
+  return children.size;
+ }
+ function employeeRegistration(){
+  const base=employeeFamily(),year=base.family.year;
+  const info=Object.fromEntries(base.family.employee);
+  const [self,spouse,childA,childB,father]=base.family.rows;
+  const choice=(...options)=>[['','선택'],...options];
+  const departments=choice(['management','관리부'],['accounting','회계부'],['general','총무부']);
+  const basicFields=[
+   {key:'employee-code',label:'사번',input:'code',expected:info.사원번호},
+   {key:'employee-name',label:'성명',expected:info.성명},
+   {key:'employee-rrn',label:'가상 주민등록번호',input:'rrn',expected:self.rrn},
+   {key:'hire-date',label:'입사일자',input:'date',expected:info.입사일자},
+   {key:'department',label:'근무부서',options:departments,expected:departments.find(([,label])=>label===info.근무부서)[0]},
+   {key:'nationality',label:'내·외국인',options:choice(['domestic','내국인'],['foreign','외국인']),expected:'domestic'},
+   {key:'residence',label:'거주구분',options:choice(['resident','거주자'],['nonresident','비거주자']),expected:'resident'},
+   {key:'household',label:'세대구분',options:choice(['head','세대주'],['member','세대원']),expected:'head'}
+  ];
+  const rows=[
+   {...spouse,role:'spouse'},
+   {...childA,role:'child',rrn:'200101-4'+childA.rrn.slice(8),remarks:'소득 없음 · 장애인 아님',eligible:'yes'},
+   {...childB,role:'child',rrn:'191231-3'+childB.rrn.slice(8),remarks:'소득 없음 · 장애인 아님',eligible:'yes'},
+   {...father,role:'parent'}
+  ].map((row,i)=>({...row,key:row.role+'-'+(i+1),start:basicFields.length+i*4}));
+  const relationOptions=choice(['spouse','배우자'],['child','자녀'],['parent','부친'],['mother','모친'],['sibling','형제자매']);
+  const basicOptions=choice(['yes','공제 가능'],['no','공제 불가']);
+  const fields=[
+   ...basicFields.map(field=>({...field,member:'기본사항',criterion:'employee-basic'})),
+   ...rows.flatMap((row,i)=>[
+    {key:'relation',label:'관계',options:relationOptions,expected:row.role},
+    {key:'name',label:'성명',expected:row.name},
+    {key:'rrn',label:'가상 주민등록번호',input:'rrn',expected:row.rrn},
+    {key:'deduction',label:'기본공제',options:basicOptions,expected:row.eligible}
+   ].map(field=>({...field,key:row.key+':'+field.key,label:'가족 '+(i+1)+' · '+field.label,member:'가족 '+(i+1),criterion:'family-registration'}))),
+   {key:'childcare-import',label:'6세 이하 보육수당 대상자 불러오기',input:'import',member:'부양가족명세',criterion:'childcare-import'}
+  ];
+  const registration={year,employee:[...base.family.employee.filter(([label])=>label!=='월정급여'),['가상 주민등록번호',self.rrn]],rows,basicCount:basicFields.length};
+  fields.at(-1).expected=String(childcareCount(registration,fields.map(field=>field.expected)));
+  return {
+   id:'taxquiz-070',sample:'employee-klab',level:'basic',book:'withholding',variant:base.variant,unit:'사원등록',
+   detail:'기본사항·부양가족명세',topic:'사원 등록 · 보육수당 대상자',
+   prompt:'가상 사원을 등록하고 부양가족명세를 작성하세요.',
+   condition:`${year}년 귀속 · 사원 본인은 기본공제 대상입니다. 가족은 자료 순서대로 입력하고, 주어진 조건 외 생계·부양·중복공제 요건은 충족한다고 봅니다. 주민등록번호는 끝자리가 X인 연습용 번호입니다.`,
+   registration,fields,answers:fields.map(field=>field.expected),
+   solution:`6세 이하 보육수당 대상자 ${fields.at(-1).expected}명.`,
+   explanation:`${year}년 1월 1일에 정확히 만 6세가 되는 자녀는 포함합니다. 그 전날 만 6세가 된 자녀는 기본공제가 가능하지만 보육수당 연령 요건은 충족하지 않습니다. 부양가족명세를 입력한 뒤 불러오기 결과를 확인합니다.`,
+   articles:['childcare']
+  };
+ }
  function caseText(question){
+  if(question.registration){
+   const {year,employee,rows}=question.registration;
+   return ['사원 등록 실무 연습 · '+year+'년 귀속 · 가상 자료',...employee.map(([label,value])=>label+': '+value),
+    ...rows.map(row=>[row.relation,row.name,row.rrn,row.remarks].join(' | ')),question.condition].join('\n');
+  }
   if(!question.family)return [...(question.facts||[]).map(([label,value])=>label+': '+value),question.condition||''].filter(Boolean).join('\n');
   return ['가상 연습자료 · '+question.family.year+'년 귀속 · 자료번호 '+question.variant,'자료 1',...question.family.employee.map(([label,value])=>label+': '+value),'자료 2',...question.family.rows.map(row=>[row.label,row.name,row.rrn,row.remarks].join(' | ')),question.condition].join('\n');
  }
  function fieldResults(question,values){
+  if(question.registration)return question.fields.map((field,i)=>{
+   const display=value=>field.input==='import'?value===''?'불러오지 않음':value+'명':
+    field.options?.find(([option])=>option===value&&option)?.[1]||value||'미입력';
+   let value=registrationAnswer(field,values[i]);
+   if(field.input==='import'&&field.expected==='0'&&!value)value='0';
+   return {key:field.key,member:field.member,criterion:field.criterion,label:field.label,
+    value:display(value),expected:display(field.expected),correct:value===field.expected};
+  });
   if(!question.family)return undefined;
   return question.fields.map((field,i)=>({key:field.key,member:field.member,criterion:field.criterion,label:field.label,
    value:field.options.find(([value])=>value===values[i])?.[1]||String(values[i]??''),
@@ -598,7 +685,7 @@
   const graded=[['basic',basicQuestions(course)],['applied',course==='income'?incomeApplied:withholdingApplied],
    ['advanced',course==='income'?incomeAdvanced:withholdingAdvanced]];
   if(course==='income')graded[0][1].push(...extraIncomeBasics);
-  else graded[0][1].push(...Array.from({length:24},(_,scenario)=>employeeFamily(20261118+scenario,scenario)));
+  else graded[0][1].push(...Array.from({length:24},(_,scenario)=>employeeFamily(20261118+scenario,scenario)),employeeRegistration());
   return graded.flatMap(([level,list])=>list.map(question=>({...question,level,book:question.book||course})))
    .sort((a,b)=>units[course].indexOf(a.unit)-units[course].indexOf(b.unit));
  }
@@ -619,7 +706,7 @@
   return matching.filter(question=>chosen.has(question));
  }
 
- const api={units,levels,books,questions,inUnit,selectQuestions,employeeFamily,caseText,fieldResults};
+ const api={units,levels,books,questions,inUnit,selectQuestions,employeeFamily,registrationAnswer,childcareCount,caseText,fieldResults};
  if(typeof module==='object'&&module.exports)module.exports=api;
  else root.SemuonTaxQuiz=api;
 })(globalThis);

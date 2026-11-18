@@ -493,6 +493,41 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
 .employee-family-table [data-result=wrong] select[aria-invalid=true]{border:2px solid #b94b34}
 .employee-family-table [data-result=correct] .employee-feedback{color:var(--primary)}
 .employee-attempt-details{margin-top:12px}.employee-attempt-details summary{font-weight:700}
+.klab-workspace>.withholding-quiz{max-width:none}
+.klab-layout{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:14px;margin-top:12px;align-items:start}
+.klab-material,.klab-entry{min-width:0;margin:0;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.klab-material>summary{padding:10px 12px;font-weight:700;color:var(--primary);cursor:pointer}
+.klab-material[open]>summary{border-bottom:1px solid var(--line)}
+.klab-material-body{padding:12px}
+.klab-employee{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 12px;margin:0 0 12px}
+.klab-employee>div{display:flex;flex-wrap:wrap;gap:0 7px}
+.klab-employee dt{font-weight:700}
+.klab-employee dd{margin:0;overflow-wrap:anywhere}
+.semuon .klab-source-table{width:100%;min-width:0;font-size:var(--font-ui);line-height:1.45}
+.klab-source-table :is(th,td){padding:6px;vertical-align:top}
+.klab-source-table td:nth-child(3){white-space:nowrap;font-variant-numeric:tabular-nums}
+.klab-entry{padding:12px}
+.klab-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.klab-tabs>button{padding:6px 11px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--primary);font-weight:700}
+.klab-tabs>button[aria-selected=true]{border-color:var(--line);background:var(--soft)}
+.klab-basic-grid,.klab-family-row{display:grid;gap:6px 8px}
+.klab-basic-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.klab-family-row{grid-template-columns:minmax(0,.85fr) minmax(0,.85fr) minmax(0,1.35fr) minmax(0,1fr);padding:6px 0}
+.klab-family-row+.klab-family-row{border-top:1px solid var(--line)}
+.klab-entry label{display:grid;align-content:start;gap:2px;min-width:0;font-size:var(--font-ui);font-weight:700}
+.klab-entry :is(input,select):not([type=hidden]){width:100%;min-width:0;min-height:34px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface);font-weight:400}
+.klab-entry [aria-invalid=true]{outline:1px solid var(--danger);outline-offset:-1px}
+.klab-childcare{gap:8px;margin-top:6px;padding:8px;border-radius:7px;background:var(--soft);font-size:var(--font-ui)}
+.klab-childcare output{display:inline-block;margin-left:4px;color:var(--primary);font-weight:700}
+.klab-childcare output.klab-count-wrong{color:var(--danger)}
+.klab-field-results ul{margin:6px 0;padding-inline-start:1.3em;overflow-wrap:anywhere}
+@container quiz-question (max-width:1050px){.klab-family-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container quiz-question (max-width:830px){.klab-layout{grid-template-columns:minmax(0,1fr)}}
+@container quiz-question (max-width:410px){
+ .klab-entry{padding:8px}
+ .klab-basic-grid>label:has(input[maxlength="14"]),.klab-family-row>label:nth-child(n+3){grid-column:1/-1}
+ .klab-source-table :is(th,td){padding:4px}
+}
 @container quiz-question (max-width:680px){
  .employee-meta{grid-template-columns:repeat(2,minmax(0,1fr))}
  .employee-family-table,.employee-family-table tbody{display:block}
