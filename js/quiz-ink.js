@@ -3,10 +3,15 @@
  'use strict';
 
  const widths={pen:[1,12,3],marker:[6,32,14]};
- const labels={pen:'펜',marker:'형광펜',eraser:'획 지우개',width:'굵기 조절',clear:'필기 전체 지우기',image:'이미지 추가',move:'이미지 이동·크기 조절'};
+ const labels={pen:'펜',marker:'형광펜',eraser:'획 지우개',width:'굵기·색상 조절',clear:'필기 전체 지우기',image:'이미지 추가',move:'이미지 이동·크기 조절'};
  const icons={pen:'Pencil',marker:'Highlighter',eraser:'Eraser',width:'Settings2',clear:'Trash2',image:'ImagePlus',move:'Move'};
  const keys={pen:'B',marker:'P',eraser:'E',clear:'D'};
  const isDrawingTool=tool=>tool==='pen'||tool==='marker'||tool==='eraser';
+ const palettes={
+  pen:[['기본 글자색',''],['파랑','#1966be'],['빨강','#d43645'],['초록','#198253'],['보라','#8346ad']],
+  marker:[['노랑','#e5b829'],['하늘색','#36a9ea'],['분홍','#ed67a3'],['연두','#72bd38'],['보라','#a270ed']]
+ };
+ const controls='input,textarea,select,button,a,summary,[contenteditable],[role=button],.evidence-bar,.evidence-size-bar,.evidence-width';
 
  function mountImages(paper,picker,{added,changed,notify}){
   const layer=paper.querySelector('.quiz-ink-images'),pages=new Map();
@@ -139,10 +144,11 @@
   };
  }
 
- function mountSurface(canvas,target,{sizes,changed}){
+ function mountSurface(canvas,target,{sizes,colors,changed,canStart}){
   const ctx=canvas.getContext('2d');
   if(!ctx)return null;
   const notes=new Map();
+  const lifetime=new AbortController(),events={signal:lifetime.signal};
   let tool='',question=null,strokes=new Set(),gesture=null,frame=0;
   let size={width:1,height:1,ratio:1},lastPen=0;
 
@@ -164,7 +170,7 @@
    for(const stroke of strokes){
     stroke.path??=makePath(stroke.points);
     ctx.globalAlpha=stroke.tool==='marker'?.44:1;
-    ctx.strokeStyle=stroke.tool==='marker'?'#e5b829':ink;
+    ctx.strokeStyle=stroke.color||ink;
     ctx.lineWidth=stroke.width;
     ctx.stroke(stroke.path);
    }
@@ -211,8 +217,8 @@
    if(erased){changed();scheduleDraw()}
   }
   target.addEventListener('pointerdown',event=>{
-   if(!question||!tool||gesture||event.button!==0||!event.isPrimary)return;
-   if(target!==canvas&&event.target.closest('input,textarea,select,button,a,summary,[contenteditable],[role=button]'))return;
+   if(!question||!tool||gesture||event.defaultPrevented||event.button!==0||!event.isPrimary||canStart?.()===false)return;
+   if(target!==canvas&&event.target.closest(controls))return;
    const rect=canvas.getBoundingClientRect();
    if(!rect.width||!rect.height)return;
    if(event.pointerType==='pen')lastPen=Date.now();
@@ -222,11 +228,11 @@
    gesture={id:event.pointerId,last:start,stroke:null};
    target.setPointerCapture(event.pointerId);
    if(tool==='eraser'){erase(start,start);return}
-   gesture.stroke={tool,width:sizes[tool],points:[start],path:null};
+   gesture.stroke={tool,color:colors[tool],width:sizes[tool],points:[start],path:null};
    strokes.add(gesture.stroke);
    changed({drawing:true});
    scheduleDraw();
-  });
+  },{...events,capture:true});
   function extend(event){
    if(gesture?.id!==event.pointerId)return;
    const rect=canvas.getBoundingClientRect();
@@ -242,16 +248,17 @@
    }
    if(gesture.stroke)scheduleDraw();
   }
-  target.addEventListener('pointermove',extend);
+  target.addEventListener('pointermove',extend,events);
   target.addEventListener('pointerup',event=>{
    if(gesture?.id!==event.pointerId)return;
    extend(event);
    finish();
-  });
+  },events);
   for(const type of ['pointercancel','lostpointercapture'])target.addEventListener(type,event=>{
    if(gesture?.id===event.pointerId)finish();
-  });
-  new ResizeObserver(resize).observe(canvas);
+  },events);
+  const observer=new ResizeObserver(resize);
+  observer.observe(canvas);
   resize();
   return {
    setTool(next){
@@ -271,28 +278,40 @@
     strokes.clear();
     draw();
    },
+   dispose(){
+    finish();
+    if(frame)cancelAnimationFrame(frame);
+    lifetime.abort();
+    observer.disconnect();
+    canvas.remove();
+   },
    get hasStrokes(){return strokes.size>0}
   };
  }
 
- function mount(toolbar,paper,problem){
-  const paperCanvas=paper.querySelector('canvas');
+ function mount(toolbar,paper,problem,{onMode}={}){
   const sizes={pen:widths.pen[2],marker:widths.marker[2]};
-  const surfaces=[
-   mountSurface(problem.querySelector('canvas'),problem,{sizes,changed:surfaceChanged}),
-   mountSurface(paperCanvas,paperCanvas,{sizes,changed:surfaceChanged})
+  const colors={pen:palettes.pen[0][1],marker:palettes.marker[0][1]};
+  const options={sizes,colors,changed:surfaceChanged};
+  const paperCanvas=paper?.querySelector('canvas');
+  const fixedSurfaces=[
+   problem&&mountSurface(problem.querySelector('canvas'),problem,options),
+   paperCanvas&&mountSurface(paperCanvas,paperCanvas,options)
   ].filter(Boolean);
-  if(!surfaces.length)return null;
+  const regions=new Map();
+  let activeOwner=null,activeTarget=null;
+  const activeSurfaces=()=>problem?fixedSurfaces:[...regions.values()].filter(region=>region.owner===activeOwner).map(region=>region.surface);
   const iconsHTML=root.SemuonJournalIcons;
-  toolbar.innerHTML=Object.keys(labels).map(action=>{
+  toolbar.innerHTML=Object.keys(labels).filter(action=>paper||!['image','move'].includes(action)).map(action=>{
    const state=action==='width'?' aria-expanded="false" aria-controls="quiz-ink-width"':
-    action==='clear'?'':' aria-pressed="false" aria-controls="quiz-ink-question quiz-ink-paper"';
+    action==='clear'?'':' aria-pressed="false"';
    const key=keys[action],shortcut=key?` aria-keyshortcuts="${key}"`:'';
    const title=key?`${labels[action]} (${key})`:labels[action];
    return `<button type="button" data-ink-action="${action}" aria-label="${labels[action]}" title="${title}"${state}${shortcut}>${iconsHTML[icons[action]]}</button>`;
-  }).join('')+`<input type="file" accept="image/png,image/jpeg,image/webp,image/bmp,image/gif,image/avif" hidden>
+  }).join('')+(paper?'<input type="file" accept="image/png,image/jpeg,image/webp,image/bmp,image/gif,image/avif" hidden>':'')+`
   <div id="quiz-ink-width" class="quiz-ink-width" hidden>
    <label><span>굵기</span><input type="range"><output></output></label>
+   <div class="quiz-ink-colors" role="group" aria-label="필기 색상"></div>
   </div><span class="sr-only" role="status"></span>`;
 
   const buttons=[...toolbar.querySelectorAll('[data-ink-action]')];
@@ -302,7 +321,7 @@
   const status=toolbar.querySelector('[role=status]');
   const picker=toolbar.querySelector('[type=file]');
   let tool='',question=null;
-  const images=mountImages(paper,picker,{
+  const images=paper&&mountImages(paper,picker,{
    added(){chooseTool('move');status.textContent='이미지를 필기 공간에 붙였습니다.'},
    changed:updateTools,
    notify:message=>{status.textContent=message}
@@ -316,17 +335,31 @@
    slider.value=sizes[tool];
    slider.setAttribute('aria-label',labels[tool]+' 굵기');
    widthPanel.querySelector('output').textContent=slider.value+'px';
+   const palette=widthPanel.querySelector('.quiz-ink-colors');
+   palette.replaceChildren(...palettes[tool].map(([name,color])=>{
+    const button=document.createElement('button');
+    button.type='button';button.title=name;button.setAttribute('aria-label',name);
+    button.setAttribute('aria-pressed',String(colors[tool]===color));
+    button.style.setProperty('--ink-swatch',color||'var(--ink)');
+    button.onclick=()=>{
+     colors[tool]=color;
+     for(const swatch of palette.children)swatch.setAttribute('aria-pressed',String(swatch===button));
+    };
+    return button;
+   }));
    slider.focus({preventScroll:true});
   }
   function updateTools(){
    const drawing=question&&isDrawingTool(tool)?tool:'';
-   for(const surface of surfaces)surface.setTool(drawing);
-   images.setEditable(!drawing);
-   const hasStrokes=surfaces.some(surface=>surface.hasStrokes);
+   for(const surface of fixedSurfaces)surface.setTool(drawing);
+   for(const {surface} of regions.values())surface.setTool(drawing);
+   images?.setEditable(!drawing);
+   onMode?.(Boolean(drawing));
+   const hasStrokes=activeSurfaces().some(surface=>surface.hasStrokes);
    for(const button of buttons){
     const action=button.dataset.inkAction;
     if(button.hasAttribute('aria-pressed'))button.setAttribute('aria-pressed',String(Boolean(question)&&action===tool));
-    button.disabled=!question||(action==='clear'&&!hasStrokes)||(action==='width'&&!widths[tool])||(action==='move'&&!images.hasImages);
+    button.disabled=!question||(action==='clear'&&!hasStrokes)||(action==='width'&&!widths[tool])||(action==='move'&&!images?.hasImages);
    }
   }
   function surfaceChanged({drawing=false}={}){
@@ -335,13 +368,13 @@
   }
   function show(next){
    question=next;
-   for(const surface of surfaces)surface.show(next);
-   images.show(next);
-   if(!question)showWidth(false);
+   for(const surface of fixedSurfaces)surface.show(next);
+   images?.show(next);
+   if(!question){tool='';showWidth(false)}
    updateTools();
   }
   function clear(){
-   for(const surface of surfaces)surface.clear();
+   for(const surface of activeSurfaces())surface.clear();
    updateTools();
   }
   function clearInk(){
@@ -386,7 +419,83 @@
   });
 
   updateTools();
-  return{show,reset(){images.reset();clear()}};
+  return {
+   show,
+   reset(){images?.reset();clear()},
+   prepare(target,owner){
+    if(!isDrawingTool(tool))return;
+    activeOwner=owner;
+    activeTarget=target;
+    if(!regions.has(target)){
+     const canvas=document.createElement('canvas');
+     canvas.className='problem-ink-canvas';
+     canvas.setAttribute('aria-hidden','true');
+     if(getComputedStyle(target).position==='static')target.classList.add('problem-ink-anchor');
+     target.append(canvas);
+     const surface=mountSurface(canvas,target,{...options,canStart:()=>activeTarget===target});
+     if(!surface){canvas.remove();return}
+     surface.show(owner);
+     regions.set(target,{surface,owner});
+    }
+    updateTools();
+   },
+   prune(){
+    for(const [target,{surface,owner}] of regions){
+     if(target.isConnected&&owner.isConnected)continue;
+     surface.dispose();
+     regions.delete(target);
+    }
+    if(activeOwner&&!activeOwner.isConnected)activeOwner=null;
+    if(activeTarget&&!activeTarget.isConnected)activeTarget=null;
+    updateTools();
+   },
+   retire(id){
+    for(const {owner,surface} of regions.values()){
+     if(owner.dataset.problemId===id)surface.clear();
+    }
+    updateTools();
+   },
+   clearRegion(target){
+    regions.get(target)?.surface.clear();
+    updateTools();
+   }
+  };
  }
- root.SemuonQuizInk={mount};
+ let problemInk;
+ function mountProblems(container){
+  if(problemInk)return;
+  const selector='#questions [data-problem-id]';
+  const toolbar=document.createElement('div');
+  toolbar.className='quiz-ink-tools problem-ink-tools';
+  toolbar.hidden=true;
+  toolbar.setAttribute('role','group');
+  toolbar.setAttribute('aria-label','문제 필기 도구');
+  document.body.append(toolbar);
+  let drawing=false;
+  problemInk=mount(toolbar,null,null,{onMode(active){
+   drawing=active;
+   document.body.classList.toggle('problem-ink-active',active);
+  }});
+  function refresh(){
+   const visible=Boolean(container.querySelector(selector));
+   if(toolbar.hidden!==!visible){
+    toolbar.hidden=!visible;
+    problemInk.show(visible?container:null);
+   }
+   problemInk.prune();
+  }
+  refresh();
+  new MutationObserver(refresh).observe(container,{childList:true,subtree:true});
+  document.addEventListener('pointerdown',event=>{
+   if(!drawing||event.button!==0||!event.isPrimary||event.target.closest(controls))return;
+   const viewport=event.target.closest('[data-ink-for] .evidence-viewport');
+   const owner=viewport?[...container.querySelectorAll(selector)].find(card=>
+    card.dataset.problemId===viewport.closest('[data-ink-for]').dataset.inkFor):event.target.closest(selector);
+   if(!owner)return;
+   const target=viewport?event.target.closest('.question-conditions-source,.evidence-ink-image'):owner;
+   if(!target)return;
+   problemInk.prepare(target,owner);
+  },true);
+ }
+ root.SemuonQuizInk={mount,mountProblems,retire:id=>problemInk?.retire(id),clearRegion:target=>problemInk?.clearRegion(target)};
 })(globalThis);

@@ -63,7 +63,7 @@
    return b?{distance:Math.hypot(a.x-b.x,a.y-b.y),x:(a.x+b.x)/2,y:(a.y+b.y)/2}:null;
   }
   viewport.addEventListener('pointerdown',event=>{
-   if(event.button!==0)return;
+   if(event.button!==0||event.defaultPrevented||viewport.closest('.problem-ink-active [data-ink-for]'))return;
    event.preventDefault();
    const {clientX:x,clientY:y,pointerType:type,pointerId:id}=event;
    pointers.set(id,{x,y,type,startX:x,startY:y,at:performance.now(),scale});
@@ -130,6 +130,8 @@
   panel.id='evidence-window-'+(++sequence);
   const transparencyId=panel.id+'-transparency';
   panel.className='evidence-window';
+  const problem=preview.closest('[data-problem-id]');
+  if(problem)panel.dataset.inkFor=problem.dataset.problemId;
   panel.setAttribute('role','dialog');
   panel.setAttribute('aria-label',label);
   panel.innerHTML=`<header class="evidence-bar">
@@ -183,11 +185,17 @@
   }else{
    img.draggable=false;
    if(inline)img.loading='lazy';
-   viewport.append(img);
+   if(problem){
+    const imageSurface=document.createElement('div');
+    imageSurface.className='evidence-ink-image';
+    imageSurface.append(img);
+    viewport.append(imageSurface);
+   }else viewport.append(img);
    reset=mountZoom(viewport,img,signal);
    images.forEach((image,index)=>picker.add(new Option(image.alt,String(index))));
    picker.closest('label').hidden=images.length===1;
    function selectImage(index){
+    root.SemuonQuizInk?.clearRegion(img.parentElement);
     reset();
     img.alt=images[index].alt;
     img.src=images[index].getAttribute('src');

@@ -395,6 +395,18 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
 }
 .quiz-ink-width label{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px}
 .quiz-ink-width input{width:100%;min-width:0;accent-color:var(--primary)}
+.quiz-ink-colors{display:flex;justify-content:space-between;gap:4px;margin-top:6px}
+.quiz-ink-colors button{display:grid;place-items:center;width:32px;height:32px;padding:0;border:1px solid transparent;border-radius:7px;background:transparent}
+.quiz-ink-colors button[aria-pressed=true]{border-color:var(--primary);background:var(--soft)}
+.quiz-ink-colors button::before{content:'';width:18px;height:18px;border-radius:50%;background:var(--ink-swatch)}
+.problem-ink-tools{position:fixed;z-index:92;top:auto;right:12px;bottom:calc(14px + env(safe-area-inset-bottom,0px));box-shadow:0 3px 12px #0002}
+.problem-ink-tools .quiz-ink-width{top:auto;bottom:calc(100% + 7px)}
+.problem-ink-active :is(#questions [data-problem-id],[data-ink-for] .evidence-viewport){touch-action:none;cursor:crosshair}
+.problem-ink-anchor{position:relative}
+.evidence-ink-image{position:relative;width:max-content;margin-inline:auto}
+.problem-ink-canvas{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
+@media(pointer:coarse){.problem-ink-tools>button,.quiz-ink-colors button{width:42px;height:42px}}
+@media print{.problem-ink-tools{display:none}}
 .quiz-ink-paper{
  position:sticky;top:82px;isolation:isolate;overflow:hidden;align-self:start;min-width:0;
  height:calc(100dvh - 110px);min-height:360px;margin:0 0 20px
@@ -422,9 +434,8 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
 .quiz-ink-image>.quiz-image-resize{bottom:0;cursor:nwse-resize;touch-action:none}
 @media(pointer:coarse){.quiz-ink-image>button{visibility:visible;opacity:1;width:36px;height:36px}}
 @media(max-width:760px),(pointer:coarse){
- .quiz-workspace .quiz-ink-paper,.quiz-workspace .quiz-splitter,.quiz-ink-over-question>canvas{display:none}
+ .quiz-workspace .quiz-ink-paper,.quiz-workspace .quiz-splitter{display:none}
  .quiz-workspace.quiz-ink-layout{grid-template-columns:minmax(0,1fr);gap:0}
- .quiz-ink-over-question[data-tool]:not([data-tool=""]){cursor:auto;touch-action:auto}
 }
 @media(max-width:760px){
  .quiz-heading-actions{justify-content:flex-start}

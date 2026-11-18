@@ -57,7 +57,7 @@
  SemuonFullscreen.install({notify:message=>toast(message)});
  // 학습 센터의 ‘✓ 알고 있어요 · 통과 / ↻ 틀렸어요 · 다시 연습’. 답안 없이 직접 표시 기록(semuon-self)을 남기며 채점 취소와 같은 방식으로 되돌린다.
  function selfButtons(p,done){const pass=document.createElement('button'),wrong=document.createElement('button');pass.type=wrong.type='button';pass.className='btn secondary notebook-pass';wrong.className='btn secondary notebook-wrong';pass.textContent='✓ 알고 있어요 · 통과';wrong.textContent='↻ 틀렸어요 · 다시 연습';
-  const mark=correct=>act(()=>{const e=store.mark(p,correct);globalThis.SemuonMarkup?.retire(p.id);done();toast(correct?'통과로 기록했습니다.':'다시 연습할 문제로 기록했습니다.',()=>act(()=>{store.cancel(e.id);done();if(isGeneral(p))$('#questions')?.dispatchEvent(new CustomEvent('semuon-general-undo',{detail:{problemId:p.id}}));toast('직접 표시를 되돌렸습니다.')}));if(correct&&isGeneral(p))pass.dispatchEvent(new CustomEvent('semuon-general-pass',{bubbles:true,detail:{problemId:p.id}}))});pass.onclick=()=>mark(true);wrong.onclick=()=>mark(false);return[pass,wrong]}
+  const mark=correct=>act(()=>{const e=store.mark(p,correct);retireProblemMarks(p.id);done();toast(correct?'통과로 기록했습니다.':'다시 연습할 문제로 기록했습니다.',()=>act(()=>{store.cancel(e.id);done();if(isGeneral(p))$('#questions')?.dispatchEvent(new CustomEvent('semuon-general-undo',{detail:{problemId:p.id}}));toast('직접 표시를 되돌렸습니다.')}));if(correct&&isGeneral(p))pass.dispatchEvent(new CustomEvent('semuon-general-pass',{bubbles:true,detail:{problemId:p.id}}))});pass.onclick=()=>mark(true);wrong.onclick=()=>mark(false);return[pass,wrong]}
  document.addEventListener('semuon-general-pass',e=>{const card=e.target.closest('.question');if(!card)return;if(TrainingComboReview.active(comboKey)){card.remove();const remaining=$('#questions .question');if(remaining)remaining.scrollIntoView({block:'start',behavior:'smooth'});else $('#questions').insertAdjacentHTML('beforeend','<p class="notice">일반전표 복습을 마쳤습니다.</p>');return}let search='';try{search=sessionStorage.getItem('semuon-tax2-list-practical')||''}catch(_){}const url=new URL(href('pages/general.html')+search);url.searchParams.delete('scope');url.searchParams.delete('id');SemuonFullscreen.navigate(url.href)});
  function resetButton(p,run){const b=document.createElement('button');b.type='button';b.className='btn secondary reset-one';b.textContent='초기화';b.onclick=()=>{if(confirm(p.initialEntry?.subject===p.subject?'수정 전 입력으로 되돌릴까요? 채점·학습기록은 보존됩니다.':'이 문제에 입력한 답안만 초기화할까요? 채점·학습기록은 보존됩니다.'))act(run)};return b}
  let problemReportsSyncing=false,reportQueueRevision=-1,reportQueue;
@@ -94,7 +94,8 @@
  document.addEventListener("semuon-sync-finished",e=>{if(!e.detail.succeeded)problemReportsSyncing=false});
  function fail(e){$('#save-status').textContent=e.message||String(e);$('#save-status').hidden=false}
  function act(fn){try{return fn()}catch(e){fail(e);return null}}
- function recordAnswer(p,input){const event=store.record(p,input);globalThis.SemuonMarkup?.retire(p.id);return event}
+ function retireProblemMarks(id){globalThis.SemuonMarkup?.retire(id);globalThis.SemuonQuizInk?.retire(id)}
+ function recordAnswer(p,input){const event=store.record(p,input);retireProblemMarks(p.id);return event}
  function head(title,description,action=''){return`<header class="page-head"><div><p class="eyebrow">전산세무 2급</p><h1>${esc(title)}</h1><p>${esc(description)}</p></div>${action}</header>`}
  function empty(message='확인된 문제가 아직 없습니다.'){return`<section class="empty"><h2>${message}</h2><p>확인된 기출 문제가 추가되면 이곳에서 바로 풀 수 있습니다.</p></section>`}
  function download(name,value,type='application/json'){const url=URL.createObjectURL(new Blob([typeof value==='string'?value:JSON.stringify(value,null,2)],{type})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),10000)}
@@ -270,7 +271,7 @@
   field('show-all-problems').addEventListener('change',filter);$('#questions').addEventListener('semuon-general-pass',e=>{e.stopPropagation();passedHere.add(e.detail.problemId);filter(true)});$('#questions').addEventListener('semuon-general-undo',e=>{passedHere.delete(e.detail.problemId);filter(true)});$('#questions').addEventListener('click',e=>{if(e.target.closest('[data-dismiss-completed]'))filter(true)});
  }
  const loaded=new Map();function script(url){const key=String(url);if(!loaded.has(key))loaded.set(key,new Promise((resolve,reject)=>{const el=document.createElement('script');el.src=key;el.onload=resolve;el.onerror=()=>{loaded.delete(key);el.remove();reject(Error('문제 입력 화면을 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.'))};document.head.append(el)}));return loaded.get(key)}
- const loadEvidence=()=>script(new URL('js/evidence.js?v=9',rootURL));
+ const loadEvidence=()=>script(new URL('js/evidence.js?v=10',rootURL));
  content.addEventListener('click',async event=>{
   const trigger=event.target.closest('.evidence-quick');
   if(!trigger)return;
@@ -432,6 +433,10 @@
   if(memo)memo.before(note);else reveal.append(note);
  }
  async function markup(container,isCurrent=()=>true){
+  if(container.querySelector('[data-problem-id]'))try{
+   await Promise.all([script(new URL('js/journal-icons.js?v=b32526e47bd8',rootURL)),script(new URL('js/quiz-ink.js?v=problem-ink-1',rootURL))]);
+   if(isCurrent())SemuonQuizInk.mountProblems(content);
+  }catch(_){}
   if(container.querySelector('[data-evidence-inline],[data-question-conditions]')){
    try{
     await loadEvidence();
@@ -506,7 +511,7 @@
     target.querySelector('.inline-notice').textContent='공식 시험에서는 출제 오류로 전원 정답 처리된 문항입니다. '+
      (result.correct?'입력값이 학습용 참고답안과 일치합니다.':'참고답안과 다른 항목: '+result.wrongLabels.join(', '))+
      '. 이 비교는 채점기록·취약점 통계에 반영하지 않습니다.';
-    globalThis.SemuonMarkup?.retire(p.id);
+    retireProblemMarks(p.id);
     return;
    }
    const event=recordAnswer(p,{form:fields.read()});
@@ -632,14 +637,14 @@
      <label><span id="quiz-count-label">풀 문제 수</span><select id="withholding-quiz-count" aria-labelledby="quiz-count-label">${allowed.map(n=>`<option value="${n}"${daily===n?' selected':''}>${n==='all'?'전체':n+'문제'}</option>`).join('')}</select></label>
      <span class="help withholding-quiz-total" role="status"></span>
     </section>
-    ${desktopInk?'<div id="quiz-ink-question" class="quiz-ink-over-question">':''}
+    <div id="quiz-ink-question" class="quiz-ink-over-question">
     <section class="card withholding-quiz-question" id="withholding-quiz-card" aria-labelledby="withholding-question"></section>
-    ${desktopInk?'<canvas aria-hidden="true"></canvas></div>':''}
+    <canvas aria-hidden="true"></canvas></div>
    </div>
    ${desktopInk?`<div class="quiz-splitter" role="separator" aria-label="문제와 필기 영역 비율" aria-orientation="vertical" aria-valuemin="25" aria-valuemax="75" aria-valuenow="50" tabindex="0"></div><section id="quiz-ink-paper" class="quiz-ink-paper" aria-label="퀴즈 필기 공간" tabindex="0">
     <div class="quiz-ink-tools" role="group" aria-label="필기 도구"></div>
     <div class="quiz-ink-images"></div><canvas aria-label="펜과 마우스로 그리는 필기 영역"></canvas>
-   </section>`:''}</div>
+   </section>`:'<div class="quiz-ink-tools problem-ink-tools" role="group" aria-label="문제 필기 도구"></div>'}</div>
    <dialog class="quiz-stats-dialog" aria-labelledby="quiz-stats-title">
     <header class="row spread"><h2 id="quiz-stats-title">${esc(Q.courses[course])} 퀴즈 통계</h2><form method="dialog"><button class="btn secondary" type="submit">닫기</button></form></header>
     <div class="quiz-stats-body"></div>
@@ -666,7 +671,7 @@
     <p class="help quiz-stats-note">성숙 문제는 복습 간격이 21일 이상인 문제입니다.</p>`;
    dialog.showModal();
   };
-  const ink=desktopInk?globalThis.SemuonQuizInk?.mount($('.quiz-ink-tools'),$('#quiz-ink-paper'),$('#quiz-ink-question')):null;
+  const ink=globalThis.SemuonQuizInk?.mount($('.quiz-ink-tools'),$('#quiz-ink-paper'),$('#quiz-ink-question'));
   if(desktopInk){
    const workspace=$('.quiz-workspace'),splitter=$('.quiz-splitter'),ratioKey='semuon-tax2-quiz-split-'+(employee?'employee':course);
    let ratio=50,drag=null;try{const value=Number(localStorage.getItem(ratioKey));if(value>=25&&value<=75)ratio=value}catch(_){}
