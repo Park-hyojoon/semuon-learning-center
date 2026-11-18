@@ -566,9 +566,13 @@
   const {year,employee,rows,basicCount,columns,detailed}=question.registration;
   const control=(index,label,source=false)=>{
    const field=question.fields[index],attrs=`name="answer-${index}" data-klab-criterion="${esc(field.criterion)}" aria-label="${esc(field.label)}"${source?' data-childcare-source':''}`;
+   const compact=detailed&&(field.key.endsWith('id-type')?'number':
+    field.key==='self-basic'||field.key.endsWith(':deduction')?'label':
+    field.options?.length===3&&field.options.some(([,text])=>text==='0 부')&&field.options.some(([,text])=>text==='1 여')?'mark':'');
    const input=field.options? `<select ${attrs}${field.relationCodes?' title="관계 코드 1~8 · 1을 반복하면 부친/모친 전환"':''}>${field.options.map(([value,text])=>`<option value="${esc(value)}">${esc(text)}</option>`).join('')}</select>`:
     `<input ${attrs} type="${field.input==='date'?'date':'text'}" autocomplete="off"${field.input==='code'?' maxlength="3" inputmode="numeric"':field.input==='rrn'?' maxlength="14" autocapitalize="characters"':' maxlength="32"'}>`;
-   return `<label><span data-klab-text>${esc(label)}</span>${input}</label>`;
+   const displayed=compact?`<div class="klab-compact-choice" data-klab-display="${compact}">${input}<span aria-hidden="true"></span></div>`:input;
+   return `<label><span data-klab-text>${esc(label)}</span>${displayed}</label>`;
   };
   const ownField=(key,label)=>control(question.fields.findIndex(field=>field.key===key),label);
   const familyHeaders=['연말관계','성명','내/외국인','주민(외국인, 여권)번호','나이','기본공제','부녀자','한부모','경로우대','장애인','자녀(간이)','출산·입양','자녀(세액)','위탁관계'];
@@ -643,6 +647,17 @@
   const tabs=[...form.querySelectorAll('.klab-tabs [role=tab]')];
   const selfNationality=form.querySelector('[data-klab-self-nationality]');
   const values=()=>question.fields.map((field,i)=>quiz.registrationAnswer(field,fields[i].value));
+  const compactChoices=[...form.querySelectorAll('[data-klab-display]')];
+  function showCompactChoices(){
+   for(const container of compactChoices){
+    const select=container.querySelector('select'),output=container.querySelector('span');
+    const selected=select.value?select.selectedOptions[0]?.textContent||'':'';
+    container.title=selected;
+    output.textContent=container.dataset.klabDisplay==='mark'?(selected==='1 여'?'○':''):
+     container.dataset.klabDisplay==='number'?select.value:selected.replace(/^\d /,'');
+   }
+  }
+  form.addEventListener('change',showCompactChoices);
   function bindCodes(select,field){
    if(!field.options?.some(([,label])=>/^\d /.test(label)))return;
    select.addEventListener('keydown',event=>{
@@ -742,7 +757,7 @@
   form.addEventListener('input',invalidateImport);
   form.addEventListener('change',invalidateImport);
   return {
-   values,restore(){showCount();showEmployee();showFamilyAges();showDeductionTotals()},
+   values,restore(){showCount();showEmployee();showFamilyAges();showDeductionTotals();showCompactChoices()},
    showResult(results){
     fields.forEach((field,i)=>{
      field.disabled=true;

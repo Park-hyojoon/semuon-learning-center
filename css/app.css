@@ -506,18 +506,27 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
 .klab-roster tbody tr{background:var(--soft);font-weight:700}
 .klab-roster td:nth-child(3){font-size:.9em}
 .klab-family-scroll{max-width:100%;overflow:auto}
-.semuon .klab-family-grid{min-width:1080px;width:100%;table-layout:auto;font-size:var(--font-ui);line-height:1.4}
-.klab-family-grid :is(th,td){padding:4px;vertical-align:middle;white-space:nowrap;text-align:center}
-.klab-family-grid :is(th,td):nth-child(4){min-width:135px;font-variant-numeric:tabular-nums}
-.klab-family-grid td:nth-child(2){min-width:75px}
+.semuon .klab-family-grid{min-width:0;width:100%;table-layout:fixed;font-size:var(--font-ui);line-height:1.4}
+.klab-family-grid :is(th,td){padding:2px;vertical-align:middle;text-align:center}
+.klab-family-grid th{word-break:keep-all;overflow-wrap:anywhere;font-size:.9em}
+.klab-family-grid th:nth-child(1){width:9%}
+.klab-family-grid th:nth-child(2){width:8%}
+.klab-family-grid th:nth-child(3){width:7%}
+.klab-family-grid th:nth-child(4){width:19%}
+.klab-family-grid th:nth-child(5){width:4%}
+.klab-family-grid th:nth-child(6){width:8%}
+.klab-family-grid th:is(:nth-child(7),:nth-child(8)){width:4%}
+.klab-family-grid th:nth-child(9){width:5%}
+.klab-family-grid th:is(:nth-child(10),:nth-child(12)){width:7%}
+.klab-family-grid th:is(:nth-child(11),:nth-child(13),:nth-child(14)){width:6%}
+.klab-family-grid td:nth-child(4){font-variant-numeric:tabular-nums}
 .klab-family-grid td label>span{position:absolute;inline-size:1px;block-size:1px;overflow:hidden;clip-path:inset(50%)}
-.klab-family-grid label :is(input,select){min-width:4.5em}
-.klab-family-grid td:first-child select{min-width:5em}
 .klab-family-grid td select{padding-inline:3px}
-.klab-family-grid td:is(:nth-child(3),:nth-child(6),:nth-child(10)) select{min-width:6em}
-.klab-family-grid td:nth-child(12) select{min-width:6.5em}
-.klab-id-controls{display:grid;grid-template-columns:max-content minmax(9em,1fr);align-items:center;gap:4px}
-.klab-family-grid .klab-id-controls select{min-width:0;width:3em}
+.klab-id-controls{display:grid;grid-template-columns:1.7em minmax(0,1fr);align-items:center;gap:3px}
+.klab-compact-choice{position:relative;min-width:0}
+.klab-family-grid .klab-compact-choice select{appearance:none;color:transparent;cursor:pointer}
+.klab-family-grid .klab-compact-choice option{color:var(--ink)}
+.klab-compact-choice>span{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;overflow:hidden;white-space:nowrap}
 .klab-material>summary{padding:10px 12px;font-weight:700;color:var(--primary);cursor:pointer}
 .klab-material[open]>summary{border-bottom:1px solid var(--line)}
 .klab-material-body{padding:12px}

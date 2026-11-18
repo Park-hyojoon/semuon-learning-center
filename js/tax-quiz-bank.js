@@ -634,7 +634,7 @@
    {key:'residence',label:'거주구분',options:choice(['resident','거주자'],['nonresident','비거주자']),expected:'resident'},
    {key:'household',label:'세대구분',options:choice(['head','세대주'],['member','세대원']),expected:'head'}
   ];
-  const eligible=choice(['yes','여'],['no','부']);
+  const eligible=choice(['yes','1 여'],['no','0 부']);
   const birthAdoption=choice(['none','0 부'],['first','1 첫째'],['second','2 둘째'],['third','3 셋째 이상']);
   const familyPeople=[
    detailed?{...sibling,role:'child',relation:'자녀',rrn:'110402-3'+sibling.rrn.slice(8),remarks:'소득 없음 · 장애인 아님',eligible:'yes',childCredit:'yes'}:{...spouse,role:'spouse'},
@@ -649,7 +649,7 @@
   const relations=[['parent','부친','1'],['mother','모친','1'],['in-law','배우자의 직계존속','2'],['spouse','배우자','3'],
    ['child','자녀','4'],['descendant','기타 직계비속','5'],['sibling','형제자매','6'],['recipient','수급자','7'],['foster','위탁아동','8']];
   const relationOptions=choice(...relations.map(([value,label,code])=>[value,code+' '+label]));
-  const basicOptions=detailed?coded('부','본인','배우자','20세 이하','60세 이상','장애인','기초생활수급자 등'):choice(['yes','공제 가능'],['no','공제 불가']);
+  const basicOptions=detailed?coded('부','본인','배우자','20세 이하','60세 이상','장애인','기초생활대상 등','자녀장려금 대상'):choice(['yes','공제 가능'],['no','공제 불가']);
   const fields=[
    ...basicFields.map(field=>({...field,member:'기본사항',criterion:'employee-basic'})),
    ...rows.flatMap((row,i)=>[
