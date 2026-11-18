@@ -488,10 +488,10 @@
    {key:'spouse',relation:'배우자',label:'배우자',name:name(false),...birth(1976,true),remarks:'일반 근로소득만 · 연간 총급여 '+wage+'만 원',eligible:'yes',reason:'spouse',criterion:'spouse-wage',
     reasonOptions:[['spouse','나이 제한 없음 · 소득 요건 충족'],['age','배우자의 나이 요건 미충족'],['income','총급여 '+wage+'만 원은 한도 초과']],
     explanation:'배우자에게는 나이 제한이 없고, 일반 근로소득만 있으며 총급여가 500만 원 이하이므로 가능합니다.'},
-   {key:'child-disabled',relation:'자녀',label:'첫째 자녀',name:name(true),...birth(2000,true),remarks:'첫째 · 소득 없음 · 세법상 장애인',eligible:'yes',reason:'disability',criterion:'disability-age',
+   {key:'child-disabled',relation:'자녀',label:'첫째 자녀',name:name(true),...birth(2000,true),remarks:'소득 없음 · 세법상 장애인',eligible:'yes',reason:'disability',criterion:'disability-age',
     reasonOptions:[['disability','장애인의 나이 제한 예외'],['age','자녀의 나이 요건 미충족'],['unlimited','장애인은 소득 제한도 없음']],
     explanation:'세법상 장애인은 나이 제한을 적용하지 않습니다. 소득이 없으므로 소득 요건도 충족합니다.'},
-   {key:'child-adult',relation:'자녀',label:'둘째 자녀',name:name(true),...birth(2003,false),remarks:'둘째 · 소득 없음 · 장애인 아님',eligible:'no',reason:'age',criterion:'child-age',
+   {key:'child-adult',relation:'자녀',label:'둘째 자녀',name:name(true),...birth(2003,false),remarks:'소득 없음 · 장애인 아님',eligible:'no',reason:'age',criterion:'child-age',
     reasonOptions:[['age','자녀의 나이 요건 미충족'],['noage','자녀는 나이 제한 없음'],['noincome','소득이 없으면 나이 무관']],
     explanation:'장애인이 아닌 직계비속은 나이 요건을 충족해야 합니다. 이 자녀는 해당 연도의 나이 요건을 초과합니다.'},
    {key:'father',relation:'부친',label:'부친',name:name(true),...birth(1947,false),remarks:'사업소득금액 '+business+'만 원 · 다른 소득 없음',eligible:'no',reason:'income',criterion:'income-amount',
@@ -512,13 +512,13 @@
    change('sibling',{remarks:'동생 · 세법상 장애인 · 근로소득만 · 총급여 500만 원',eligible:'yes',reason:'disability',reasonOptions:[['disability','장애인 나이 예외 · 소득 충족'],['income','총급여 한도 초과'],['age','형제의 나이 요건 미충족']],explanation:'장애인으로 나이 제한을 받지 않으며, 근로소득만 있고 총급여가 500만 원 이하입니다.'});
   }
   if(scenario===2){
-   change('child-disabled',{remarks:'첫째 · 소득 없음 · 장애인 아님',eligible:'no',reason:'age',criterion:'child-age',explanation:'장애인이 아닌 성인 자녀로 나이 요건을 충족하지 못합니다.'});
+   change('child-disabled',{remarks:'소득 없음 · 장애인 아님',eligible:'no',reason:'age',criterion:'child-age',explanation:'장애인이 아닌 성인 자녀로 나이 요건을 충족하지 못합니다.'});
    change('father',{...birth(1968,false),remarks:'소득 없음 · 장애인 아님',eligible:'no',reason:'age',criterion:'parent-age',reasonOptions:[['age','직계존속의 나이 요건 미충족'],['noincome','소득이 없으면 나이 무관'],['unlimited','부모는 나이 제한 없음']],explanation:'소득 요건은 충족하지만 직계존속의 나이 요건인 60세 이상에 해당하지 않습니다.'});
    change('mother',{remarks:'일반 근로소득만 · 총급여 820만 원',eligible:'no',reason:'income',criterion:'wage-limit',reasonOptions:[['income','총급여 500만 원 초과'],['daily','일용근로소득으로 합산 제외'],['unlimited','고령자는 소득 제한 없음']],explanation:'일용근로소득이 아닌 일반 근로소득입니다. 총급여가 500만 원을 초과하므로 공제 불가입니다.'});
   }
   if(scenario===3){
    change('spouse',{remarks:'사업소득금액 101만 원 · 다른 소득 없음',eligible:'no',reason:'income',criterion:'income-amount',reasonOptions:[['income','소득금액 100만 원 초과'],['wage','사업소득에도 총급여 500만 원 적용'],['unlimited','배우자는 소득 제한 없음']],explanation:'사업소득은 필요경비를 뺀 소득금액으로 판단하며, 100만 원 한도를 초과합니다.'});
-   change('child-disabled',{remarks:'첫째 · 세법상 장애인 · 사업소득금액 101만 원',eligible:'no',reason:'income',criterion:'disability-income',reasonOptions:[['income','장애인도 소득 제한 적용'],['unlimited','장애인은 소득 제한 없음'],['age','장애인도 나이 제한 적용']],explanation:'장애인의 나이 예외는 소득 요건을 면제하지 않습니다. 사업소득금액이 100만 원을 초과합니다.'});
+   change('child-disabled',{remarks:'세법상 장애인 · 사업소득금액 101만 원',eligible:'no',reason:'income',criterion:'disability-income',reasonOptions:[['income','장애인도 소득 제한 적용'],['unlimited','장애인은 소득 제한 없음'],['age','장애인도 나이 제한 적용']],explanation:'장애인의 나이 예외는 소득 요건을 면제하지 않습니다. 사업소득금액이 100만 원을 초과합니다.'});
    change('mother',{remarks:'일반 근로소득만 · 총급여 500만 원',eligible:'yes',reason:'incomeok',criterion:'wage-limit',reasonOptions:[['incomeok','나이 충족 · 총급여 500만 원 이하'],['income','총급여 500만 원은 한도 초과'],['daily','일용근로소득으로 합산 제외']],explanation:'직계존속의 나이 요건을 충족하며, 근로소득만 있고 총급여가 500만 원 이하이므로 가능합니다.'});
   }
   if(scenario>=4){
@@ -556,7 +556,7 @@
     const incomeOK=excluded||spec.amount<=(spec.kind==='wage'?500:100);
     const ageOK=row.key==='self'||row.key==='spouse'||spec.disabled||(['father','mother'].includes(row.key)?spec.age>=60:row.key==='sibling'?spec.age<=20||spec.age>=60:spec.age<=20);
     const incomeText=spec.kind==='combined'?'종합소득금액 100만 원 + 퇴직소득금액 '+(spec.amount-100)+'만 원':incomeLabels[spec.kind]+' '+spec.amount+'만 원';
-    row.remarks=row.key==='self'?'세대주 · 근로소득자':(row.key==='child-disabled'?'첫째 · ':row.key==='child-adult'?'둘째 · ':'')+(spec.disabled?'세법상 장애인 · ':'장애인 아님 · ')+incomeText+' · 다른 소득 없음';
+    row.remarks=row.key==='self'?'세대주 · 근로소득자':(spec.disabled?'세법상 장애인 · ':'장애인 아님 · ')+incomeText+' · 다른 소득 없음';
     row.eligible=row.key==='self'||ageOK&&incomeOK?'yes':'no';
     let label,wrong;
     row.criterion=incomeCriteria[spec.kind];
