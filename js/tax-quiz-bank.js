@@ -634,7 +634,7 @@
    {key:'household',label:'세대구분',options:choice(['head','세대주'],['member','세대원']),expected:'head'}
   ];
   const eligible=choice(['yes','여'],['no','부']);
-  const birthAdoption=choice(['none','해당 없음'],['first','첫째'],['second','둘째'],['third','셋째 이상']);
+  const birthAdoption=choice(['none','0 부'],['first','1 첫째'],['second','2 둘째'],['third','3 셋째 이상']);
   const familyPeople=[
    detailed?{...sibling,role:'child',relation:'자녀',rrn:'110402-3'+sibling.rrn.slice(8),remarks:'소득 없음 · 장애인 아님',eligible:'yes',childCredit:'yes'}:{...spouse,role:'spouse'},
    {...childA,role:'child',rrn:'200101-4'+childA.rrn.slice(8),remarks:detailed?'소득 없음 · 장애인복지법상 장애인 · 2026년 가족관계등록부에 셋째로 입양 신고':'소득 없음 · 장애인 아님',eligible:'yes',disabled:detailed?'1':'0',birthAdoption:detailed?'third':'none'},
