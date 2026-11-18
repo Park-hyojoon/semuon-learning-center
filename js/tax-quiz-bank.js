@@ -467,7 +467,7 @@
  ];
 
  function employeeFamily(seed=20261118,scenario=0){
-  scenario=[0,1,2,3].includes(scenario)?scenario:0;
+  scenario=Number.isInteger(scenario)&&scenario>=0&&scenario<24?scenario:0;
   const variant=Number(seed)>>>0;
   let state=variant;
   const random=()=>{state+=0x6D2B79F5;let t=state;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return ((t^t>>>14)>>>0)/4294967296};
@@ -521,6 +521,54 @@
    change('child-disabled',{remarks:'첫째 · 세법상 장애인 · 사업소득금액 101만 원',eligible:'no',reason:'income',criterion:'disability-income',reasonOptions:[['income','장애인도 소득 제한 적용'],['unlimited','장애인은 소득 제한 없음'],['age','장애인도 나이 제한 적용']],explanation:'장애인의 나이 예외는 소득 요건을 면제하지 않습니다. 사업소득금액이 100만 원을 초과합니다.'});
    change('mother',{remarks:'일반 근로소득만 · 총급여 500만 원',eligible:'yes',reason:'incomeok',criterion:'wage-limit',reasonOptions:[['incomeok','나이 충족 · 총급여 500만 원 이하'],['income','총급여 500만 원은 한도 초과'],['daily','일용근로소득으로 합산 제외']],explanation:'직계존속의 나이 요건을 충족하며, 근로소득만 있고 총급여가 500만 원 이하이므로 가능합니다.'});
   }
+  if(scenario>=4){
+   // Each set changes a tax condition. Random identity decoration does not create another review card.
+   const specs=[
+    {spouse:{kind:'wage',amount:500},'child-disabled':{kind:'wage',amount:501}},
+    {spouse:{kind:'wage',amount:501},'child-adult':{age:20}},
+    {father:{age:60,amount:100},mother:{age:59,kind:'amount',amount:0}},
+    {father:{age:59},mother:{age:60,kind:'amount',amount:0}},
+    {sibling:{age:20},'child-adult':{age:23}},
+    {sibling:{age:23},'child-adult':{age:19}},
+    {sibling:{age:60},'child-adult':{age:18}},
+    {sibling:{age:59},father:{age:60}},
+    {sibling:{age:35,disabled:true},'child-disabled':{disabled:false}},
+    {sibling:{disabled:true,amount:100},'child-disabled':{amount:101}},
+    {father:{kind:'retirement',amount:100},mother:{kind:'retirement',amount:101}},
+    {father:{kind:'capital',amount:100},mother:{kind:'capital',amount:101}},
+    {spouse:{kind:'pension',amount:100},father:{kind:'pension',amount:101}},
+    {mother:{kind:'pension',amount:100},spouse:{amount:101}},
+    {spouse:{kind:'other',amount:101},'child-adult':{amount:100}},
+    {spouse:{kind:'separateOther',amount:300},'child-adult':{kind:'wage',amount:500}},
+    {father:{kind:'financial',amount:1800},mother:{kind:'financial',amount:1900}},
+    {father:{kind:'combined',amount:100},mother:{kind:'combined',amount:101}},
+    {spouse:{kind:'exempt',amount:600},mother:{kind:'daily',amount:900}},
+    {sibling:{disabled:true,kind:'wage',amount:500},'child-disabled':{kind:'wage',amount:501},father:{age:59},mother:{age:60,kind:'amount',amount:0}}
+   ];
+   const defaults={self:{age:52},spouse:{age:50},'child-disabled':{age:26,disabled:true},'child-adult':{age:18},father:{age:75},mother:{age:72,kind:'daily',amount:800},sibling:{age:35}};
+   const incomeLabels={amount:'사업소득금액',wage:'일반 근로소득만 · 총급여',retirement:'퇴직소득금액',capital:'양도소득금액(양도소득 기본공제 전)',pension:'공적연금소득금액(연금소득공제 후)',other:'종합과세로 신고한 기타소득금액',separateOther:'원천징수된 기타소득금액 · 분리과세 선택',financial:'국내 원천징수 이자소득 · 분리과세',combined:'종합소득금액 100만 원 + 퇴직소득금액',exempt:'비과세소득만',daily:'일용근로소득만'};
+   const incomeCriteria={amount:'income-amount',wage:'wage-limit',retirement:'retirement-income',capital:'capital-income',pension:'pension-income',other:'other-income',separateOther:'separate-income',financial:'separate-income',combined:'combined-income',exempt:'exempt-income',daily:'daily-income'};
+   for(const row of rows){
+    const spec={kind:'amount',amount:0,disabled:false,...defaults[row.key],...specs[scenario-4][row.key]};
+    const female=['spouse','child-disabled','mother'].includes(row.key),dob=birth(2026-spec.age,female),birthYear=2026-spec.age;
+    row.rrn=String(birthYear).slice(-2)+dob.rrn.slice(2,7)+(birthYear>=2000?(female?'4':'3'):(female?'2':'1'))+dob.rrn.slice(8);row.age=spec.age;
+    const excluded=['daily','financial','separateOther','exempt'].includes(spec.kind);
+    const incomeOK=excluded||spec.amount<=(spec.kind==='wage'?500:100);
+    const ageOK=row.key==='self'||row.key==='spouse'||spec.disabled||(['father','mother'].includes(row.key)?spec.age>=60:row.key==='sibling'?spec.age<=20||spec.age>=60:spec.age<=20);
+    const incomeText=spec.kind==='combined'?'종합소득금액 100만 원 + 퇴직소득금액 '+(spec.amount-100)+'만 원':incomeLabels[spec.kind]+' '+spec.amount+'만 원';
+    row.remarks=row.key==='self'?'세대주 · 근로소득자':(row.key==='child-disabled'?'첫째 · ':row.key==='child-adult'?'둘째 · ':'')+(spec.disabled?'세법상 장애인 · ':'장애인 아님 · ')+incomeText+' · 다른 소득 없음';
+    row.eligible=row.key==='self'||ageOK&&incomeOK?'yes':'no';
+    let label,wrong;
+    row.criterion=incomeCriteria[spec.kind];
+    if(row.key==='self'){row.reason='self';row.criterion='self';label='본인은 나이·소득 제한 없음';wrong=[['limit','본인도 소득 제한 적용'],['age','본인의 나이 요건 미충족']];row.explanation='본인 기본공제에는 부양가족의 나이·소득 한도를 적용하지 않습니다.'}
+    else if(!incomeOK){row.reason='limit';label=spec.kind==='wage'?'총급여 500만 원 초과':'소득금액 합계 100만 원 초과';wrong=[['ok','소득 요건 충족'],['excluded','해당 소득은 무조건 합산 제외']];row.explanation='이 소득은 기본공제 소득 요건 판정에 반영하며, '+(spec.kind==='wage'?'근로소득만 있는 경우의 총급여 500만 원':'연간 소득금액 합계 100만 원')+' 한도를 초과합니다.';if(spec.disabled)row.criterion='disability-income'}
+    else if(!ageOK){row.reason='age';row.criterion=['father','mother'].includes(row.key)?'parent-age':row.key==='sibling'?'sibling-age':'child-age';label='나이 요건 미충족';wrong=[['ok','나이 요건 충족'],['ignore','소득이 없으면 나이 무관']];row.explanation='장애인이 아니므로 '+(['father','mother'].includes(row.key)?'직계존속 60세 이상':row.key==='sibling'?'형제자매 20세 이하 또는 60세 이상':'직계비속 20세 이하')+'의 나이 요건을 적용하며, 이 요건을 충족하지 못합니다.'}
+    else if(spec.disabled){row.reason='disability';row.criterion='disability-age';label='장애인 나이 예외 · 소득 충족';wrong=[['age','장애인도 나이 제한 적용'],['unlimited','장애인은 소득 제한도 없음']];row.explanation='세법상 장애인은 나이 제한을 적용하지 않습니다. 이 사례는 소득 요건도 충족합니다.'}
+    else if(excluded){row.reason='excluded';label=spec.kind==='daily'?'일용근로소득 합산 제외':spec.kind==='exempt'?'비과세소득 합산 제외':'분리과세소득 합산 제외';wrong=[['limit','소득금액 한도 초과'],['wage','모든 소득에 총급여 500만 원 적용']];row.explanation='명시된 '+(spec.kind==='daily'?'일용근로소득':spec.kind==='exempt'?'비과세소득':'분리과세로 확정된 소득')+'은 기본공제 소득금액 합계에 포함하지 않습니다. 나머지 요건도 충족합니다.'}
+    else{row.reason='ok';label=row.key==='spouse'?'배우자 나이 제한 없음 · 소득 충족':'나이·소득 요건 충족';wrong=[['age','나이 요건 미충족'],['limit','소득 요건 한도 초과']];row.explanation=(row.key==='spouse'?'배우자는 나이 제한이 없습니다. ':'나이 요건을 충족합니다. ')+(spec.kind==='wage'?'일반 근로소득만 있고 총급여가 500만 원 이하입니다.':'판정에 포함하는 연간 소득금액 합계가 100만 원 이하입니다.')}
+    row.reasonOptions=[[row.reason,label],...wrong];
+   }
+  }
   for(const row of rows)for(let i=row.reasonOptions.length-1;i>0;i--){const j=((variant^Math.imul(i+1,2654435761)^row.key.length)>>>0)%(i+1);[row.reasonOptions[i],row.reasonOptions[j]]=[row.reasonOptions[j],row.reasonOptions[i]]}
   const judgment=[['','선택'],['yes','공제 가능'],['no','공제 불가']];
   const fields=rows.flatMap(row=>[
@@ -550,7 +598,7 @@
   const graded=[['basic',basicQuestions(course)],['applied',course==='income'?incomeApplied:withholdingApplied],
    ['advanced',course==='income'?incomeAdvanced:withholdingAdvanced]];
   if(course==='income')graded[0][1].push(...extraIncomeBasics);
-  else graded[0][1].push(...[0,1,2,3].map(scenario=>employeeFamily(20261118+scenario,scenario)));
+  else graded[0][1].push(...Array.from({length:24},(_,scenario)=>employeeFamily(20261118+scenario,scenario)));
   return graded.flatMap(([level,list])=>list.map(question=>({...question,level,book:question.book||course})))
    .sort((a,b)=>units[course].indexOf(a.unit)-units[course].indexOf(b.unit));
  }

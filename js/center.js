@@ -34,7 +34,7 @@
   const links=practiceMenu.map(([id,name,path])=>`<a data-sub-menu-id="${id}" href="${href(path)}" ${page===id?'class="active" aria-current="page"':''}>${name}</a>`);
   return `<details class="app-nav-group" data-menu-id="practice-learning" open>
    <summary><span aria-hidden="true">${icon}</span><span>${label}</span></summary>
-   <div class="app-subnav">${links.join('')}<a data-sub-menu-id="sub:quiz:withholding" href="${href('pages/quiz.html?course=withholding')}" ${page==='quiz'&&quizCourse==='withholding'&&!employeeSample?'class="active" aria-current="page"':''}>원천징수 핵심 퀴즈</a><a data-sub-menu-id="sub:quiz:employee" data-menu-parent-id="sub:quiz:withholding" href="${href('pages/quiz.html?course=withholding&sample=employee')}" ${page==='quiz'&&employeeSample?'class="active" aria-current="page"':''}>사원 등록</a></div>
+   <div class="app-subnav">${links.join('')}<a data-sub-menu-id="sub:quiz:withholding" href="${href('pages/quiz.html?course=withholding')}" ${page==='quiz'&&quizCourse==='withholding'&&!employeeSample?'class="active" aria-current="page"':''}>원천징수 핵심 퀴즈</a><a data-sub-menu-id="sub:quiz:employee" data-menu-parent-id="sub:quiz:withholding" href="${href('pages/quiz.html?course=withholding&sample=employee-family')}" ${page==='quiz'&&employeeSample?'class="active" aria-current="page"':''}>사원 등록</a></div>
   </details>`;
  }
  document.body.classList.add('semuon');document.body.innerHTML=`<aside class="app-sidebar"><a class="app-brand" href="${href('index.html')}"><img src="${href('assets/favicon.svg')}" alt=""><span>세무온<small>전산세무 2급 학습센터</small></span></a><button class="btn secondary mobile-menu" aria-expanded="false" aria-controls="app-nav" type="button">☰<span class="sr-only">메뉴 열기</span></button><nav id="app-nav" class="app-nav" aria-label="주 메뉴">${nav.map(([key,icon,label,path])=>key==='theory'?theoryNavigation(icon,label,path):key==='practice-learning'?practiceNavigation(icon,label):key==='settings'?`<details class="app-nav-group ${['settings','database'].includes(page)?'is-active':''}" data-menu-id="settings" open><summary><span>⚙</span><span>설정 · 백업</span></summary><div class="app-subnav"><a href="${href('pages/settings.html')}" ${page==='settings'?'class="active"':''}>설정 · 백업</a><a href="${href('pages/database.html')}" ${page==='database'?'class="active" aria-current="page"':''}>데이터베이스 현황</a></div></details>`:key==='status'?`<details class="app-nav-group ${['progress','map','journal','roadmap'].includes(page)?'is-active':''}" data-menu-id="status" open><summary><span aria-hidden="true">${icon}</span><span>${label}</span></summary><div class="app-subnav"><a href="${href('pages/learning-map.html')}" ${page==='map'?'class="active" aria-current="page"':''}>나의 학습 지도</a><a href="${href('pages/journal.html')}" ${page==='journal'?'class="active" aria-current="page"':''}>학습 기록</a></div></details>`:`<a data-menu-id="${key}" href="${href(path)}" ${key===page?'class="active" aria-current="page"':''}><span aria-hidden="true">${icon}</span><span>${label}</span></a>`).join('')}</nav></aside><main class="app-main"><header class="app-topbar"><p class="app-date">${new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',dateStyle:'full'}).format(new Date())}</p>${SemuonFullscreen.button()}</header><div id="save-status" class="notice error" role="alert" hidden></div><div id="content"></div><footer class="app-footer">세무온 · 전산세무 2급 전용 · <a href="${href('pages/settings.html')}">백업 · 설정</a></footer></main><div class="toast" role="status" hidden></div>`;
@@ -614,10 +614,11 @@
   const initialLevel=employee?quiz.levels[0]:quiz.levels.find(level=>level.id===params.get('level'))||
    quiz.levels.find(level=>level.id===preferredLevel)||quiz.levels[0];
   const back=income?'pages/concepts.html?subject=income':'pages/forms.html?practice=withholding';
-  const title=family?'사원 등록 · 샘플 2':employee?'사원 등록':income?'소득세법 핵심 퀴즈':'원천징수 핵심 퀴즈';
+  const desktopInk=!matchMedia('(max-width:760px), (pointer:coarse)').matches;
+  const title=employee?'사원 등록':income?'소득세법 핵심 퀴즈':'원천징수 핵심 퀴즈';
   document.title=title+' · 전산세무 2급';
-  content.innerHTML=head(title,'',`<div class="row quiz-heading-actions">${employee?`<a class="btn secondary" href="${href('pages/quiz.html?course=withholding&sample=employee')}"${family?'':' aria-current="page"'}>샘플 1</a><a class="btn secondary" href="${href('pages/quiz.html?course=withholding&sample=employee-family')}"${family?' aria-current="page"':''}>샘플 2 · 가족 자료</a>`:''}${dueMode?`<a class="btn secondary" href="${quizPage(course)}">전체 퀴즈</a>`:''}${income||family?'':'<div class="quiz-ink-tools" role="group" aria-label="필기 도구"></div>'}<a class="btn secondary" href="${href(back)}">${income?'소득세법 개념':'원천징수 실무'}</a></div>`)+`
-   <div class="${family?'employee-family-layout':income?'':'quiz-ink-layout'}">
+  content.innerHTML=head(title,'',`<div class="row quiz-heading-actions">${dueMode?`<a class="btn secondary" href="${quizPage(course)}">전체 퀴즈</a>`:''}${desktopInk?'<div class="quiz-ink-tools" role="group" aria-label="필기 도구"></div>':''}<a class="btn secondary" href="${href(back)}">${income?'소득세법 개념':'원천징수 실무'}</a></div>`)+`
+   <div class="quiz-workspace ${desktopInk?'quiz-ink-layout':''}">
    <div class="withholding-quiz">
     ${dueMode?'<p class="quiz-due-heading"><strong>오늘 복습</strong></p>':''}
     <section class="card withholding-quiz-settings row" aria-label="퀴즈 조건"${dueMode||employee?' hidden':''}>
@@ -630,10 +631,10 @@
     </section>
     <section class="card withholding-quiz-question" id="withholding-quiz-card" aria-labelledby="withholding-question"></section>
    </div>
-   ${income||family?'':`<section id="quiz-ink-paper" class="quiz-ink-paper" aria-label="퀴즈 필기 공간" tabindex="0">
+   ${desktopInk?`<div class="quiz-splitter" role="separator" aria-label="문제와 필기 영역 비율" aria-orientation="vertical" aria-valuemin="25" aria-valuemax="75" aria-valuenow="50" tabindex="0"></div><section id="quiz-ink-paper" class="quiz-ink-paper" aria-label="퀴즈 필기 공간" tabindex="0">
     <span class="quiz-ink-label" aria-hidden="true">필기</span>
     <div class="quiz-ink-images"></div><canvas aria-label="펜과 마우스로 그리는 필기 영역"></canvas>
-   </section>`}</div>
+   </section>`:''}</div>
    <dialog class="quiz-stats-dialog" aria-labelledby="quiz-stats-title">
     <header class="row spread"><h2 id="quiz-stats-title">${esc(Q.courses[course])} 퀴즈 통계</h2><form method="dialog"><button class="btn secondary" type="submit">닫기</button></form></header>
     <div class="quiz-stats-body"></div>
@@ -660,7 +661,18 @@
     <p class="help quiz-stats-note">성숙 문제는 복습 간격이 21일 이상인 문제입니다.</p>`;
    dialog.showModal();
   };
-  const ink=income||family?null:globalThis.SemuonQuizInk?.mount($('.quiz-ink-tools'),$('#quiz-ink-paper'));
+  const ink=desktopInk?globalThis.SemuonQuizInk?.mount($('.quiz-ink-tools'),$('#quiz-ink-paper')):null;
+  if(desktopInk){
+   const workspace=$('.quiz-workspace'),splitter=$('.quiz-splitter'),ratioKey='semuon-tax2-quiz-split-'+(employee?'employee':course);
+   let ratio=50,drag=null;try{const value=Number(localStorage.getItem(ratioKey));if(value>=25&&value<=75)ratio=value}catch(_){}
+   const setRatio=value=>{ratio=Math.max(25,Math.min(75,value));workspace.style.setProperty('--quiz-left',ratio+'fr');workspace.style.setProperty('--quiz-right',(100-ratio)+'fr');splitter.setAttribute('aria-valuenow',String(Math.round(ratio)))};
+   const remember=()=>{try{localStorage.setItem(ratioKey,String(ratio))}catch(_){}};setRatio(ratio);
+   splitter.onpointerdown=event=>{if(event.button!==0)return;event.preventDefault();drag=event.pointerId;splitter.setPointerCapture(drag);splitter.focus({preventScroll:true})};
+   splitter.onpointermove=event=>{if(drag!==event.pointerId)return;const rect=workspace.getBoundingClientRect();setRatio((event.clientX-rect.left)/rect.width*100)};
+   for(const type of ['pointerup','pointercancel','lostpointercapture'])splitter.addEventListener(type,event=>{if(drag!==event.pointerId)return;drag=null;remember()});
+   splitter.onkeydown=event=>{const value=event.key==='ArrowLeft'?ratio-2:event.key==='ArrowRight'?ratio+2:event.key==='Home'?25:event.key==='End'?75:null;if(value===null)return;event.preventDefault();setRatio(value);remember()};
+   splitter.ondblclick=()=>{setRatio(50);remember()};
+  }
   const count=$('#withholding-quiz-count'),card=$('#withholding-quiz-card');
   const unit=$('#withholding-quiz-unit'),detail=$('#withholding-quiz-detail'),level=$('#withholding-quiz-level');
   const total=$('.withholding-quiz-total');
@@ -764,10 +776,6 @@
    const question=questions[position],attempt=attempts.get(question);
    const layout=card.parentElement.parentElement;
    layout.classList.toggle('employee-family-layout',Boolean(question.family));
-   layout.classList.toggle('quiz-ink-layout',!income&&!question.family);
-   const paper=$('#quiz-ink-paper'),tools=$('.quiz-ink-tools');
-   if(paper)paper.hidden=Boolean(question.family);
-   if(tools)tools.hidden=Boolean(question.family);
    const savedMemo=C.quizNotes(storedSnapshot()).get(question.id)?.text||'';
    ink?.show(question);
    const difficulty=quiz.levels.find(option=>option.id===question.level);
@@ -779,7 +787,7 @@
     ?`<a href="${esc(href(book.file+'#page='+pdfPage))}" target="_blank" rel="noopener">${referenceLabel}</a>`
     :referenceLabel;
    card.innerHTML=`
-    <div class="row spread"><span class="pill">${income?'이론':'실무'} · ${esc(question.topic)}</span><span class="help">${employee?'샘플':esc(difficulty.label)} · ${position+1} / ${questions.length}</span></div>
+    <div class="row spread"><span class="pill">${income?'이론':'실무'} · ${esc(question.topic)}</span><span class="help">${esc(difficulty.label)} · ${position+1} / ${questions.length}</span></div>
      <form id="withholding-quiz-form">
       <fieldset>
        <legend id="withholding-question" tabindex="-1">${esc(question.prompt)}</legend>
@@ -1075,7 +1083,7 @@
   function apply({order,hidden,appearance,labels,subOrders}){function build(id,depth=0){const d=byId.get(id),kids=subOrders[id]||[],node=document.createElement(kids.length||!d.route?'details':'a');node.dataset.menuId=id;if(depth)node.classList.add('menu-nested-node');let row=node;if(node.tagName==='DETAILS'){node.classList.add('app-nav-group');node.open=true;row=document.createElement('summary');node.append(row)}else node.href=d.route;const icon=document.createElement('span'),name=document.createElement(d.route&&row!==node?'a':'span');name.textContent=labels[id]||d.label;if(name.tagName==='A'){name.href=d.route;name.className='menu-parent-link'}row.append(icon,name);d.icon=icon;d.name=name;if(id===activeNode){if(node.tagName==='A')node.classList.add('active');else node.classList.add('is-active');if(d.route)(name.tagName==='A'?name:node).setAttribute('aria-current','page')}if(kids.length){const box=document.createElement('div');box.className='app-subnav';kids.forEach(key=>box.append(build(key,depth+1)));node.append(box);if(box.querySelector('[aria-current=page]'))node.classList.add('is-active')}node.hidden=hidden.includes(id);return node}navBox.replaceChildren(...order.map(id=>build(id)));applyAppearance(appearance)}
   apply(load());
   const foldKey='semuon-tax2-menu-fold-all',foldBar=document.createElement('div'),foldButton=document.createElement('button');
-  foldBar.className='menu-tree-controls';foldButton.type='button';foldButton.className='btn secondary menu-tree-toggle';foldButton.setAttribute('aria-controls','app-nav');foldBar.append(foldButton);navBox.before(foldBar);
+  foldBar.className='menu-tree-controls';foldButton.type='button';foldButton.className='btn secondary menu-tree-toggle';foldButton.setAttribute('aria-controls','app-nav');foldBar.append(foldButton);const brandRow=document.createElement('div');brandRow.className='app-brand-row';$('.app-brand').before(brandRow);brandRow.append($('.app-brand'),foldBar);
   let folded=false;try{folded=localStorage.getItem(foldKey)==='1'}catch(_){}
   function paintFold(applyState=false){
    const groups=[...navBox.querySelectorAll('details')];
@@ -1087,6 +1095,20 @@
   foldButton.onclick=()=>{folded=[...navBox.querySelectorAll('details')].some(group=>group.open);try{localStorage.setItem(foldKey,folded?'1':'0')}catch(_){}paintFold(true)};
   navBox.addEventListener('toggle',()=>paintFold(),true);
   new MutationObserver(()=>paintFold(true)).observe(navBox,{childList:true});paintFold(true);
+  const navViewKey='semuon-tax2-nav-view';let navView=null;
+  try{navView=JSON.parse(sessionStorage.getItem(navViewKey)||'null')}catch(_){}
+  if(navView&&Array.isArray(navView.open))for(const group of navBox.querySelectorAll('details'))group.open=navView.open.includes(group.dataset.menuId);
+  const saveNavView=()=>{navView={top:navBox.scrollTop,open:[...navBox.querySelectorAll('details[open]')].map(group=>group.dataset.menuId)};try{sessionStorage.setItem(navViewKey,JSON.stringify(navView))}catch(_){}};
+  const restoreNavView=()=>{
+   if(navView&&Number.isFinite(navView.top))navBox.scrollTop=navView.top;
+   const active=navBox.querySelector('[aria-current=page]');
+   if(active&&!folded){let parent=active.parentElement;while(parent&&parent!==navBox){if(parent.tagName==='DETAILS')parent.open=true;parent=parent.parentElement}}
+   if(active&&active.getClientRects().length){const bounds=navBox.getBoundingClientRect(),rect=active.getBoundingClientRect();if(rect.top<bounds.top||rect.bottom>bounds.bottom)navBox.scrollTop+=rect.top-bounds.top-bounds.height/2+rect.height/2}
+  };
+  requestAnimationFrame(()=>{restoreNavView();requestAnimationFrame(()=>{restoreNavView();navBox.addEventListener('scroll',saveNavView,{passive:true});navBox.addEventListener('toggle',saveNavView,true)})});
+  navBox.addEventListener('click',event=>{if(event.target.closest('a[href]'))saveNavView()});
+  window.addEventListener('pagehide',saveNavView);
+  $('.mobile-menu').addEventListener('click',()=>requestAnimationFrame(restoreNavView));
   const gear=document.createElement('button');gear.type='button';gear.className='btn secondary menu-settings-button';gear.innerHTML='<span aria-hidden="true">⚙</span> 메뉴 편집';gear.title='메뉴 이름 · 순서 · 글자 · 아이콘 설정';$('.app-sidebar').append(gear);
   const dialog=document.createElement('dialog');dialog.className='menu-settings';dialog.setAttribute('aria-labelledby','menuSettingsTitle');dialog.innerHTML='<header class="menu-settings-head"><h2 id="menuSettingsTitle">메뉴 편집</h2><button class="btn ghost menu-settings-close" type="button" aria-label="닫기">×</button></header><div class="menu-settings-body"><section class="menu-look-controls"><h3>글자 모양</h3><div class="menu-look-grid"><fieldset><legend>메인 메뉴</legend><label>크기 (pt)<input id="menu-main-pt" type="number" min="1" max="30" step="any" required></label><label class="menu-bold-check"><input id="menu-main-bold" type="checkbox"> 굵게</label></fieldset><fieldset><legend>서브 메뉴</legend><label>크기 (pt)<input id="menu-sub-pt" type="number" min="1" max="30" step="any" required></label><label class="menu-bold-check"><input id="menu-sub-bold" type="checkbox"> 굵게</label></fieldset></div><div class="menu-look-preview" aria-label="메뉴 글자 미리보기"><span class="menu-preview-main">◇ 학습 현황</span><span class="menu-preview-sub">학습 기록</span></div><button type="button" class="btn secondary menu-look-reset">글자·아이콘 기본값</button></section><h3>사용 중인 메뉴 <span class="menu-active-count"></span></h3><ol class="menu-order-list"></ol><h3>대기 중인 메뉴 <span class="menu-waiting-count"></span></h3><ul class="menu-waiting-list"></ul></div><footer class="menu-settings-actions"><button class="btn secondary menu-default" type="button">기본 순서</button><button class="btn secondary menu-cancel" type="button">취소</button><button class="btn menu-save" type="button">저장</button></footer><div class="menu-icon-panel" role="dialog" aria-label="메뉴 아이콘 선택" hidden><div class="menu-icon-panel-head"><strong>아이콘 선택</strong><button type="button" class="btn ghost" data-close-icons aria-label="아이콘 선택 닫기">×</button></div><div class="menu-icon-options"></div></div>';document.body.append(dialog);
   const orderList=dialog.querySelector('.menu-order-list'),waitingList=dialog.querySelector('.menu-waiting-list'),iconPanel=dialog.querySelector('.menu-icon-panel');let draft=[],draftHidden=[],dragged=null,draftAppearance=null,draftLabels={},draftSubOrders={},iconTarget=null;

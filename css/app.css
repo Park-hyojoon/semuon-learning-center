@@ -369,9 +369,14 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
  .quiz-stats-dialog{padding:14px}
  .quiz-rating-buttons{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
-.quiz-ink-layout{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.quiz-ink-layout{display:grid;grid-template-columns:minmax(0,var(--quiz-left,50fr)) 16px minmax(0,var(--quiz-right,50fr));gap:0}
+.quiz-workspace>.withholding-quiz{container-type:inline-size;container-name:quiz-question;min-width:0}
+.quiz-splitter{cursor:col-resize;touch-action:none;position:relative;margin:0 2px 20px;background:linear-gradient(var(--line),var(--line)) center/1px 100% no-repeat}
+.quiz-splitter:hover,.quiz-splitter:focus-visible{background-color:var(--soft)}
+.quiz-splitter::after{content:'';display:block;position:sticky;top:45vh;height:38px;margin:20px auto;width:4px;background:var(--primary);border-radius:4px}
 .quiz-ink-layout>.withholding-quiz{max-width:none;min-width:0}
 .quiz-heading-actions{justify-content:flex-end;gap:8px}
+@media(max-width:760px),(pointer:coarse){.quiz-workspace .quiz-ink-paper,.quiz-workspace .quiz-splitter,.quiz-heading-actions .quiz-ink-tools{display:none!important}.quiz-workspace.quiz-ink-layout{grid-template-columns:minmax(0,1fr)}}
 .quiz-ink-tools{
  position:relative;display:flex;flex-wrap:wrap;gap:3px;padding:3px;
  background:var(--surface);border:1px solid var(--line);border-radius:10px
@@ -390,8 +395,8 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
 .quiz-ink-width label{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px}
 .quiz-ink-width input{width:100%;min-width:0;accent-color:var(--primary)}
 .quiz-ink-paper{
- position:relative;isolation:isolate;overflow:hidden;align-self:stretch;min-width:0;
- min-height:clamp(400px,63vh,740px);margin:0 0 20px;background:var(--surface);
+ position:sticky;top:82px;isolation:isolate;overflow:hidden;align-self:start;min-width:0;
+ height:calc(100dvh - 110px);min-height:360px;margin:0 0 20px;background:var(--surface);
  border:1px solid var(--line);border-radius:12px
 }
 .quiz-ink-label{
@@ -414,7 +419,7 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
 .quiz-ink-image>.quiz-image-remove{top:0}
 .quiz-ink-image>.quiz-image-resize{bottom:0;cursor:nwse-resize;touch-action:none}
 @media(pointer:coarse){.quiz-ink-image>button{visibility:visible;opacity:1;width:36px;height:36px}}
-@media(max-width:980px){
+@media(max-width:760px){
  .quiz-ink-layout{grid-template-columns:minmax(0,1fr);gap:0}
  .quiz-ink-paper{min-height:350px}
  .quiz-heading-actions{justify-content:flex-start}
@@ -470,7 +475,7 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
 .employee-family-table [data-result=wrong] select[aria-invalid=true]{border:2px solid #b94b34}
 .employee-family-table [data-result=correct] .employee-feedback{color:var(--primary)}
 .employee-attempt-details{margin-top:12px}.employee-attempt-details summary{font-weight:700}
-@media(max-width:1050px){
+@container quiz-question (max-width:680px){
  .employee-meta{grid-template-columns:repeat(2,minmax(0,1fr))}
  .employee-family-table,.employee-family-table tbody{display:block}
  .employee-family-table colgroup,.employee-family-table thead{display:none}
@@ -481,9 +486,13 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
  .employee-family-table td:nth-child(5){grid-column:1/-1}
 }
 @media(max-width:520px){.employee-meta{grid-template-columns:minmax(0,1fr)}.employee-meta>div{padding:6px 0}}
-.menu-tree-controls{display:flex;justify-content:flex-end;margin:0 0 6px;flex:none}
-.menu-tree-toggle{width:36px;min-height:36px;padding:6px}
-@media(max-width:760px){.menu-tree-controls{display:none}body.menu-open .menu-tree-controls{display:flex}}
+.app-brand-row{display:flex;align-items:center;justify-content:space-between;gap:4px;flex:none;margin-bottom:24px}
+.app-brand-row .app-brand{margin:0;min-width:0}
+.menu-tree-controls{display:flex;align-items:center;flex:none;margin:0}
+.semuon .menu-tree-toggle,.semuon .menu-tree-toggle:hover{width:26px;min-height:26px;padding:3px;background:transparent;border-color:transparent}
+.menu-tree-toggle svg{width:14px;height:14px}
+@media(max-width:760px){.app-brand-row{margin-bottom:6px}.menu-tree-controls{display:flex}}
+@media(max-width:760px){.semuon:not(.menu-open) .menu-tree-controls{display:none}.semuon:not(.menu-open) .app-brand-row{justify-content:center}}
 #withholding-quiz-explanation p{margin:0 0 4px}
 @media(max-width:520px){
  .withholding-quiz-question{padding:16px}
