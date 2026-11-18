@@ -470,11 +470,12 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
 .employee-meta dd{margin:0;overflow-wrap:anywhere}
 .employee-family-heading{gap:8px}
 .employee-family-heading+.quiz-question-condition{margin:8px 0 12px}
-.semuon .employee-family-table{table-layout:fixed;width:min(100%,760px);min-width:0;max-width:100%;font-size:var(--font-ui);line-height:1.4}
-.employee-family-table col:nth-child(1){width:8%}.employee-family-table col:nth-child(2){width:8%}.employee-family-table col:nth-child(3){width:20%}.employee-family-table col:nth-child(4){width:30%}.employee-family-table col:nth-child(5){width:12%}.employee-family-table col:nth-child(6){width:22%}
+.semuon .employee-family-table{table-layout:fixed;width:100%;min-width:0;max-width:100%;font-size:var(--font-ui);line-height:1.4}
+.employee-family-table col:nth-child(1){width:8%}.employee-family-table col:nth-child(2){width:8%}.employee-family-table col:nth-child(3){width:20%}.employee-family-table col:nth-child(4){width:26%}.employee-family-table col:nth-child(5){width:14%}.employee-family-table col:nth-child(6){width:24%}
 .employee-family-table :is(th,td){padding:5px 4px;vertical-align:top;overflow-wrap:anywhere}
 .employee-family-table th:first-child{white-space:nowrap;overflow-wrap:normal}
-.employee-family-table select{display:block;width:100%;max-width:100%;min-width:0;padding:4px 3px;background:var(--surface);font:inherit;color:var(--ink)}
+.employee-family-table th{ text-align:center}
+.employee-family-table select{display:block;width:100%;max-width:100%;min-width:0;padding:2px 3px;background:var(--surface);font:inherit;font-size:.9em;color:var(--ink)}
 .employee-rrn{white-space:nowrap;font-variant-numeric:tabular-nums}
 .employee-feedback{margin:8px 0 0;line-height:1.6}
 .employee-family-table [data-result=wrong]{background:color-mix(in srgb,#c25c43 7%,var(--surface))}
