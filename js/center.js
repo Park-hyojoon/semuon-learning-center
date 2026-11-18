@@ -565,7 +565,7 @@
  function registrationFieldsHTML(question){
   const {year,employee,rows,basicCount,columns,detailed}=question.registration;
   const control=(index,label,source=false)=>{
-   const field=question.fields[index],attrs=`name="answer-${index}" aria-label="${esc(field.label)}"${source?' data-childcare-source':''}`;
+   const field=question.fields[index],attrs=`name="answer-${index}" data-klab-criterion="${esc(field.criterion)}" aria-label="${esc(field.label)}"${source?' data-childcare-source':''}`;
    const input=field.options? `<select ${attrs}${field.relationCodes?' title="관계 코드 1~8 · 1을 반복하면 부친/모친 전환"':''}>${field.options.map(([value,text])=>`<option value="${esc(value)}">${esc(text)}</option>`).join('')}</select>`:
     `<input ${attrs} type="${field.input==='date'?'date':'text'}" autocomplete="off"${field.input==='code'?' maxlength="3" inputmode="numeric"':field.input==='rrn'?' maxlength="14" autocapitalize="characters"':' maxlength="32"'}>`;
    return `<label><span data-klab-text>${esc(label)}</span>${input}</label>`;
@@ -587,7 +587,7 @@
        <td>${control(start,'연말관계',true)}</td><td>${control(start+1,'성명')}</td><td>${control(start+8,'내/외국인')}</td>
        <td class="klab-id-cell"><div class="klab-id-controls">${control(start+9,'번호 구분')}${control(start+2,'주민(외국인, 여권)번호',true)}</div></td>${ageCell(start+2)}
        <td>${control(start+3,'기본공제')}</td>${unused}${unused}<td>${control(start+4,'경로우대')}</td><td>${control(start+5,'장애인')}</td>
-       <td>${control(start+10,'자녀(간이)')}</td><td>${control(start+6,'출산·입양')}</td><td>${control(start+7,'자녀(세액)')}</td>${unused}
+       <td data-klab-simple-child>${control(start+10,'자녀(간이)')}</td><td>${control(start+6,'출산·입양')}</td><td>${control(start+7,'자녀(세액)')}</td>${unused}
       </tr>`).join('')}
      </tbody>
     </table>
@@ -662,6 +662,22 @@
     fields[5].dispatchEvent(new Event('change',{bubbles:true}));
    };
   }
+  form.querySelector('.klab-family-grid')?.addEventListener('keydown',event=>{
+   const direction=event.key==='ArrowLeft'?-1:event.key==='ArrowRight'?1:0;
+   const field=event.target;
+   if(!direction||event.defaultPrevented||event.altKey||event.ctrlKey||event.metaKey||event.shiftKey||
+    event.isComposing||!field.matches('input,select'))return;
+   if(field.matches('input')&&(field.selectionStart!==field.selectionEnd||
+    field.selectionStart!==(direction<0?0:field.value.length)))return;
+   const row=field.closest('tr');
+   const controls=[...row.querySelectorAll('input:not(:disabled),select:not(:disabled)')];
+   const simple=direction<0&&field.dataset.klabCriterion==='child-tax-credit'?
+    row.querySelector('[data-klab-simple-child] select:not(:disabled)'):null;
+   const next=simple||controls[controls.indexOf(field)+direction];
+   if(!next)return;
+   event.preventDefault();
+   next.focus();
+  });
   function selectTab(index,focus=false){
    tabs.forEach((tab,i)=>{
     tab.setAttribute('aria-selected',String(i===index));

@@ -622,6 +622,7 @@
   const identityOptions=choice(['1','1 주민등록번호'],['2','2 외국인등록번호'],['3','3 여권번호']);
   const disabilityOptions=coded('부','장애인복지법','국가유공자 등','중증환자 등');
   const simpleChildOptions=coded('부','여');
+  const childTaxOptions=choice(['no','0 부'],['yes','1 여']);
   const departments=choice(['management','관리부'],['accounting','회계부'],['general','총무부']);
   const basicFields=[
    {key:'employee-code',label:'사번',input:'code',expected:info.사원번호},
@@ -661,7 +662,7 @@
      {key:'senior',label:'경로우대',options:eligible,expected:row.senior||'no',criterion:'senior-deduction'},
      {key:'disability',label:'장애인',options:disabilityOptions,expected:row.disabled||'0',criterion:'disability-deduction'},
      {key:'birth-adoption',label:'출산·입양',options:birthAdoption,expected:row.birthAdoption||'none',criterion:'birth-adoption-credit'},
-     {key:'child-credit',label:'자녀세액공제',options:eligible,expected:row.childCredit||'no',criterion:'child-tax-credit'},
+     {key:'child-credit',label:'자녀세액공제',options:childTaxOptions,expected:row.childCredit||'no',criterion:'child-tax-credit'},
      {key:'nationality',label:'내/외국인',options:nationalityOptions,expected:'domestic'},
      {key:'id-type',label:'번호 구분',options:identityOptions,expected:'1'},
      {key:'simple-child',label:'자녀(간이)',options:simpleChildOptions,expected:row.role==='child'&&row.eligible==='yes'&&row.age>=8&&row.age<=20?'1':'0'}
@@ -672,7 +673,7 @@
     {key:'self-basic',label:'본인 · 기본공제',options:basicOptions,expected:'1',member:'본인',criterion:'family-registration'},
     {key:'self-senior',label:'본인 · 경로우대',options:eligible,expected:'no',member:'본인',criterion:'senior-deduction'},
     {key:'self-disability',label:'본인 · 장애인',options:disabilityOptions,expected:'0',member:'본인',criterion:'disability-deduction'},
-    {key:'self-child-credit',label:'본인 · 자녀세액공제',options:eligible,expected:'no',member:'본인',criterion:'child-tax-credit'},
+    {key:'self-child-credit',label:'본인 · 자녀세액공제',options:childTaxOptions,expected:'no',member:'본인',criterion:'child-tax-credit'},
     {key:'women-deduction',label:'본인 · 부녀자',options:eligible,expected:'no',member:'본인',criterion:'household-deduction'},
     {key:'single-parent',label:'본인 · 한부모',options:eligible,expected:'yes',member:'본인',criterion:'household-deduction'}
    ]:[]),
