@@ -466,7 +466,8 @@
   }
  ];
 
- function employeeFamily(seed=20261118){
+ function employeeFamily(seed=20261118,scenario=0){
+  scenario=[0,1,2,3].includes(scenario)?scenario:0;
   const variant=Number(seed)>>>0;
   let state=variant;
   const random=()=>{state+=0x6D2B79F5;let t=state;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return ((t^t>>>14)>>>0)/4294967296};
@@ -503,14 +504,32 @@
     reasonOptions:[['income','장애인도 소득 제한 적용 · 한도 초과'],['unlimited','장애인은 소득 제한 없음'],['age','장애인 형제도 나이 제한 적용']],
     explanation:'장애인의 예외는 나이 제한에 대한 것입니다. 일반 근로소득만 있어도 총급여가 500만 원을 초과하면 불가합니다.'}
   ];
+  const change=(key,values)=>Object.assign(rows.find(row=>row.key===key),values);
+  if(scenario===1){
+   change('spouse',{remarks:'일반 근로소득만 · 총급여 501만 원',eligible:'no',reason:'income',reasonOptions:[['income','총급여 500만 원 초과'],['age','배우자의 나이 요건 미충족'],['unlimited','배우자는 소득 제한 없음']],explanation:'배우자는 나이 제한이 없지만, 근로소득만 있는 경우의 총급여 한도 500만 원을 초과합니다.'});
+   change('child-adult',{...birth(2008,false),eligible:'yes',reason:'ageok',reasonOptions:[['ageok','나이·소득 요건 충족'],['age','자녀의 나이 요건 미충족'],['unlimited','자녀는 소득 제한 없음']],explanation:'이 자녀는 20세 이하이고 소득이 없어 기본공제 요건을 충족합니다.'});
+   change('father',{remarks:'사업소득금액 100만 원 · 다른 소득 없음',eligible:'yes',reason:'incomeok',reasonOptions:[['incomeok','소득금액 100만 원 이하'],['income','소득금액 한도 초과'],['sales','사업 매출액으로만 판단']],explanation:'나이 요건을 충족하고 사업소득금액이 100만 원 이하이므로 가능합니다.'});
+   change('sibling',{remarks:'동생 · 세법상 장애인 · 근로소득만 · 총급여 500만 원',eligible:'yes',reason:'disability',reasonOptions:[['disability','장애인 나이 예외 · 소득 충족'],['income','총급여 한도 초과'],['age','형제의 나이 요건 미충족']],explanation:'장애인으로 나이 제한을 받지 않으며, 근로소득만 있고 총급여가 500만 원 이하입니다.'});
+  }
+  if(scenario===2){
+   change('child-disabled',{remarks:'첫째 · 소득 없음 · 장애인 아님',eligible:'no',reason:'age',criterion:'child-age',explanation:'장애인이 아닌 성인 자녀로 나이 요건을 충족하지 못합니다.'});
+   change('father',{...birth(1968,false),remarks:'소득 없음 · 장애인 아님',eligible:'no',reason:'age',criterion:'parent-age',reasonOptions:[['age','직계존속의 나이 요건 미충족'],['noincome','소득이 없으면 나이 무관'],['unlimited','부모는 나이 제한 없음']],explanation:'소득 요건은 충족하지만 직계존속의 나이 요건인 60세 이상에 해당하지 않습니다.'});
+   change('mother',{remarks:'일반 근로소득만 · 총급여 820만 원',eligible:'no',reason:'income',criterion:'wage-limit',reasonOptions:[['income','총급여 500만 원 초과'],['daily','일용근로소득으로 합산 제외'],['unlimited','고령자는 소득 제한 없음']],explanation:'일용근로소득이 아닌 일반 근로소득입니다. 총급여가 500만 원을 초과하므로 공제 불가입니다.'});
+  }
+  if(scenario===3){
+   change('spouse',{remarks:'사업소득금액 101만 원 · 다른 소득 없음',eligible:'no',reason:'income',criterion:'income-amount',reasonOptions:[['income','소득금액 100만 원 초과'],['wage','사업소득에도 총급여 500만 원 적용'],['unlimited','배우자는 소득 제한 없음']],explanation:'사업소득은 필요경비를 뺀 소득금액으로 판단하며, 100만 원 한도를 초과합니다.'});
+   change('child-disabled',{remarks:'첫째 · 세법상 장애인 · 사업소득금액 101만 원',eligible:'no',reason:'income',criterion:'disability-income',reasonOptions:[['income','장애인도 소득 제한 적용'],['unlimited','장애인은 소득 제한 없음'],['age','장애인도 나이 제한 적용']],explanation:'장애인의 나이 예외는 소득 요건을 면제하지 않습니다. 사업소득금액이 100만 원을 초과합니다.'});
+   change('mother',{remarks:'일반 근로소득만 · 총급여 500만 원',eligible:'yes',reason:'incomeok',criterion:'wage-limit',reasonOptions:[['incomeok','나이 충족 · 총급여 500만 원 이하'],['income','총급여 500만 원은 한도 초과'],['daily','일용근로소득으로 합산 제외']],explanation:'직계존속의 나이 요건을 충족하며, 근로소득만 있고 총급여가 500만 원 이하이므로 가능합니다.'});
+  }
+  for(const row of rows)for(let i=row.reasonOptions.length-1;i>0;i--){const j=((variant^Math.imul(i+1,2654435761)^row.key.length)>>>0)%(i+1);[row.reasonOptions[i],row.reasonOptions[j]]=[row.reasonOptions[j],row.reasonOptions[i]]}
   const judgment=[['','선택'],['yes','공제 가능'],['no','공제 불가']];
   const fields=rows.flatMap(row=>[
    {key:row.key+':eligibility',member:row.label,criterion:row.criterion,label:row.label+' · 기본공제 여부',options:judgment},
    {key:row.key+':reason',member:row.label,criterion:row.criterion,label:row.label+' · 판단 이유',options:[['','선택'],...row.reasonOptions]}
   ]);
-  return {id:'taxquiz-046',sample:'employee-family',level:'basic',book:'withholding',variant,
-   unit:'사원등록',detail:'가족별 기본공제 판단',topic:'사원등록 · 가족별 기본공제 판단',
-   prompt:'가족별 기본공제 대상 여부와 판단 이유를 선택하세요.',
+  return {id:'taxquiz-'+String(46+scenario).padStart(3,'0'),sample:'employee-family',scenario,level:'basic',book:'withholding',variant,
+   unit:'사원등록',detail:'가족별 기본공제 판단',topic:'사원등록 · 가족별 기본공제 판단'+(scenario?' · 연습 '+scenario:''),
+   prompt:(scenario?'[연습 '+scenario+'] ':'')+'가족별 기본공제 대상 여부와 판단 이유를 선택하세요.',
    condition:'2026년 귀속 · 생계·부양·중복공제 등 명시되지 않은 요건은 충족합니다. 총급여는 비과세 급여를 제외한 금액이며, 장애인은 세법상 장애인입니다.',
    family:{year,employee:[['사원번호',String(integer(100,999))],['성명',rows[0].name],['입사일자',year+'-'+pad(integer(1,9))+'-'+pad(integer(1,28))],['근무부서',pick(['관리부','회계부','총무부'])],['월정급여',pick(['4,500,000원','5,000,000원','5,500,000원'])],['기타정보','내국인 · 거주자 · 세대주']],rows},
    fields,answers:rows.flatMap(row=>[row.eligible,row.reason]),
@@ -531,7 +550,7 @@
   const graded=[['basic',basicQuestions(course)],['applied',course==='income'?incomeApplied:withholdingApplied],
    ['advanced',course==='income'?incomeAdvanced:withholdingAdvanced]];
   if(course==='income')graded[0][1].push(...extraIncomeBasics);
-  else graded[0][1].push(employeeFamily());
+  else graded[0][1].push(...[0,1,2,3].map(scenario=>employeeFamily(20261118+scenario,scenario)));
   return graded.flatMap(([level,list])=>list.map(question=>({...question,level,book:question.book||course})))
    .sort((a,b)=>units[course].indexOf(a.unit)-units[course].indexOf(b.unit));
  }

@@ -460,10 +460,10 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
 .employee-meta dd{margin:0;overflow-wrap:anywhere}
 .employee-family-heading{gap:8px}
 .employee-family-heading+.quiz-question-condition{margin:8px 0 12px}
-.semuon .employee-family-table{table-layout:fixed;width:100%;min-width:0;max-width:100%;font-size:var(--font-ui)}
-.employee-family-table col:nth-child(1){width:5%}.employee-family-table col:nth-child(2){width:7%}.employee-family-table col:nth-child(3){width:16%}.employee-family-table col:nth-child(4){width:23%}.employee-family-table col:nth-child(5){width:15%}.employee-family-table col:nth-child(6){width:34%}
-.employee-family-table :is(th,td){padding:10px 8px;vertical-align:top;overflow-wrap:anywhere}
-.employee-family-table select{display:block;width:100%;max-width:100%;min-width:0;padding:8px 6px;background:var(--surface);font:inherit;color:var(--ink)}
+.semuon .employee-family-table{table-layout:fixed;width:min(100%,760px);min-width:0;max-width:100%;font-size:var(--font-ui);line-height:1.4}
+.employee-family-table col:nth-child(1){width:6%}.employee-family-table col:nth-child(2){width:8%}.employee-family-table col:nth-child(3){width:20%}.employee-family-table col:nth-child(4){width:32%}.employee-family-table col:nth-child(5){width:12%}.employee-family-table col:nth-child(6){width:22%}
+.employee-family-table :is(th,td){padding:5px 4px;vertical-align:top;overflow-wrap:anywhere}
+.employee-family-table select{display:block;width:100%;max-width:100%;min-width:0;padding:4px 3px;background:var(--surface);font:inherit;color:var(--ink)}
 .employee-rrn{white-space:nowrap;font-variant-numeric:tabular-nums}
 .employee-feedback{margin:8px 0 0;line-height:1.6}
 .employee-family-table [data-result=wrong]{background:color-mix(in srgb,#c25c43 7%,var(--surface))}
@@ -475,12 +475,15 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
  .employee-family-table,.employee-family-table tbody{display:block}
  .employee-family-table colgroup,.employee-family-table thead{display:none}
  .employee-family-table tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border:1px solid var(--line);border-radius:9px;margin:12px 0;overflow:hidden}
- .employee-family-table :is(th,td){display:block;border:0;padding:8px 10px;text-align:left;min-width:0}
+ .employee-family-table :is(th,td){display:block;border:0;padding:4px 5px;text-align:left;min-width:0}
  .employee-family-table :is(th,td)::before{content:attr(data-label);display:block;font-weight:700;color:var(--muted);margin-bottom:4px}
  .employee-family-table td:nth-child(3),.employee-family-table td:nth-child(4),.employee-family-table td:nth-child(6){grid-column:1/-1}
  .employee-family-table td:nth-child(5){grid-column:1/-1}
 }
 @media(max-width:520px){.employee-meta{grid-template-columns:minmax(0,1fr)}.employee-meta>div{padding:6px 0}}
+.menu-tree-controls{display:flex;justify-content:flex-end;margin:0 0 6px;flex:none}
+.menu-tree-toggle{width:36px;min-height:36px;padding:6px}
+@media(max-width:760px){.menu-tree-controls{display:none}body.menu-open .menu-tree-controls{display:flex}}
 #withholding-quiz-explanation p{margin:0 0 4px}
 @media(max-width:520px){
  .withholding-quiz-question{padding:16px}

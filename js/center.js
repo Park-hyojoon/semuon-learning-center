@@ -563,7 +563,7 @@
    familySeed=raw!==null&&/^\d{1,10}$/.test(raw)&&Number(raw)<=4294967295?Number(raw):crypto.getRandomValues(new Uint32Array(1))[0];
    const url=new URL(location.href);url.searchParams.set('variant',familySeed);history.replaceState(null,'',url);
   }
-  const bank=quiz.questions(course).filter(q=>!employee||q.sample===params.get('sample')).map(q=>q.family&&family?quiz.employeeFamily(familySeed):q),attempts=new Map();
+  const bank=quiz.questions(course).filter(q=>!employee||q.sample===params.get('sample')).map(q=>q.family&&family?quiz.employeeFamily(familySeed,q.scenario):q),attempts=new Map();
   const today=()=>SemuonProgress.day(Date.now());
   const quizState=()=>Q.analyze(storedSnapshot().quizReviewEvents);
   const session=globalThis.SemuonResume?.readQuiz(course);
@@ -672,7 +672,7 @@
    if(!flushQuizMemo())return;
    const matching=bank.filter(question=>question.level===level.value&&quiz.inUnit(question,unit.value)&&
     (!detail.value||question.detail===detail.value));
-   questions=dueMode?Q.due(bank,quizState(),today()):count.value==='all'?matching:quiz.selectQuestions(matching,Number(count.value),level.value);
+   questions=dueMode?Q.due(bank,quizState(),today()):family||count.value==='all'?matching:quiz.selectQuestions(matching,Number(count.value),level.value);
    position=0;
    if(initialQuiz&&params.get('question')){
     const chosen=matching.find(q=>q.id===params.get('question'));
@@ -878,7 +878,9 @@
       const line=card.querySelector('[data-employee-row="'+i+'"]'),feedback=line.querySelector('.employee-feedback');
       line.dataset.result=correctRow?'correct':'wrong';
       feedback.hidden=false;
-      feedback.textContent=(correctRow?'정답':'정답: '+(row.eligible==='yes'?'공제 가능':'공제 불가'))+' · '+question.family.year+'년 말 만 '+row.age+'세. '+row.explanation;
+      const detail=document.createElement('details'),summary=document.createElement('summary'),text=document.createElement('p');
+      summary.textContent=(correctRow?'정답':'정답: '+(row.eligible==='yes'?'공제 가능':'공제 불가'))+' · 만 '+row.age+'세';
+      text.textContent=row.explanation;detail.append(summary,text);feedback.replaceChildren(detail);
       for(const index of [i*2,i*2+1])form.elements.namedItem('answer-'+index).setAttribute('aria-invalid',String(attempt.values[index]!==question.answers[index]));
      });
      result.textContent=complete===question.family.rows.length?complete+'명 모두 정확합니다.':question.family.rows.length+'명 중 '+complete+'명 정확 · '+(question.family.rows.length-complete)+'명 재확인';
@@ -1072,6 +1074,19 @@
   function applyAppearance(v){const side=$('.app-sidebar');for(const[name,value]of Object.entries({'--menu-main-size':v?v.mainPt+'pt':null,'--menu-sub-size':v?v.subPt+'pt':null,'--menu-main-weight':v?(v.mainBold?'800':'400'):null,'--menu-sub-weight':v?(v.subBold?'800':'400'):null})){if(value)side.style.setProperty(name,value);else side.style.removeProperty(name)}for(const d of descriptors){const key=v?.icons[d.id]||'default',glyph=key==='none'?'':key==='default'?d.original:key;d.icon.textContent=glyph;d.icon.hidden=!glyph;d.icon.setAttribute('aria-hidden','true')}}
   function apply({order,hidden,appearance,labels,subOrders}){function build(id,depth=0){const d=byId.get(id),kids=subOrders[id]||[],node=document.createElement(kids.length||!d.route?'details':'a');node.dataset.menuId=id;if(depth)node.classList.add('menu-nested-node');let row=node;if(node.tagName==='DETAILS'){node.classList.add('app-nav-group');node.open=true;row=document.createElement('summary');node.append(row)}else node.href=d.route;const icon=document.createElement('span'),name=document.createElement(d.route&&row!==node?'a':'span');name.textContent=labels[id]||d.label;if(name.tagName==='A'){name.href=d.route;name.className='menu-parent-link'}row.append(icon,name);d.icon=icon;d.name=name;if(id===activeNode){if(node.tagName==='A')node.classList.add('active');else node.classList.add('is-active');if(d.route)(name.tagName==='A'?name:node).setAttribute('aria-current','page')}if(kids.length){const box=document.createElement('div');box.className='app-subnav';kids.forEach(key=>box.append(build(key,depth+1)));node.append(box);if(box.querySelector('[aria-current=page]'))node.classList.add('is-active')}node.hidden=hidden.includes(id);return node}navBox.replaceChildren(...order.map(id=>build(id)));applyAppearance(appearance)}
   apply(load());
+  const foldKey='semuon-tax2-menu-fold-all',foldBar=document.createElement('div'),foldButton=document.createElement('button');
+  foldBar.className='menu-tree-controls';foldButton.type='button';foldButton.className='btn secondary menu-tree-toggle';foldButton.setAttribute('aria-controls','app-nav');foldBar.append(foldButton);navBox.before(foldBar);
+  let folded=false;try{folded=localStorage.getItem(foldKey)==='1'}catch(_){}
+  function paintFold(applyState=false){
+   const groups=[...navBox.querySelectorAll('details')];
+   if(applyState)groups.forEach(group=>group.open=!folded);
+   const open=groups.some(group=>group.open),label=open?'전체 메뉴 접기':'전체 메뉴 펼치기';
+   foldButton.title=label;foldButton.setAttribute('aria-label',label);foldButton.setAttribute('aria-expanded',String(open));foldButton.disabled=!groups.length;
+   foldButton.innerHTML='<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="'+(open?'m8 7 4-4 4 4M8 17l4 4 4-4M5 10h14M5 14h14':'m8 3 4 4 4-4M8 21l4-4 4 4M5 10h14M5 14h14')+'"/></svg>';
+  }
+  foldButton.onclick=()=>{folded=[...navBox.querySelectorAll('details')].some(group=>group.open);try{localStorage.setItem(foldKey,folded?'1':'0')}catch(_){}paintFold(true)};
+  navBox.addEventListener('toggle',()=>paintFold(),true);
+  new MutationObserver(()=>paintFold(true)).observe(navBox,{childList:true});paintFold(true);
   const gear=document.createElement('button');gear.type='button';gear.className='btn secondary menu-settings-button';gear.innerHTML='<span aria-hidden="true">⚙</span> 메뉴 편집';gear.title='메뉴 이름 · 순서 · 글자 · 아이콘 설정';$('.app-sidebar').append(gear);
   const dialog=document.createElement('dialog');dialog.className='menu-settings';dialog.setAttribute('aria-labelledby','menuSettingsTitle');dialog.innerHTML='<header class="menu-settings-head"><h2 id="menuSettingsTitle">메뉴 편집</h2><button class="btn ghost menu-settings-close" type="button" aria-label="닫기">×</button></header><div class="menu-settings-body"><section class="menu-look-controls"><h3>글자 모양</h3><div class="menu-look-grid"><fieldset><legend>메인 메뉴</legend><label>크기 (pt)<input id="menu-main-pt" type="number" min="1" max="30" step="any" required></label><label class="menu-bold-check"><input id="menu-main-bold" type="checkbox"> 굵게</label></fieldset><fieldset><legend>서브 메뉴</legend><label>크기 (pt)<input id="menu-sub-pt" type="number" min="1" max="30" step="any" required></label><label class="menu-bold-check"><input id="menu-sub-bold" type="checkbox"> 굵게</label></fieldset></div><div class="menu-look-preview" aria-label="메뉴 글자 미리보기"><span class="menu-preview-main">◇ 학습 현황</span><span class="menu-preview-sub">학습 기록</span></div><button type="button" class="btn secondary menu-look-reset">글자·아이콘 기본값</button></section><h3>사용 중인 메뉴 <span class="menu-active-count"></span></h3><ol class="menu-order-list"></ol><h3>대기 중인 메뉴 <span class="menu-waiting-count"></span></h3><ul class="menu-waiting-list"></ul></div><footer class="menu-settings-actions"><button class="btn secondary menu-default" type="button">기본 순서</button><button class="btn secondary menu-cancel" type="button">취소</button><button class="btn menu-save" type="button">저장</button></footer><div class="menu-icon-panel" role="dialog" aria-label="메뉴 아이콘 선택" hidden><div class="menu-icon-panel-head"><strong>아이콘 선택</strong><button type="button" class="btn ghost" data-close-icons aria-label="아이콘 선택 닫기">×</button></div><div class="menu-icon-options"></div></div>';document.body.append(dialog);
   const orderList=dialog.querySelector('.menu-order-list'),waitingList=dialog.querySelector('.menu-waiting-list'),iconPanel=dialog.querySelector('.menu-icon-panel');let draft=[],draftHidden=[],dragged=null,draftAppearance=null,draftLabels={},draftSubOrders={},iconTarget=null;
