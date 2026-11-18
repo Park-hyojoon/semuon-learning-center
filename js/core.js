@@ -6,14 +6,18 @@
   'use strict';
   const EXAM='tax2',KEY='semuon-tax2-v1',VERSION=1,SUBJECTS=['theory','practical','voucher'];
   const labels={theory:'이론 학습',practical:'일반전표 입력',voucher:'매입매출전표 입력'};
-  const MARKUP_TOOLS=[['blue','파란색','1'],['red','빨간색','2'],['green','초록색','3'],['highlight','형광펜','+'],['underline','밑줄','5'],['strike','취소선','6'],['clear','표시 지우기','7']];
+  const MARKUP_TOOLS=[['blue','파란색','1'],['red','빨간색','2'],['green','초록색','3'],['bold','굵게','4'],['highlight','형광펜','+'],['underline','밑줄','5'],['strike','취소선','6'],['clear','표시 지우기','7']];
   const MARKUP_SHORTCUT_DEFAULTS=Object.fromEntries(MARKUP_TOOLS.map(([id,,key])=>[id,key]));
   function markupShortcuts(settings){
     const saved=settings.markupShortcuts;
-    const oldDefaults=saved&&MARKUP_TOOLS.every(([id,,key])=>saved[id]===(id==='highlight'?'4':key));
-    return {...MARKUP_SHORTCUT_DEFAULTS,...(oldDefaults?{}:saved)};
+    const keys={...MARKUP_SHORTCUT_DEFAULTS,...saved};
+    if(saved&&!Object.hasOwn(saved,'bold')){
+      const displaced=Object.keys(saved).find(id=>saved[id]==='4');
+      if(displaced)keys[displaced]=[MARKUP_SHORTCUT_DEFAULTS[displaced],...'+890ABCDEFGHIJKLMNOPQRSTUVWXYZ'].find(key=>!Object.values(keys).includes(key));
+    }
+    return keys;
   }
-  function validateMarkupShortcuts(value){assert(value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).length===MARKUP_TOOLS.length&&MARKUP_TOOLS.every(([id])=>typeof value[id]==='string'&&/^[0-9A-Z+]$/.test(value[id])),'단축키는 기능마다 숫자, 영문 한 글자 또는 +로 입력해 주세요.');assert(new Set(Object.values(value)).size===MARKUP_TOOLS.length,'같은 단축키를 두 기능에 사용할 수 없습니다.');return value}
+  function validateMarkupShortcuts(value){const tools=MARKUP_TOOLS.filter(([id])=>id!=='bold'||Object.hasOwn(value||{},id));assert(value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).length===tools.length&&tools.every(([id])=>typeof value[id]==='string'&&/^[0-9A-Z+]$/.test(value[id])),'단축키는 기능마다 숫자, 영문 한 글자 또는 +로 입력해 주세요.');assert(new Set(Object.values(value)).size===tools.length,'같은 단축키를 두 기능에 사용할 수 없습니다.');return value}
   const FONT_DEFAULTS={fontUiPt:10.5,fontBodyPt:12,fontUiFamily:'default',fontBodyFamily:'default'};
   const FONT_FAMILIES={default:{label:'기본 글꼴 (Noto Sans KR)',css:'"Noto Sans KR", "Malgun Gothic", "Segoe UI", system-ui, sans-serif'},malgun:{label:'맑은 고딕',css:'"Malgun Gothic", "Segoe UI", system-ui, sans-serif'},nanum:{label:'나눔고딕',css:'"Nanum Gothic", "Malgun Gothic", system-ui, sans-serif'},gulim:{label:'굴림',css:'Gulim, "Malgun Gothic", system-ui, sans-serif'},batang:{label:'바탕',css:'Batang, "Noto Serif KR", serif'},mono:{label:'고정폭 글꼴',css:'Consolas, "D2Coding", monospace'}};
   function fontPreferences(settings){const old=settings.fontSize||18;return{fontUiPt:settings.fontUiPt??Math.max(16,old-2)*72/96,fontBodyPt:settings.fontBodyPt??old*72/96,fontUiFamily:settings.fontUiFamily||'default',fontBodyFamily:settings.fontBodyFamily||'default'}}
