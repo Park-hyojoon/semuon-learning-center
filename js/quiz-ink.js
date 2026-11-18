@@ -1,10 +1,12 @@
-/* Temporary, per-question handwritten notes for the withholding quiz. */
+/* Temporary, per-question handwritten notes for the study quizzes. */
 (function(root){
  'use strict';
 
  const widths={pen:[1,12,3],marker:[6,32,14]};
  const labels={pen:'펜',marker:'형광펜',eraser:'획 지우개',width:'굵기 조절',clear:'필기 전체 지우기',image:'이미지 추가',move:'이미지 이동·크기 조절'};
  const icons={pen:'Pencil',marker:'Highlighter',eraser:'Eraser',width:'Settings2',clear:'Trash2',image:'ImagePlus',move:'Move'};
+ const keys={pen:'B',marker:'P',eraser:'E',clear:'D'};
+ const isDrawingTool=tool=>tool==='pen'||tool==='marker'||tool==='eraser';
 
  function mountImages(paper,picker,{added,changed,notify}){
   const layer=paper.querySelector('.quiz-ink-images'),pages=new Map();
@@ -137,33 +139,12 @@
   };
  }
 
- function mount(toolbar,paper){
-  const canvas=paper.querySelector('canvas'),ctx=canvas.getContext('2d');
+ function mountSurface(canvas,target,{sizes,changed}){
+  const ctx=canvas.getContext('2d');
   if(!ctx)return null;
-  const iconsHTML=root.SemuonJournalIcons;
-  toolbar.innerHTML=Object.keys(labels).map(action=>{
-   const state=action==='width'?' aria-expanded="false" aria-controls="quiz-ink-width"':
-    action==='clear'?'':' aria-pressed="false" aria-controls="quiz-ink-paper"';
-   return `<button type="button" data-ink-action="${action}" aria-label="${labels[action]}" title="${labels[action]}"${state}>${iconsHTML[icons[action]]}</button>`;
-  }).join('')+`<input type="file" accept="image/png,image/jpeg,image/webp,image/bmp,image/gif,image/avif" hidden>
-  <div id="quiz-ink-width" class="quiz-ink-width" hidden>
-   <label><span>굵기</span><input type="range"><output></output></label>
-  </div><span class="sr-only" role="status"></span>`;
-
-  const buttons=[...toolbar.querySelectorAll('[data-ink-action]')];
-  const widthButton=toolbar.querySelector('[data-ink-action=width]');
-  const clearButton=toolbar.querySelector('[data-ink-action=clear]');
-  const widthPanel=toolbar.querySelector('#quiz-ink-width'),slider=widthPanel.querySelector('input');
-  const status=toolbar.querySelector('[role=status]');
-  const picker=toolbar.querySelector('[type=file]');
-  const sizes={pen:widths.pen[2],marker:widths.marker[2]},notes=new Map();
+  const notes=new Map();
   let tool='',question=null,strokes=new Set(),gesture=null,frame=0;
   let size={width:1,height:1,ratio:1},lastPen=0;
-  const images=mountImages(paper,picker,{
-   added(){chooseTool('move');status.textContent='이미지를 필기 공간에 붙였습니다.'},
-   changed:updateTools,
-   notify:message=>{status.textContent=message}
-  });
 
   function makePath(points){
    // Scale both axes by width so handwriting still lines up when the quiz grows taller.
@@ -178,7 +159,7 @@
    frame=0;
    ctx.setTransform(size.ratio,0,0,size.ratio,0,0);
    ctx.clearRect(0,0,size.width,size.height);
-   const ink=getComputedStyle(paper).getPropertyValue('--ink').trim()||'#273b37';
+   const ink=getComputedStyle(target).getPropertyValue('--ink').trim()||'#273b37';
    ctx.lineCap=ctx.lineJoin='round';
    for(const stroke of strokes){
     stroke.path??=makePath(stroke.points);
@@ -190,90 +171,23 @@
   }
   function scheduleDraw(){if(!frame)frame=requestAnimationFrame(draw)}
   function resize(){
-   const rect=canvas.getBoundingClientRect(),ratio=Math.min(devicePixelRatio||1,3);
+   const rect=canvas.getBoundingClientRect();
    if(!rect.width||!rect.height)return;
+   const ratio=Math.min(devicePixelRatio||1,3,8192/Math.max(rect.width,rect.height),Math.sqrt(8e6/(rect.width*rect.height)));
    if(rect.width===size.width&&rect.height===size.height&&ratio===size.ratio)return;
+   if(rect.width!==size.width){
+    for(const note of notes.values())for(const stroke of note)stroke.path=null;
+   }
    size={width:rect.width,height:rect.height,ratio};
    canvas.width=Math.round(rect.width*ratio);
    canvas.height=Math.round(rect.height*ratio);
-   for(const note of notes.values())for(const stroke of note)stroke.path=null;
    draw();
-  }
-  function showWidth(open){
-   widthPanel.hidden=!open;
-   widthButton.setAttribute('aria-expanded',String(open));
-   if(!open)return;
-   [slider.min,slider.max]=widths[tool];
-   slider.value=sizes[tool];
-   slider.setAttribute('aria-label',labels[tool]+' 굵기');
-   widthPanel.querySelector('output').textContent=slider.value+'px';
-   slider.focus({preventScroll:true});
-  }
-  function updateTools(){
-   canvas.dataset.tool=question&&tool!=='move'?tool:'';
-   images.setEditable(!canvas.dataset.tool);
-   for(const button of buttons){
-    const action=button.dataset.inkAction;
-    if(button.hasAttribute('aria-pressed'))button.setAttribute('aria-pressed',String(Boolean(question)&&action===tool));
-    button.disabled=!question||(action==='clear'&&!strokes.size)||(action==='width'&&!widths[tool])||(action==='move'&&!images.hasImages);
-   }
   }
   function finish(){
    const active=gesture;
    gesture=null;
-   if(active&&canvas.hasPointerCapture(active.id))canvas.releasePointerCapture(active.id);
+   if(active&&target.hasPointerCapture(active.id))target.releasePointerCapture(active.id);
   }
-  function show(next){
-   finish();
-   question=next;
-   if(question&&!notes.has(question))notes.set(question,new Set());
-   strokes=question?notes.get(question):new Set();
-   images.show(question);
-   if(!question)showWidth(false);
-   updateTools();
-   draw();
-  }
-  function clear(){
-   finish();
-   strokes.clear();
-   updateTools();
-   draw();
-  }
-  function chooseTool(next){
-   finish();
-   tool=next;
-   showWidth(false);
-   updateTools();
-   if(tool&&matchMedia('(max-width: 980px)').matches)paper.scrollIntoView({block:'nearest'});
-  }
-  toolbar.addEventListener('click',event=>{
-   const button=event.target.closest('[data-ink-action]');
-   if(!button||button.disabled)return;
-   const action=button.dataset.inkAction;
-   if(action==='clear'){
-    clear();
-    status.textContent='필기를 모두 지웠습니다.';
-    return;
-   }
-   if(action==='width'){showWidth(widthPanel.hidden);return}
-   if(action==='image'){picker.click();return}
-   chooseTool(tool===action?'':action);
-  });
-  slider.addEventListener('input',()=>{
-   sizes[tool]=slider.valueAsNumber;
-   widthPanel.querySelector('output').textContent=slider.value+'px';
-  });
-  document.addEventListener('pointerdown',event=>{
-   if(!widthPanel.hidden&&!toolbar.contains(event.target))showWidth(false);
-  });
-  document.addEventListener('keydown',event=>{
-   if(event.key!=='Escape'||!question||!tool)return;
-   if(!widthPanel.hidden){showWidth(false);widthButton.focus({preventScroll:true});return}
-   finish();
-   tool='';
-   updateTools();
-  });
-
   const point=(event,rect)=>({x:(event.clientX-rect.left)/rect.width,y:(event.clientY-rect.top)/rect.width});
   function erase(from,to){
    const x=from.x*size.width,y=from.y*size.width;
@@ -282,33 +196,35 @@
    ctx.save();
    ctx.setTransform(1,0,0,1,0,0);
    ctx.lineCap=ctx.lineJoin='round';
-   let changed=false;
+   let erased=false;
    for(const stroke of strokes){
     stroke.path??=makePath(stroke.points);
     ctx.lineWidth=stroke.width+16;
     for(let i=0;i<=steps;i++){
      if(!ctx.isPointInStroke(stroke.path,x+dx*i/steps,y+dy*i/steps))continue;
      strokes.delete(stroke);
-     changed=true;
+     erased=true;
      break;
     }
    }
    ctx.restore();
-   if(changed){updateTools();scheduleDraw()}
+   if(erased){changed();scheduleDraw()}
   }
-  canvas.addEventListener('pointerdown',event=>{
+  target.addEventListener('pointerdown',event=>{
    if(!question||!tool||gesture||event.button!==0||!event.isPrimary)return;
+   if(target!==canvas&&event.target.closest('input,textarea,select,button,a,summary,[contenteditable],[role=button]'))return;
+   const rect=canvas.getBoundingClientRect();
+   if(!rect.width||!rect.height)return;
    if(event.pointerType==='pen')lastPen=Date.now();
    if(event.pointerType==='touch'&&Date.now()-lastPen<600)return;
    event.preventDefault();
-   const start=point(event,canvas.getBoundingClientRect());
+   const start=point(event,rect);
    gesture={id:event.pointerId,last:start,stroke:null};
-   canvas.setPointerCapture(event.pointerId);
+   target.setPointerCapture(event.pointerId);
    if(tool==='eraser'){erase(start,start);return}
    gesture.stroke={tool,width:sizes[tool],points:[start],path:null};
    strokes.add(gesture.stroke);
-   status.textContent='';
-   updateTools();
+   changed({drawing:true});
    scheduleDraw();
   });
   function extend(event){
@@ -326,19 +242,151 @@
    }
    if(gesture.stroke)scheduleDraw();
   }
-  canvas.addEventListener('pointermove',extend);
-  canvas.addEventListener('pointerup',event=>{
+  target.addEventListener('pointermove',extend);
+  target.addEventListener('pointerup',event=>{
    if(gesture?.id!==event.pointerId)return;
    extend(event);
    finish();
   });
-  for(const type of ['pointercancel','lostpointercapture'])canvas.addEventListener(type,event=>{
+  for(const type of ['pointercancel','lostpointercapture'])target.addEventListener(type,event=>{
    if(gesture?.id===event.pointerId)finish();
   });
   new ResizeObserver(resize).observe(canvas);
   resize();
+  return {
+   setTool(next){
+    if(next!==tool)finish();
+    tool=next;
+    target.dataset.tool=tool;
+   },
+   show(next){
+    finish();
+    question=next;
+    if(question&&!notes.has(question))notes.set(question,new Set());
+    strokes=question?notes.get(question):new Set();
+    draw();
+   },
+   clear(){
+    finish();
+    strokes.clear();
+    draw();
+   },
+   get hasStrokes(){return strokes.size>0}
+  };
+ }
+
+ function mount(toolbar,paper,problem){
+  const paperCanvas=paper.querySelector('canvas');
+  const sizes={pen:widths.pen[2],marker:widths.marker[2]};
+  const surfaces=[
+   mountSurface(problem.querySelector('canvas'),problem,{sizes,changed:surfaceChanged}),
+   mountSurface(paperCanvas,paperCanvas,{sizes,changed:surfaceChanged})
+  ].filter(Boolean);
+  if(!surfaces.length)return null;
+  const iconsHTML=root.SemuonJournalIcons;
+  toolbar.innerHTML=Object.keys(labels).map(action=>{
+   const state=action==='width'?' aria-expanded="false" aria-controls="quiz-ink-width"':
+    action==='clear'?'':' aria-pressed="false" aria-controls="quiz-ink-question quiz-ink-paper"';
+   const key=keys[action],shortcut=key?` aria-keyshortcuts="${key}"`:'';
+   const title=key?`${labels[action]} (${key})`:labels[action];
+   return `<button type="button" data-ink-action="${action}" aria-label="${labels[action]}" title="${title}"${state}${shortcut}>${iconsHTML[icons[action]]}</button>`;
+  }).join('')+`<input type="file" accept="image/png,image/jpeg,image/webp,image/bmp,image/gif,image/avif" hidden>
+  <div id="quiz-ink-width" class="quiz-ink-width" hidden>
+   <label><span>굵기</span><input type="range"><output></output></label>
+  </div><span class="sr-only" role="status"></span>`;
+
+  const buttons=[...toolbar.querySelectorAll('[data-ink-action]')];
+  const widthButton=toolbar.querySelector('[data-ink-action=width]');
+  const clearButton=toolbar.querySelector('[data-ink-action=clear]');
+  const widthPanel=toolbar.querySelector('#quiz-ink-width'),slider=widthPanel.querySelector('input');
+  const status=toolbar.querySelector('[role=status]');
+  const picker=toolbar.querySelector('[type=file]');
+  let tool='',question=null;
+  const images=mountImages(paper,picker,{
+   added(){chooseTool('move');status.textContent='이미지를 필기 공간에 붙였습니다.'},
+   changed:updateTools,
+   notify:message=>{status.textContent=message}
+  });
+
+  function showWidth(open){
+   widthPanel.hidden=!open;
+   widthButton.setAttribute('aria-expanded',String(open));
+   if(!open)return;
+   [slider.min,slider.max]=widths[tool];
+   slider.value=sizes[tool];
+   slider.setAttribute('aria-label',labels[tool]+' 굵기');
+   widthPanel.querySelector('output').textContent=slider.value+'px';
+   slider.focus({preventScroll:true});
+  }
+  function updateTools(){
+   const drawing=question&&isDrawingTool(tool)?tool:'';
+   for(const surface of surfaces)surface.setTool(drawing);
+   images.setEditable(!drawing);
+   const hasStrokes=surfaces.some(surface=>surface.hasStrokes);
+   for(const button of buttons){
+    const action=button.dataset.inkAction;
+    if(button.hasAttribute('aria-pressed'))button.setAttribute('aria-pressed',String(Boolean(question)&&action===tool));
+    button.disabled=!question||(action==='clear'&&!hasStrokes)||(action==='width'&&!widths[tool])||(action==='move'&&!images.hasImages);
+   }
+  }
+  function surfaceChanged({drawing=false}={}){
+   if(drawing)status.textContent='';
+   updateTools();
+  }
+  function show(next){
+   question=next;
+   for(const surface of surfaces)surface.show(next);
+   images.show(next);
+   if(!question)showWidth(false);
+   updateTools();
+  }
+  function clear(){
+   for(const surface of surfaces)surface.clear();
+   updateTools();
+  }
+  function clearInk(){
+   clear();
+   status.textContent='필기를 모두 지웠습니다.';
+  }
+  function chooseTool(next){
+   tool=next;
+   showWidth(false);
+   updateTools();
+  }
+  toolbar.addEventListener('click',event=>{
+   const button=event.target.closest('[data-ink-action]');
+   if(!button||button.disabled)return;
+   const action=button.dataset.inkAction;
+   if(action==='clear'){clearInk();return}
+   if(action==='width'){showWidth(widthPanel.hidden);return}
+   if(action==='image'){picker.click();return}
+   chooseTool(tool===action?'':action);
+  });
+  slider.addEventListener('input',()=>{
+   sizes[tool]=slider.valueAsNumber;
+   widthPanel.querySelector('output').textContent=slider.value+'px';
+  });
+  document.addEventListener('pointerdown',event=>{
+   if(!widthPanel.hidden&&!toolbar.contains(event.target))showWidth(false);
+  });
+  document.addEventListener('keydown',event=>{
+   if(event.defaultPrevented||!question||!tool||event.target.closest?.('dialog[open]'))return;
+   if(event.key==='Escape'){
+    if(!widthPanel.hidden){showWidth(false);widthButton.focus({preventScroll:true});return}
+    chooseTool('');
+    return;
+   }
+   if(!isDrawingTool(tool)||event.repeat||event.isComposing||event.ctrlKey||event.metaKey||event.altKey||event.shiftKey||
+    event.target.closest?.('input,textarea,select,[contenteditable]'))return;
+   const action=Object.keys(keys).find(name=>keys[name]===event.key.toUpperCase());
+   if(!action||!toolbar.getClientRects().length)return;
+   event.preventDefault();
+   if(action==='clear'){if(!clearButton.disabled)clearInk();return}
+   chooseTool(action);
+  });
+
   updateTools();
-  return{show,reset(){clear();images.reset()}};
+  return{show,reset(){images.reset();clear()}};
  }
  root.SemuonQuizInk={mount};
 })(globalThis);

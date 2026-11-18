@@ -620,7 +620,7 @@
   const desktopInk=!matchMedia('(max-width:760px), (pointer:coarse)').matches;
   const title=employee?'사원 등록':income?'소득세법 핵심 퀴즈':'원천징수 핵심 퀴즈';
   document.title=title+' · 전산세무 2급';
-  content.innerHTML=head(title,'',`<div class="row quiz-heading-actions">${dueMode?`<a class="btn secondary" href="${quizPage(course)}">전체 퀴즈</a>`:''}${desktopInk?'<div class="quiz-ink-tools" role="group" aria-label="필기 도구"></div>':''}<a class="btn secondary" href="${href(back)}">${income?'소득세법 개념':'원천징수 실무'}</a></div>`)+`
+  content.innerHTML=head(title,'',`<div class="row quiz-heading-actions">${dueMode?`<a class="btn secondary" href="${quizPage(course)}">전체 퀴즈</a>`:''}<a class="btn secondary" href="${href(back)}">${income?'소득세법 개념':'원천징수 실무'}</a></div>`)+`
    <div class="quiz-workspace ${desktopInk?'quiz-ink-layout':''}">
    <div class="withholding-quiz">
     ${dueMode?'<p class="quiz-due-heading"><strong>오늘 복습</strong></p>':''}
@@ -632,10 +632,12 @@
      <label><span id="quiz-count-label">풀 문제 수</span><select id="withholding-quiz-count" aria-labelledby="quiz-count-label">${allowed.map(n=>`<option value="${n}"${daily===n?' selected':''}>${n==='all'?'전체':n+'문제'}</option>`).join('')}</select></label>
      <span class="help withholding-quiz-total" role="status"></span>
     </section>
+    ${desktopInk?'<div id="quiz-ink-question" class="quiz-ink-over-question">':''}
     <section class="card withholding-quiz-question" id="withholding-quiz-card" aria-labelledby="withholding-question"></section>
+    ${desktopInk?'<canvas aria-hidden="true"></canvas></div>':''}
    </div>
    ${desktopInk?`<div class="quiz-splitter" role="separator" aria-label="문제와 필기 영역 비율" aria-orientation="vertical" aria-valuemin="25" aria-valuemax="75" aria-valuenow="50" tabindex="0"></div><section id="quiz-ink-paper" class="quiz-ink-paper" aria-label="퀴즈 필기 공간" tabindex="0">
-    <span class="quiz-ink-label" aria-hidden="true">필기</span>
+    <div class="quiz-ink-tools" role="group" aria-label="필기 도구"></div>
     <div class="quiz-ink-images"></div><canvas aria-label="펜과 마우스로 그리는 필기 영역"></canvas>
    </section>`:''}</div>
    <dialog class="quiz-stats-dialog" aria-labelledby="quiz-stats-title">
@@ -664,7 +666,7 @@
     <p class="help quiz-stats-note">성숙 문제는 복습 간격이 21일 이상인 문제입니다.</p>`;
    dialog.showModal();
   };
-  const ink=desktopInk?globalThis.SemuonQuizInk?.mount($('.quiz-ink-tools'),$('#quiz-ink-paper')):null;
+  const ink=desktopInk?globalThis.SemuonQuizInk?.mount($('.quiz-ink-tools'),$('#quiz-ink-paper'),$('#quiz-ink-question')):null;
   if(desktopInk){
    const workspace=$('.quiz-workspace'),splitter=$('.quiz-splitter'),ratioKey='semuon-tax2-quiz-split-'+(employee?'employee':course);
    let ratio=50,drag=null;try{const value=Number(localStorage.getItem(ratioKey));if(value>=25&&value<=75)ratio=value}catch(_){}
@@ -778,7 +780,7 @@
   function renderQuestion(focus=false){
    const question=questions[position],attempt=attempts.get(question);
    const markId=question.variant===undefined?question.id:question.id+'-v'+question.variant;
-   const layout=card.parentElement.parentElement;
+   const layout=card.closest('.quiz-workspace');
    layout.classList.toggle('employee-family-layout',Boolean(question.family));
    const savedMemo=C.quizNotes(storedSnapshot()).get(question.id)?.text||'';
    ink?.show(question);
