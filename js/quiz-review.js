@@ -71,6 +71,7 @@
  const criteria={'self':'본인 공제','spouse-wage':'배우자 · 근로소득 한도','disability-age':'장애인 · 나이 예외','child-age':'자녀 · 나이 요건','parent-age':'부모 · 나이 요건','wage-limit':'근로소득 총급여 한도','income-amount':'연간 소득금액 한도','daily-income':'일용근로소득 구분','disability-income':'장애인 · 소득 요건'};
  Object.assign(criteria,{'sibling-age':'형제자매 · 나이 요건','retirement-income':'퇴직소득금액','capital-income':'양도소득금액','pension-income':'연금소득금액','other-income':'기타소득금액','combined-income':'소득금액 합산','separate-income':'분리과세소득 구분','exempt-income':'비과세소득 구분'});
  Object.assign(criteria,{'employee-basic':'사원 등록 · 기본사항','family-registration':'사원 등록 · 부양가족명세','childcare-import':'6세 이하 보육수당 대상자 불러오기'});
+ Object.assign(criteria,{'senior-deduction':'경로우대 추가공제','disability-deduction':'장애인 추가공제','household-deduction':'부녀자·한부모 공제','birth-adoption-credit':'출산·입양 세액공제','child-tax-credit':'자녀세액공제'});
  function weaknesses(events=[],start='0000-00-00',end='9999-12-31',now=Date.now()){
   const groups=new Map();
   for(const event of recent(events.filter(e=>Date.parse(e.at)<=now),start,end)){

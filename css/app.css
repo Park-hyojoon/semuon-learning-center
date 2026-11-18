@@ -496,6 +496,23 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
 .klab-workspace>.withholding-quiz{max-width:none}
 .klab-layout{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:14px;margin-top:12px;align-items:start}
 .klab-material,.klab-entry{min-width:0;margin:0;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.klab-detailed{grid-template-columns:minmax(110px,.2fr) minmax(0,1fr);gap:10px}
+.klab-detailed>.klab-material{grid-column:1/-1}
+.klab-detailed .klab-material-body{display:grid;grid-template-columns:minmax(0,.75fr) minmax(0,1.25fr);gap:12px;align-items:start}
+.klab-detailed .klab-material .klab-employee{grid-template-columns:minmax(0,1fr);margin:0}
+.klab-roster{min-width:0;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:10px}
+.klab-roster h3{margin:0 0 6px;font-size:var(--font-ui);color:var(--primary)}
+.klab-roster tbody tr{background:var(--soft);font-weight:700}
+.klab-family-scroll{max-width:100%;overflow:auto}
+.semuon .klab-family-grid{min-width:920px;width:100%;table-layout:auto;font-size:var(--font-ui);line-height:1.4}
+.klab-family-grid :is(th,td){padding:4px;vertical-align:middle;white-space:nowrap;text-align:center}
+.klab-family-grid :is(th,td):nth-child(3){min-width:135px;font-variant-numeric:tabular-nums}
+.klab-family-grid td:nth-child(2){min-width:75px}
+.klab-family-grid td label>span{position:absolute;inline-size:1px;block-size:1px;overflow:hidden;clip-path:inset(50%)}
+.klab-family-grid label :is(input,select){min-width:4.5em}
+.klab-family-grid td:first-child select{min-width:5em}
+.klab-family-grid td select{padding-inline:3px}
+.klab-family-grid td:nth-child(9) select{min-width:6.5em}
 .klab-material>summary{padding:10px 12px;font-weight:700;color:var(--primary);cursor:pointer}
 .klab-material[open]>summary{border-bottom:1px solid var(--line)}
 .klab-material-body{padding:12px}
@@ -523,6 +540,17 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
 .klab-field-results ul{margin:6px 0;padding-inline-start:1.3em;overflow-wrap:anywhere}
 @container quiz-question (max-width:1050px){.klab-family-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @container quiz-question (max-width:830px){.klab-layout{grid-template-columns:minmax(0,1fr)}}
+@container quiz-question (max-width:830px){.klab-detailed .klab-material-body{grid-template-columns:minmax(0,1fr)}}
+@container quiz-question (max-width:600px){
+ .semuon .klab-family-grid,.klab-family-grid tbody{display:block;min-width:0}
+ .klab-family-grid thead,.klab-family-grid .klab-na{display:none}
+ .klab-family-grid tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:8px 0;border-bottom:1px solid var(--line)}
+ .klab-family-grid :is(th,td):nth-child(n){display:block;min-width:0;padding:0;border:0;text-align:start}
+ .klab-family-grid .klab-na:nth-child(n){display:none}
+ .klab-family-grid td:nth-child(3),.klab-family-grid th[scope=row]{grid-column:1/-1}
+ .klab-family-grid td label>span{position:static;inline-size:auto;block-size:auto;clip-path:none}
+ .klab-family-grid label :is(input,select){font-size:max(16px,var(--font-ui))}
+}
 @container quiz-question (max-width:410px){
  .klab-entry{padding:8px}
  .klab-basic-grid>label:has(input[maxlength="14"]),.klab-family-row>label:nth-child(n+3){grid-column:1/-1}

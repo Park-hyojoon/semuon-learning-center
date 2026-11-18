@@ -611,51 +611,75 @@
   }
   return children.size;
  }
- function employeeRegistration(){
+ function employeeRegistration(detailed=false){
   const base=employeeFamily(),year=base.family.year;
   const info=Object.fromEntries(base.family.employee);
-  const [self,spouse,childA,childB,father]=base.family.rows;
+  const [self,spouse,childA,childB,father,mother,sibling]=base.family.rows;
+  const employeeNumber=detailed?self.rrn.slice(0,7)+'2'+self.rrn.slice(8):self.rrn;
   const choice=(...options)=>[['','선택'],...options];
   const departments=choice(['management','관리부'],['accounting','회계부'],['general','총무부']);
   const basicFields=[
    {key:'employee-code',label:'사번',input:'code',expected:info.사원번호},
    {key:'employee-name',label:'성명',expected:info.성명},
-   {key:'employee-rrn',label:'가상 주민등록번호',input:'rrn',expected:self.rrn},
+   {key:'employee-rrn',label:'가상 주민등록번호',input:'rrn',expected:employeeNumber},
    {key:'hire-date',label:'입사일자',input:'date',expected:info.입사일자},
    {key:'department',label:'근무부서',options:departments,expected:departments.find(([,label])=>label===info.근무부서)[0]},
    {key:'nationality',label:'내·외국인',options:choice(['domestic','내국인'],['foreign','외국인']),expected:'domestic'},
    {key:'residence',label:'거주구분',options:choice(['resident','거주자'],['nonresident','비거주자']),expected:'resident'},
    {key:'household',label:'세대구분',options:choice(['head','세대주'],['member','세대원']),expected:'head'}
   ];
-  const rows=[
-   {...spouse,role:'spouse'},
-   {...childA,role:'child',rrn:'200101-4'+childA.rrn.slice(8),remarks:'소득 없음 · 장애인 아님',eligible:'yes'},
+  const eligible=choice(['yes','여'],['no','부']);
+  const birthAdoption=choice(['none','해당 없음'],['first','첫째'],['second','둘째'],['third','셋째 이상']);
+  const familyPeople=[
+   detailed?{...sibling,role:'child',relation:'자녀',rrn:'110402-3'+sibling.rrn.slice(8),remarks:'소득 없음 · 장애인 아님',eligible:'yes',childCredit:'yes'}:{...spouse,role:'spouse'},
+   {...childA,role:'child',rrn:'200101-4'+childA.rrn.slice(8),remarks:detailed?'소득 없음 · 세법상 장애인 · 2026년 가족관계등록부에 셋째로 입양 신고':'소득 없음 · 장애인 아님',eligible:'yes',disabled:detailed?'yes':'no',birthAdoption:detailed?'third':'none'},
    {...childB,role:'child',rrn:'191231-3'+childB.rrn.slice(8),remarks:'소득 없음 · 장애인 아님',eligible:'yes'},
    {...father,role:'parent'}
-  ].map((row,i)=>({...row,key:row.role+'-'+(i+1),start:basicFields.length+i*4}));
+  ];
+  if(detailed)familyPeople.push({...mother,role:'mother',remarks:'소득 없음 · 장애인 아님',senior:'yes'});
+  const columns=['관계','성명','주민등록번호','기본공제',...(detailed?['경로우대','장애인','출산·입양','자녀세액공제']:[])];
+  const rows=familyPeople.map((row,i)=>({...row,key:row.role+'-'+(i+1),start:basicFields.length+i*columns.length}));
   const relationOptions=choice(['spouse','배우자'],['child','자녀'],['parent','부친'],['mother','모친'],['sibling','형제자매']);
-  const basicOptions=choice(['yes','공제 가능'],['no','공제 불가']);
+  const basicOptions=detailed?eligible:choice(['yes','공제 가능'],['no','공제 불가']);
   const fields=[
    ...basicFields.map(field=>({...field,member:'기본사항',criterion:'employee-basic'})),
    ...rows.flatMap((row,i)=>[
     {key:'relation',label:'관계',options:relationOptions,expected:row.role},
     {key:'name',label:'성명',expected:row.name},
     {key:'rrn',label:'가상 주민등록번호',input:'rrn',expected:row.rrn},
-    {key:'deduction',label:'기본공제',options:basicOptions,expected:row.eligible}
-   ].map(field=>({...field,key:row.key+':'+field.key,label:'가족 '+(i+1)+' · '+field.label,member:'가족 '+(i+1),criterion:'family-registration'}))),
+    {key:'deduction',label:'기본공제',options:basicOptions,expected:row.eligible},
+    ...(detailed?[
+     {key:'senior',label:'경로우대',options:eligible,expected:row.senior||'no',criterion:'senior-deduction'},
+     {key:'disability',label:'장애인',options:eligible,expected:row.disabled||'no',criterion:'disability-deduction'},
+     {key:'birth-adoption',label:'출산·입양',options:birthAdoption,expected:row.birthAdoption||'none',criterion:'birth-adoption-credit'},
+     {key:'child-credit',label:'자녀세액공제',options:eligible,expected:row.childCredit||'no',criterion:'child-tax-credit'}
+    ]:[])
+   ].map(field=>({...field,key:row.key+':'+field.key,label:'가족 '+(i+1)+' · '+field.label,member:'가족 '+(i+1),criterion:field.criterion||'family-registration'}))),
+   ...(detailed?[
+    {key:'self-basic',label:'본인 · 기본공제',options:basicOptions,expected:'yes',member:'본인',criterion:'family-registration'},
+    {key:'self-senior',label:'본인 · 경로우대',options:eligible,expected:'no',member:'본인',criterion:'senior-deduction'},
+    {key:'self-disability',label:'본인 · 장애인',options:eligible,expected:'no',member:'본인',criterion:'disability-deduction'},
+    {key:'self-child-credit',label:'본인 · 자녀세액공제',options:eligible,expected:'no',member:'본인',criterion:'child-tax-credit'},
+    {key:'women-deduction',label:'본인 · 부녀자',options:eligible,expected:'no',member:'본인',criterion:'household-deduction'},
+    {key:'single-parent',label:'본인 · 한부모',options:eligible,expected:'yes',member:'본인',criterion:'household-deduction'}
+   ]:[]),
    {key:'childcare-import',label:'6세 이하 보육수당 대상자 불러오기',input:'import',member:'부양가족명세',criterion:'childcare-import'}
   ];
-  const registration={year,employee:[...base.family.employee.filter(([label])=>label!=='월정급여'),['가상 주민등록번호',self.rrn]],rows,basicCount:basicFields.length};
+  const employee=base.family.employee.filter(([label])=>label!=='월정급여');
+  if(detailed)employee.push(['공제 판단 자료','여성 · 배우자 없음 · 장애인 아님 · 종합소득금액 2,900만 원']);
+  const registration={year,employee:[...employee,['가상 주민등록번호',employeeNumber]],rows,columns,basicCount:basicFields.length,detailed};
   fields.at(-1).expected=String(childcareCount(registration,fields.map(field=>field.expected)));
   return {
-   id:'taxquiz-070',sample:'employee-klab',level:'basic',book:'withholding',variant:base.variant,unit:'사원등록',
-   detail:'기본사항·부양가족명세',topic:'사원 등록 · 보육수당 대상자',
+   id:detailed?'taxquiz-071':'taxquiz-070',sample:'employee-klab',level:'basic',book:'withholding',variant:base.variant,unit:'사원등록',
+   detail:'기본사항·부양가족명세',topic:detailed?'사원 등록 · 기본·추가공제와 보육수당':'사원 등록 · 보육수당 대상자',
    prompt:'가상 사원을 등록하고 부양가족명세를 작성하세요.',
    condition:`${year}년 귀속 · 사원 본인은 기본공제 대상입니다. 가족은 자료 순서대로 입력하고, 주어진 조건 외 생계·부양·중복공제 요건은 충족한다고 봅니다. 주민등록번호는 끝자리가 X인 연습용 번호입니다.`,
    registration,fields,answers:fields.map(field=>field.expected),
    solution:`6세 이하 보육수당 대상자 ${fields.at(-1).expected}명.`,
-   explanation:`${year}년 1월 1일에 정확히 만 6세가 되는 자녀는 포함합니다. 그 전날 만 6세가 된 자녀는 기본공제가 가능하지만 보육수당 연령 요건은 충족하지 않습니다. 부양가족명세를 입력한 뒤 불러오기 결과를 확인합니다.`,
-   articles:['childcare']
+   explanation:detailed?
+    '한부모와 부녀자 공제 요건이 겹치면 한부모 공제만 적용합니다. 모친은 기본공제 대상이면서 70세 이상이므로 경로우대 대상입니다. 부친은 소득요건을 초과해 경로우대도 적용할 수 없습니다. 그해 입양 신고한 막내는 장애인 추가공제와 셋째 이상 출산·입양 공제를 적용합니다. 일반 자녀세액공제는 15세 자녀만 해당합니다. 보육수당 대상자는 1월 1일에 정확히 만 6세가 된 자녀 한 명입니다.':
+    `${year}년 1월 1일에 정확히 만 6세가 되는 자녀는 포함합니다. 그 전날 만 6세가 된 자녀는 기본공제가 가능하지만 보육수당 연령 요건은 충족하지 않습니다. 부양가족명세를 입력한 뒤 불러오기 결과를 확인합니다.`,
+   articles:detailed?[51,'childTax','childcare']:['childcare']
   };
  }
  function caseText(question){
@@ -685,7 +709,7 @@
   const graded=[['basic',basicQuestions(course)],['applied',course==='income'?incomeApplied:withholdingApplied],
    ['advanced',course==='income'?incomeAdvanced:withholdingAdvanced]];
   if(course==='income')graded[0][1].push(...extraIncomeBasics);
-  else graded[0][1].push(...Array.from({length:24},(_,scenario)=>employeeFamily(20261118+scenario,scenario)),employeeRegistration());
+  else graded[0][1].push(...Array.from({length:24},(_,scenario)=>employeeFamily(20261118+scenario,scenario)),employeeRegistration(),employeeRegistration(true));
   return graded.flatMap(([level,list])=>list.map(question=>({...question,level,book:question.book||course})))
    .sort((a,b)=>units[course].indexOf(a.unit)-units[course].indexOf(b.unit));
  }

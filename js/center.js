@@ -561,14 +561,30 @@
   return url.href;
  }
  function registrationFieldsHTML(question){
-  const {year,employee,rows,basicCount}=question.registration;
+  const {year,employee,rows,basicCount,columns,detailed}=question.registration;
   const control=(index,label,source=false)=>{
    const field=question.fields[index],attrs=`name="answer-${index}" aria-label="${esc(field.label)}"${source?' data-childcare-source':''}`;
    const input=field.options? `<select ${attrs}>${field.options.map(([value,text])=>`<option value="${esc(value)}">${esc(text)}</option>`).join('')}</select>`:
     `<input ${attrs} type="${field.input==='date'?'date':'text'}" autocomplete="off"${field.input==='code'?' maxlength="3" inputmode="numeric"':field.input==='rrn'?' maxlength="14" autocapitalize="characters"':' maxlength="32"'}>`;
    return `<label><span data-klab-text>${esc(label)}</span>${input}</label>`;
   };
-  return `<div class="klab-layout">
+  const ownField=(key,label)=>control(question.fields.findIndex(field=>field.key===key),label);
+  const familyEntry=detailed?`<div class="table-scroll klab-family-scroll" tabindex="0" role="region" aria-label="부양가족명세 입력표">
+    <table class="klab-family-grid">
+     <thead><tr>${[...columns.slice(0,4),'부녀자','한부모',...columns.slice(4)].map(label=>`<th scope="col" data-klab-text>${label}</th>`).join('')}</tr></thead>
+     <tbody>
+      <tr><th scope="row" data-klab-text>본인</th><td data-klab-self-name>—</td><td data-klab-self-number>—</td>
+       <td>${ownField('self-basic','기본공제')}</td><td>${ownField('women-deduction','부녀자')}</td><td>${ownField('single-parent','한부모')}</td>
+       <td>${ownField('self-senior','경로우대')}</td><td>${ownField('self-disability','장애인')}</td><td class="klab-na">—</td><td>${ownField('self-child-credit','자녀세액공제')}</td></tr>
+      ${rows.map(({start},i)=>`<tr aria-label="가족 ${i+1}">
+       ${columns.map((label,column)=>`${column===4?'<td class="klab-na">—</td><td class="klab-na">—</td>':''}<td>${control(start+column,label,column===0||column===2)}</td>`).join('')}
+      </tr>`).join('')}
+     </tbody>
+    </table>
+   </div>`:`<div class="klab-family-entries">${rows.map(({start},i)=>`<div class="klab-family-row" role="group" aria-label="가족 ${i+1}">
+    ${columns.map((label,column)=>control(start+column,label,column===0||column===2)).join('')}
+   </div>`).join('')}</div>`;
+  return `<div class="klab-layout${detailed?' klab-detailed':''}">
    <details class="klab-material" open>
     <summary data-klab-text>연습 자료 · ${year}년 귀속</summary>
     <div class="klab-material-body">
@@ -580,6 +596,13 @@
      </table></div>
     </div>
    </details>
+   ${detailed?`<section class="klab-roster" aria-label="사원 목록">
+    <h3 data-klab-text>사원 목록</h3>
+    <div class="table-scroll"><table class="klab-source-table">
+     <thead><tr><th scope="col">사번</th><th scope="col">성명</th></tr></thead>
+     <tbody><tr><td data-klab-self-code>—</td><td data-klab-self-name>—</td></tr></tbody>
+    </table></div>
+   </section>`:''}
    <section class="klab-entry" aria-label="사원 등록 입력">
     <div class="klab-tabs" role="tablist" aria-label="사원 등록 탭">
      <button type="button" id="klab-basic-tab" role="tab" aria-selected="true" aria-controls="klab-basic">기본사항</button>
@@ -589,9 +612,7 @@
      <div class="klab-basic-grid">${question.fields.slice(0,basicCount).map((field,i)=>control(i,field.label)).join('')}</div>
     </div>
     <div id="klab-family" role="tabpanel" aria-labelledby="klab-family-tab" hidden>
-     <div class="klab-family-entries">${rows.map(({start},i)=>`<div class="klab-family-row" role="group" aria-label="가족 ${i+1}">
-      ${control(start,'관계',true)}${control(start+1,'성명')}${control(start+2,'주민등록번호',true)}${control(start+3,'기본공제')}
-     </div>`).join('')}</div>
+     ${familyEntry}
      <div class="row spread klab-childcare">
       <div><strong data-klab-text>6세 이하 보육수당 대상자</strong> <output role="status" id="klab-childcare-count">미반영</output></div>
       <input type="hidden" name="answer-${question.fields.length-1}">
@@ -626,12 +647,20 @@
   function showCount(){
    output.textContent=imported.value===''?'미반영':imported.value+'명';
   }
+  function showEmployee(){
+   if(!question.registration.detailed)return;
+   for(const [i,key] of ['code','name','number'].entries()){
+    const value=quiz.registrationAnswer(question.fields[i],fields[i].value)||'—';
+    form.querySelectorAll('[data-klab-self-'+key+']').forEach(el=>{el.textContent=value});
+   }
+  }
   load.onclick=()=>{
    imported.value=String(quiz.childcareCount(question.registration,values()));
    showCount();
    imported.dispatchEvent(new Event('change',{bubbles:true}));
   };
   const invalidateImport=event=>{
+   if(fields.slice(0,3).includes(event.target))showEmployee();
    if(!event.target.hasAttribute('data-childcare-source'))return;
    imported.value='';
    showCount();
@@ -639,7 +668,7 @@
   form.addEventListener('input',invalidateImport);
   form.addEventListener('change',invalidateImport);
   return {
-   values,showCount,
+   values,restore(){showCount();showEmployee()},
    showResult(results){
     fields.forEach((field,i)=>{
      field.disabled=true;
@@ -670,10 +699,13 @@
    familySeed=raw!==null&&/^\d{1,10}$/.test(raw)&&Number(raw)<=4294967295?Number(raw):crypto.getRandomValues(new Uint32Array(1))[0];
    const url=new URL(location.href);url.searchParams.set('variant',familySeed);history.replaceState(null,'',url);
   }
-  const bank=quiz.questions(course).filter(q=>employee?q.sample===quizSample:!q.registration).map(q=>q.family&&family?quiz.employeeFamily(familySeed,q.scenario):q),attempts=new Map();
+  const all=quiz.questions(course);
+  const savedRegistration=registration&&all.find(q=>q.registration&&q.id===params.get('question'));
+  const bank=all.filter(q=>employee?q.sample===quizSample&&(!registration||dueMode||(savedRegistration?q===savedRegistration:q.registration?.detailed)):!q.registration)
+   .map(q=>q.family&&family?quiz.employeeFamily(familySeed,q.scenario):q),attempts=new Map();
   const today=()=>SemuonProgress.day(Date.now());
   const quizState=()=>Q.analyze(storedSnapshot().quizReviewEvents);
-  const resumeCourse=registration?'employee-klab':course;
+  const resumeCourse=registration?(savedRegistration&&!savedRegistration.registration.detailed?'employee-klab':'employee-klab-details'):course;
   const session=globalThis.SemuonResume?.readQuiz(resumeCourse);
   const restoreQuiz=session?.url===location.href?session:null;
   const drafts=new Map();
@@ -693,7 +725,8 @@
    14:['소득세법 제14조','https://law.go.kr/lsLinkCommonInfo.do?lsJoLnkSeq=1019371607'],
    21:['소득세법 제21조','https://www.law.go.kr/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1026500583'],
    50:['소득세법 제50조','https://www.law.go.kr/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1031985573'],
-   51:['소득세법 제51조','https://www.law.go.kr/lsLinkCommonInfo.do?chrClsCd=010202&lsJoLnkSeq=1031622827'],
+   51:['소득세법 제51조','https://www.law.go.kr/lsLawLinkInfo.do?chrClsCd=010202&lsJoLnkSeq=1000660252'],
+   childTax:['소득세법 제59조의2','https://law.go.kr/LSW/lsLinkCommonInfo.do?lsJoLnkSeq=1032881079'],
    medical:['소득세법 제59조의4','https://www.law.go.kr/LSW/lsLinkCommonInfo.do?lsJoLnkSeq=1018486163'],
    19:['소득세법 제19조','https://law.go.kr/lsLinkCommonInfo.do?lsJoLnkSeq=1022119213'],
    20:['소득세법 제20조','https://www.law.go.kr/법령/소득세법/제20조'],
@@ -1037,14 +1070,14 @@
      const field=form.elements.namedItem('answer-'+i);
      field.value=value;
     });
-    registrationUI?.showCount();
+    registrationUI?.restore();
     showResult(attempt);
    }else if(drafts.has(question)){
     drafts.get(question).forEach((value,i)=>{
      const field=form.elements.namedItem('answer-'+i);
      if(field)field.value=value;
     });
-    registrationUI?.showCount();
+    registrationUI?.restore();
    }
    const answerValues=()=>{
     if(registrationUI)return registrationUI.values();
