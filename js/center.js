@@ -566,7 +566,7 @@
   const {year,employee,rows,basicCount,columns,detailed}=question.registration;
   const control=(index,label,source=false)=>{
    const field=question.fields[index],attrs=`name="answer-${index}" aria-label="${esc(field.label)}"${source?' data-childcare-source':''}`;
-   const input=field.options? `<select ${attrs}>${field.options.map(([value,text])=>`<option value="${esc(value)}">${esc(text)}</option>`).join('')}</select>`:
+   const input=field.options? `<select ${attrs}${field.relationCodes?' title="관계 코드 1~8 · 1을 반복하면 부친/모친 전환"':''}>${field.options.map(([value,text])=>`<option value="${esc(value)}">${esc(text)}</option>`).join('')}</select>`:
     `<input ${attrs} type="${field.input==='date'?'date':'text'}" autocomplete="off"${field.input==='code'?' maxlength="3" inputmode="numeric"':field.input==='rrn'?' maxlength="14" autocapitalize="characters"':' maxlength="32"'}>`;
    return `<label><span data-klab-text>${esc(label)}</span>${input}</label>`;
   };
@@ -575,7 +575,7 @@
     <table class="klab-family-grid">
      <thead><tr>${[...columns.slice(0,4),'부녀자','한부모',...columns.slice(4)].map(label=>`<th scope="col" data-klab-text>${label}</th>`).join('')}</tr></thead>
      <tbody>
-      <tr><th scope="row" data-klab-text>본인</th><td data-klab-self-name>—</td><td data-klab-self-number>—</td>
+      <tr><th scope="row" data-klab-text>0 본인</th><td data-klab-self-name>—</td><td data-klab-self-number>—</td>
        <td>${ownField('self-basic','기본공제')}</td><td>${ownField('women-deduction','부녀자')}</td><td>${ownField('single-parent','한부모')}</td>
        <td>${ownField('self-senior','경로우대')}</td><td>${ownField('self-disability','장애인')}</td><td class="klab-na">—</td><td>${ownField('self-child-credit','자녀세액공제')}</td></tr>
       ${rows.map(({start},i)=>`<tr aria-label="가족 ${i+1}">
@@ -634,6 +634,18 @@
   const imported=fields.at(-1),output=form.querySelector('#klab-childcare-count'),load=form.querySelector('#klab-import-family');
   const tabs=[...form.querySelectorAll('.klab-tabs [role=tab]')];
   const values=()=>question.fields.map((field,i)=>quiz.registrationAnswer(field,fields[i].value));
+  question.fields.forEach((field,i)=>{
+   if(!field.relationCodes)return;
+   const select=fields[i];
+   select.addEventListener('keydown',event=>{
+    if(event.ctrlKey||event.altKey||event.metaKey||event.shiftKey||event.isComposing||event.repeat)return;
+    const matches=Object.keys(field.relationCodes).filter(value=>field.relationCodes[value]===event.key);
+    if(!matches.length)return;
+    event.preventDefault();
+    select.value=matches[(matches.indexOf(select.value)+1)%matches.length];
+    select.dispatchEvent(new Event('change',{bubbles:true}));
+   });
+  });
   function selectTab(index,focus=false){
    tabs.forEach((tab,i)=>{
     tab.setAttribute('aria-selected',String(i===index));
@@ -999,10 +1011,21 @@
        ${answerFields(question)}
       </fieldset>
       <div class="row">
+       ${registration?`<button type="button" class="btn secondary" data-klab-self="pass">✓ 알고 있어요 · 통과</button>
+        <button type="button" class="btn secondary" data-klab-self="retry">↻ 틀렸어요 · 다시 연습</button>
+        <button type="button" class="btn secondary" id="klab-confused">헷갈려요</button>`:''}
        <button type="submit" class="btn">${registration?'채점하기':'정답 확인'}</button>
-       <button type="button" class="btn secondary" id="withholding-quiz-reset" hidden>다시 풀기</button>
+       <button type="button" class="btn secondary" id="withholding-quiz-reset"${registration?'':' hidden'}>${registration?'초기화':'다시 풀기'}</button>
+       ${registration?'<span id="klab-attempt-count" class="help" role="status"></span>':''}
       </div>
+      ${registration?'<p id="klab-self-status" class="help" role="status"></p>':''}
       <p id="withholding-quiz-result" class="feedback" role="status" tabindex="-1" hidden></p>
+      ${registration?`<details class="klab-answer-preview">
+       <summary>정답 · 해설 보기</summary>
+       <p data-klab-text>${esc(question.explanation)}</p>
+       <div class="table-scroll"><table><thead><tr><th scope="col">항목</th><th scope="col">정답</th></tr></thead><tbody>
+        ${quiz.fieldResults(question,question.answers).map(field=>`<tr><th scope="row" data-klab-text>${esc(field.label)}</th><td data-klab-text>${esc(field.expected)}</td></tr>`).join('')}
+       </tbody></table></div></details>`:''}
       <div id="withholding-quiz-explanation" hidden>
        ${question.family?'':`<p><strong>정답</strong> ${esc(question.solution)}</p>`}
        <p>${esc(question.explanation)}</p>
@@ -1063,6 +1086,28 @@
    memoInput.oninput=()=>{memoForm.dataset.dirty='true';memoStatus.textContent='작성 중'};
    memoInput.onchange=memoInput.onblur=()=>flushQuizMemo();
    memoForm.onsubmit=event=>{event.preventDefault();flushQuizMemo()};
+   function showRegistrationCounts(){
+    if(!registrationUI)return;
+    const counted=quizState().get(question.id);
+    $('#klab-attempt-count').textContent='채점 '+(counted?.attempts||0)+'회 · 틀림 '+(counted?.wrong||0)+'회';
+    $('#klab-self-status').textContent=counted?.selfDay===today()?
+     (counted.self.correct?'직접 통과로 기록했습니다.':'다시 연습할 문제로 기록했습니다.'):'';
+   }
+   showRegistrationCounts();
+   if(registrationUI){
+    card.querySelectorAll('[data-klab-self]').forEach(button=>button.onclick=()=>act(()=>{
+     if(problemReportsSyncing){toast('동기화가 끝난 뒤 다시 눌러 주세요.');return}
+     store.update(state=>(state.quizReviewEvents||(state.quizReviewEvents=[])).push({
+      id:crypto.randomUUID(),kind:'self',course,questionId:question.id,correct:button.dataset.klabSelf==='pass',at:new Date().toISOString()
+     }));
+     showRegistrationCounts();
+     if(dueMode)selectQuestions();
+    }));
+    $('#klab-confused').onclick=()=>{
+     memoForm.hidden=false;
+     memoInput.focus();
+    };
+   }
 
    function showRatings(attempt){
     const state=quizState().get(question.id),date=today();
@@ -1119,6 +1164,7 @@
      result.textContent=matched+'/'+results.length+'항목 정확'+(importMissed?' · 부양가족 불러오기가 누락되었습니다.':'');
     }
     showRatings(attempt);
+    showRegistrationCounts();
     attachQuizMarkup();
     globalThis.SemuonMarkup?.retire(markId);
    }

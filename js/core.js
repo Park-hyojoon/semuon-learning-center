@@ -242,8 +242,8 @@
       const events=new Map();
       for(const e of s.quizReviewEvents){
         assert(e&&typeof e.id==='string'&&e.id.length>0&&e.id.length<=100&&!events.has(e.id)&&
-          ['attempt','rating'].includes(e.kind)&&Number.isFinite(Date.parse(e.at)),'손상되거나 중복된 핵심 퀴즈 기록입니다.');
-        if(e.kind==='attempt')assert(/^taxquiz-\d{3,}$/.test(e.questionId)&&['income','withholding'].includes(e.course)&&typeof e.correct==='boolean','핵심 퀴즈의 문항과 채점 내용을 확인해 주세요.');
+          ['attempt','rating','self'].includes(e.kind)&&Number.isFinite(Date.parse(e.at)),'손상되거나 중복된 핵심 퀴즈 기록입니다.');
+        if(e.kind!=='rating')assert(/^taxquiz-\d{3,}$/.test(e.questionId)&&['income','withholding'].includes(e.course)&&typeof e.correct==='boolean','핵심 퀴즈의 문항과 채점 내용을 확인해 주세요.');
         if(e.fieldResults!==undefined){
           assert(e.kind==='attempt'&&typeof e.caseText==='string'&&e.caseText.length>0&&e.caseText.length<=10000&&Number.isInteger(e.variant)&&e.variant>=0&&e.variant<=4294967295&&Array.isArray(e.fieldResults)&&e.fieldResults.length>0&&e.fieldResults.length<=64,'사원등록의 자료와 항목별 결과를 확인해 주세요.');
           const keys=new Set();

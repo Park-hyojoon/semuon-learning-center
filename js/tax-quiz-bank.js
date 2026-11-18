@@ -639,12 +639,14 @@
   if(detailed)familyPeople.push({...mother,role:'mother',remarks:'소득 없음 · 장애인 아님',senior:'yes'});
   const columns=['관계','성명','주민등록번호','기본공제',...(detailed?['경로우대','장애인','출산·입양','자녀세액공제']:[])];
   const rows=familyPeople.map((row,i)=>({...row,key:row.role+'-'+(i+1),start:basicFields.length+i*columns.length}));
-  const relationOptions=choice(['spouse','배우자'],['child','자녀'],['parent','부친'],['mother','모친'],['sibling','형제자매']);
+  const relations=[['parent','부친','1'],['mother','모친','1'],['in-law','배우자의 직계존속','2'],['spouse','배우자','3'],
+   ['child','자녀','4'],['descendant','기타 직계비속','5'],['sibling','형제자매','6'],['recipient','수급자','7'],['foster','위탁아동','8']];
+  const relationOptions=choice(...relations.map(([value,label,code])=>[value,code+' '+label]));
   const basicOptions=detailed?eligible:choice(['yes','공제 가능'],['no','공제 불가']);
   const fields=[
    ...basicFields.map(field=>({...field,member:'기본사항',criterion:'employee-basic'})),
    ...rows.flatMap((row,i)=>[
-    {key:'relation',label:'관계',options:relationOptions,expected:row.role},
+    {key:'relation',label:'관계',options:relationOptions,relationCodes:Object.fromEntries(relations.map(([value,,code])=>[value,code])),expected:row.role},
     {key:'name',label:'성명',expected:row.name},
     {key:'rrn',label:'가상 주민등록번호',input:'rrn',expected:row.rrn},
     {key:'deduction',label:'기본공제',options:basicOptions,expected:row.eligible},

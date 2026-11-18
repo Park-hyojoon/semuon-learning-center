@@ -45,6 +45,18 @@
    card.rating=selfRatings.get(event.id)||null;
    card.plan=nextPlan(card.before,day,event.correct?card.rating||'good':'again');
   }
+  for(const event of sorted){
+   if(event.kind!=='self')continue;
+   const card=cards.get(event.questionId)||{attempts:0,wrong:0,firstDays:0,firstWrong:0,plan:null};
+   card.self=event;
+   card.selfDay=P.day(event.at);
+   cards.set(event.questionId,card);
+  }
+  for(const card of cards.values()){
+   if(card.self&&!card.self.correct&&(!card.first||order(card.first,card.self)<=0)){
+    card.plan=nextPlan(card.plan,card.selfDay,'again');
+   }else if(card.self&&!card.plan)card.plan=nextPlan(null,card.selfDay,'good');
+  }
   return cards;
  }
  function distribution(bank,cards){
@@ -53,7 +65,7 @@
   return stages.map(([id,label,color])=>({id,label,color,count:counts.get(id),ratio:bank.length?counts.get(id)/bank.length:0}));
  }
  function due(bank,cards,date){
-  return bank.filter(q=>cards.get(q.id)?.plan?.due<=date).sort((a,b)=>{
+  return bank.filter(q=>{const card=cards.get(q.id);return card?.plan?.due<=date&&card.selfDay!==date}).sort((a,b)=>{
    const first=cards.get(a.id),second=cards.get(b.id);
    return first.plan.due.localeCompare(second.plan.due)||second.firstWrong-first.firstWrong;
   });
