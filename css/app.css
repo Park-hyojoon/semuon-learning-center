@@ -506,15 +506,18 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
 .klab-roster tbody tr{background:var(--soft);font-weight:700}
 .klab-roster td:nth-child(3){font-size:.9em}
 .klab-family-scroll{max-width:100%;overflow:auto}
-.semuon .klab-family-grid{min-width:920px;width:100%;table-layout:auto;font-size:var(--font-ui);line-height:1.4}
+.semuon .klab-family-grid{min-width:1080px;width:100%;table-layout:auto;font-size:var(--font-ui);line-height:1.4}
 .klab-family-grid :is(th,td){padding:4px;vertical-align:middle;white-space:nowrap;text-align:center}
-.klab-family-grid :is(th,td):nth-child(3){min-width:135px;font-variant-numeric:tabular-nums}
+.klab-family-grid :is(th,td):nth-child(4){min-width:135px;font-variant-numeric:tabular-nums}
 .klab-family-grid td:nth-child(2){min-width:75px}
 .klab-family-grid td label>span{position:absolute;inline-size:1px;block-size:1px;overflow:hidden;clip-path:inset(50%)}
 .klab-family-grid label :is(input,select){min-width:4.5em}
 .klab-family-grid td:first-child select{min-width:5em}
 .klab-family-grid td select{padding-inline:3px}
-.klab-family-grid td:nth-child(9) select{min-width:6.5em}
+.klab-family-grid td:is(:nth-child(3),:nth-child(6),:nth-child(10)) select{min-width:6em}
+.klab-family-grid td:nth-child(12) select{min-width:6.5em}
+.klab-id-controls{display:grid;grid-template-columns:max-content minmax(9em,1fr);align-items:center;gap:4px}
+.klab-family-grid .klab-id-controls select{min-width:0;width:3em}
 .klab-material>summary{padding:10px 12px;font-weight:700;color:var(--primary);cursor:pointer}
 .klab-material[open]>summary{border-bottom:1px solid var(--line)}
 .klab-material-body{padding:12px}
@@ -558,9 +561,11 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
  .klab-family-grid tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:8px 0;border-bottom:1px solid var(--line)}
  .klab-family-grid :is(th,td):nth-child(n){display:block;min-width:0;padding:0;border:0;text-align:start}
  .klab-family-grid .klab-na:nth-child(n){display:none}
- .klab-family-grid td:nth-child(3),.klab-family-grid th[scope=row]{grid-column:1/-1}
+ .klab-family-grid .klab-id-cell,.klab-family-grid th[scope=row]{grid-column:1/-1}
  .klab-family-grid td label>span{position:static;inline-size:auto;block-size:auto;clip-path:none}
  .klab-family-grid label :is(input,select){font-size:max(16px,var(--font-ui))}
+ .klab-id-controls{grid-template-columns:minmax(0,1fr)}
+ .klab-family-grid .klab-id-controls select{width:100%}
 }
 @container quiz-question (max-width:410px){
  .klab-entry{padding:8px}
