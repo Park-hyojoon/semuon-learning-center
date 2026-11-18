@@ -34,7 +34,7 @@
   const links=practiceMenu.map(([id,name,path])=>`<a data-sub-menu-id="${id}" href="${href(path)}" ${page===id?'class="active" aria-current="page"':''}>${name}</a>`);
   return `<details class="app-nav-group" data-menu-id="practice-learning" open>
    <summary><span aria-hidden="true">${icon}</span><span>${label}</span></summary>
-   <div class="app-subnav">${links.join('')}<a data-sub-menu-id="sub:quiz:withholding" href="${href('pages/quiz.html?course=withholding')}" ${page==='quiz'&&quizCourse==='withholding'&&!employeeSample?'class="active" aria-current="page"':''}>원천징수 핵심 퀴즈</a><a data-sub-menu-id="sub:quiz:employee" data-menu-parent-id="sub:quiz:withholding" href="${href('pages/quiz.html?course=withholding&sample=employee-family')}" ${page==='quiz'&&employeeSample?'class="active" aria-current="page"':''}>사원 등록</a></div>
+   <div class="app-subnav">${links.join('')}<a data-sub-menu-id="sub:quiz:withholding" href="${href('pages/quiz.html?course=withholding')}" ${page==='quiz'&&quizCourse==='withholding'&&!employeeSample?'class="active" aria-current="page"':''}>원천징수 핵심 퀴즈</a><a data-sub-menu-id="sub:quiz:employee" href="${href('pages/quiz.html?course=withholding&sample=employee-family')}" ${page==='quiz'&&employeeSample?'class="active" aria-current="page"':''}>사원 등록</a></div>
   </details>`;
  }
  document.body.classList.add('semuon');document.body.innerHTML=`<aside class="app-sidebar"><a class="app-brand" href="${href('index.html')}"><img src="${href('assets/favicon.svg')}" alt=""><span>세무온<small>전산세무 2급 학습센터</small></span></a><button class="btn secondary mobile-menu" aria-expanded="false" aria-controls="app-nav" type="button">☰<span class="sr-only">메뉴 열기</span></button><nav id="app-nav" class="app-nav" aria-label="주 메뉴">${nav.map(([key,icon,label,path])=>key==='theory'?theoryNavigation(icon,label,path):key==='practice-learning'?practiceNavigation(icon,label):key==='settings'?`<details class="app-nav-group ${['settings','database'].includes(page)?'is-active':''}" data-menu-id="settings" open><summary><span>⚙</span><span>설정 · 백업</span></summary><div class="app-subnav"><a href="${href('pages/settings.html')}" ${page==='settings'?'class="active"':''}>설정 · 백업</a><a href="${href('pages/database.html')}" ${page==='database'?'class="active" aria-current="page"':''}>데이터베이스 현황</a></div></details>`:key==='status'?`<details class="app-nav-group ${['progress','map','journal','roadmap'].includes(page)?'is-active':''}" data-menu-id="status" open><summary><span aria-hidden="true">${icon}</span><span>${label}</span></summary><div class="app-subnav"><a href="${href('pages/learning-map.html')}" ${page==='map'?'class="active" aria-current="page"':''}>나의 학습 지도</a><a href="${href('pages/journal.html')}" ${page==='journal'?'class="active" aria-current="page"':''}>학습 기록</a></div></details>`:`<a data-menu-id="${key}" href="${href(path)}" ${key===page?'class="active" aria-current="page"':''}><span aria-hidden="true">${icon}</span><span>${label}</span></a>`).join('')}</nav></aside><main class="app-main"><header class="app-topbar"><p class="app-date">${new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',dateStyle:'full'}).format(new Date())}</p>${SemuonFullscreen.button()}</header><div id="save-status" class="notice error" role="alert" hidden></div><div id="content"></div><footer class="app-footer">세무온 · 전산세무 2급 전용 · <a href="${href('pages/settings.html')}">백업 · 설정</a></footer></main><div class="toast" role="status" hidden></div>`;
@@ -443,7 +443,7 @@
   if(isCurrent())for(const card of cards){
    attachBookReading(card,snapshot().items.find(p=>p.id===card.dataset.problemId),dictionary);
   }
-  try{await script(new URL('js/markup.js?v=20261116-undo',rootURL));if(isCurrent()){SemuonMarkup.attach(container,{shortcuts:()=>C.markupShortcuts(snapshot().settings),onUndo:recordScreenUndo});container.querySelectorAll('[data-problem-id]').forEach(card=>{attachProblemNote(card);if(card.querySelector('.journal-problem-link'))return;const p=snapshot().items.find(p=>p.id===card.dataset.problemId),unitId=p&&(p.subject==='theory'?SemuonCurriculum.classify(p).units[0]:SemuonCurriculum.practiceClassify(p).units[0]),actions=card.querySelector('.qactions');if(unitId&&actions&&!isGeneral(p)){const a=document.createElement('a');a.className='btn ghost journal-problem-link';a.textContent='학습 기록';a.href=href('pages/journal.html?unit='+encodeURIComponent(unitId)+'&problem='+encodeURIComponent(p.id));actions.append(a)}})}}catch(_){}}
+  try{await script(new URL('js/markup.js?v=20261118-quiz',rootURL));if(isCurrent()){SemuonMarkup.attach(container,{shortcuts:()=>C.markupShortcuts(snapshot().settings),onUndo:recordScreenUndo});container.querySelectorAll('[data-problem-id]').forEach(card=>{attachProblemNote(card);if(card.querySelector('.journal-problem-link'))return;const p=snapshot().items.find(p=>p.id===card.dataset.problemId),unitId=p&&(p.subject==='theory'?SemuonCurriculum.classify(p).units[0]:SemuonCurriculum.practiceClassify(p).units[0]),actions=card.querySelector('.qactions');if(unitId&&actions&&!isGeneral(p)){const a=document.createElement('a');a.className='btn ghost journal-problem-link';a.textContent='학습 기록';a.href=href('pages/journal.html?unit='+encodeURIComponent(unitId)+'&problem='+encodeURIComponent(p.id));actions.append(a)}})}}catch(_){}}
  async function loadEntry(subject){await script(new URL('entry/accounts.js',legacyURL));await script(new URL('entry/correction.js?v=1',legacyURL));await script(new URL('entry/'+subject+'.js?v='+(subject==='voucher'?13:12),legacyURL));await script(new URL('account-search.js',legacyURL));css(new URL('entry/common.css',legacyURL));css(new URL('entry/'+subject+'.css',legacyURL));css(new URL('css/entry-flat.css?v=20261116-voucher-answer',rootURL));css(new URL('entry/correction.css?v=1',legacyURL))}
  function arrangeVoucherEvidence(card){
   const workspace=card.querySelector('.answer-workspace');
@@ -766,7 +766,7 @@
      </table>`;
    }
    if(question.choices)return `<div class="withholding-quiz-options">${question.choices.map(([value,label])=>
-    `<label><input type="radio" name="answer-0" value="${value}" required> ${esc(label)}</label>`).join('')}</div>`;
+    `<label><input type="radio" name="answer-0" value="${value}" required> <span>${esc(label)}</span></label>`).join('')}</div>`;
    return `<div class="withholding-quiz-fields">${question.fields.map(({label,options},i)=>`
     <label class="field"><span>${esc(label)}</span>
      ${options
@@ -777,6 +777,7 @@
   }
   function renderQuestion(focus=false){
    const question=questions[position],attempt=attempts.get(question);
+   const markId=question.variant===undefined?question.id:question.id+'-v'+question.variant;
    const layout=card.parentElement.parentElement;
    layout.classList.toggle('employee-family-layout',Boolean(question.family));
    const savedMemo=C.quizNotes(storedSnapshot()).get(question.id)?.text||'';
@@ -789,7 +790,7 @@
    const reference=localPdf
     ?`<a href="${esc(href(book.file+'#page='+pdfPage))}" target="_blank" rel="noopener">${referenceLabel}</a>`
     :referenceLabel;
-   card.innerHTML=`
+   card.innerHTML=`<div data-problem-id="${esc(markId)}">
     <div class="row spread"><span class="pill">${income?'이론':'실무'} · ${esc(question.topic)}</span><span class="help">${esc(difficulty.label)} · ${position+1} / ${questions.length}</span></div>
      <form id="withholding-quiz-form">
       <fieldset>
@@ -820,7 +821,21 @@
      ${questions.length>1?`<nav class="row withholding-quiz-pagination" aria-label="퀴즈 문제 이동">
       <button type="button" class="btn secondary" data-quiz-step="-1"${position===0?' disabled':''}>이전 문제</button>
       <button type="button" class="btn secondary" data-quiz-step="1"${position===questions.length-1?' disabled':''}>다음 문제</button>
-     </nav>`:''}`;
+     </nav>`:''}</div>`;
+   function attachQuizMarkup(){
+    const markup=globalThis.SemuonMarkup;
+    if(!markup)return;
+    card.querySelectorAll([
+     '.pill','#withholding-question','.quiz-question-condition','.quiz-question-facts dt','.quiz-question-facts dd',
+     '.withholding-quiz-options label > span','.withholding-quiz-fields label > span:first-child',
+     '.employee-source h3','.employee-family-heading h3','.employee-meta dt','.employee-meta dd',
+     '.employee-family-table thead th','.employee-family-table tbody tr > :nth-child(-n+4)',
+     '#withholding-quiz-explanation p'
+    ].join(',')).forEach(el=>el.setAttribute('data-mark-text',''));
+    card.querySelectorAll('.employee-feedback summary,.employee-feedback details p').forEach(el=>el.setAttribute('data-mark-text','feedback'));
+    markup.attach(card,{shortcuts:()=>C.markupShortcuts(snapshot().settings),onUndo:recordScreenUndo});
+   }
+   attachQuizMarkup();
    const form=$('#withholding-quiz-form'),grade=form.querySelector('[type=submit]');
    const options=form.querySelector('fieldset'),reset=$('#withholding-quiz-reset');
    const quizReport={course,title:title+" · "+question.topic,prompt:question.prompt,
@@ -897,6 +912,8 @@
      result.textContent=complete===question.family.rows.length?complete+'명 모두 정확합니다.':question.family.rows.length+'명 중 '+complete+'명 정확 · '+(question.family.rows.length-complete)+'명 재확인';
     }
     showRatings(attempt);
+    attachQuizMarkup();
+    globalThis.SemuonMarkup?.retire(markId);
    }
    if(attempt){
     attempt.values.forEach((value,i)=>{
@@ -1079,6 +1096,11 @@
    for(const {id,parent} of descriptors){
     if(!seen.has(id))add([id],seen.has(parent)?children[parent]:root);
    }
+   const practice=children['practice-learning'],withholding='sub:quiz:withholding',employee='sub:quiz:employee';
+   if(raw?.version!==2&&practice.includes(withholding)&&children[withholding].includes(employee)){
+    children[withholding]=children[withholding].filter(id=>id!==employee);
+    practice.splice(practice.indexOf(withholding)+1,0,employee);
+   }
    return{root,children};
   }
   function load(){let v={};try{v=JSON.parse(read(MENU_KEY)||'{}')||{}}catch(_){}const legacy={...cleanSubOrders(v.subOrders),order:v.menuOrder},tree=normalizeTree(v.tree,legacy),parents={};Object.entries(tree.children).forEach(([p,ids])=>ids.forEach(id=>parents[id]=p));const protectedIds=new Set([activeNode]);let next=parents[activeNode];while(next){protectedIds.add(next);next=parents[next]}const hidden=[...new Set((Array.isArray(v.hiddenMenuIds)?v.hiddenMenuIds:[]).map(menuId))].filter(id=>byId.has(id)&&!protectedIds.has(id));return{order:tree.root,hidden,appearance:cleanAppearance(v.appearance),labels:cleanLabels(v.labels),subOrders:tree.children}}
@@ -1146,7 +1168,7 @@
   dialog.querySelector('.menu-cancel').onclick=dialog.querySelector('.menu-settings-close').onclick=()=>dialog.close();
   dialog.addEventListener('close',()=>closeIcons());
   dialog.addEventListener('click',e=>{if(e.target!==dialog)return;const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close()});
-  dialog.querySelector('.menu-save').onclick=()=>{for(const input of dialog.querySelectorAll('.menu-look-controls input,.menu-name-input')){if(input.classList.contains('menu-name-input'))input.setCustomValidity(input.value.trim()?'':'메뉴 이름을 입력해 주세요.');if(!input.reportValidity())return}const value={menuOrder:draft,hiddenMenuIds:draftHidden,appearance:draftAppearance,labels:cleanLabels(draftLabels),subOrders:draftSubOrders,tree:{root:draft,children:draftSubOrders},updatedAt:new Date().toISOString()};if(write(MENU_KEY,JSON.stringify(value))){apply(load());dialog.close();toast('메뉴 설정을 저장했습니다.')}};
+  dialog.querySelector('.menu-save').onclick=()=>{for(const input of dialog.querySelectorAll('.menu-look-controls input,.menu-name-input')){if(input.classList.contains('menu-name-input'))input.setCustomValidity(input.value.trim()?'':'메뉴 이름을 입력해 주세요.');if(!input.reportValidity())return}const value={menuOrder:draft,hiddenMenuIds:draftHidden,appearance:draftAppearance,labels:cleanLabels(draftLabels),subOrders:draftSubOrders,tree:{version:2,root:draft,children:draftSubOrders},updatedAt:new Date().toISOString()};if(write(MENU_KEY,JSON.stringify(value))){apply(load());dialog.close();toast('메뉴 설정을 저장했습니다.')}};
 
   const media=matchMedia('(max-width:760px)'),reopen=document.createElement('button');reopen.type='button';reopen.className='btn secondary sidebar-reopen';reopen.innerHTML='☰ 메뉴';reopen.title='메뉴 펼치기 (Ctrl+B)';document.body.append(reopen);
   let collapsed=read(SIDEBAR_KEY)==='1';
@@ -1244,5 +1266,5 @@
   resume?.ready();
   return;
  }
- try{if(page==='home')home();else if(C.SUBJECTS.includes(page)){const id=new URLSearchParams(location.search).get('id'),p=snapshot().items.find(p=>p.id===id&&p.subject===page);if(TrainingComboReview.active(comboKey))await solveCombo();else if(p)await solve(p);else{problemList(page);if(id&&storedSnapshot().items.some(p=>p.id===id&&!available(p)))toast('105회 이하 기출문제는 보관 중이며 학습 대상에서 제외했습니다.');}}else if(page==='topic'||page==='forms')problemList(page);else if(page==='quiz')withholdingQuiz(quizCourse);else if(page==='review')review();else if(page==='map')learningMap();else if(page==='roadmap')SemuonRoadmap.mount(content,{getState:storedSnapshot,save:fn=>store.update(fn),href,notify:toast});else if(page==='journal')journalPage();else if(page==='register'){location.replace(href('index.html'));return}else if(page==='database'){await script(new URL('js/database.js?v=20261029-3',rootURL));SemuonDatabase.mount(content,storedSnapshot().items,href)}else if(page==='settings')settings();else if(page==='guide')guide();else content.innerHTML=head('실무 훈련','일반전표 또는 매입매출전표를 선택하세요.')+`<div class="row"><a class="btn" href="${href('pages/general.html')}">일반전표 입력</a><a class="btn" href="${href('pages/voucher.html')}">매입매출전표 입력</a></div>`}catch(e){fail(e)}finally{resume?.ready()}
+ try{if(page==='home')home();else if(C.SUBJECTS.includes(page)){const id=new URLSearchParams(location.search).get('id'),p=snapshot().items.find(p=>p.id===id&&p.subject===page);if(TrainingComboReview.active(comboKey))await solveCombo();else if(p)await solve(p);else{problemList(page);if(id&&storedSnapshot().items.some(p=>p.id===id&&!available(p)))toast('105회 이하 기출문제는 보관 중이며 학습 대상에서 제외했습니다.');}}else if(page==='topic'||page==='forms')problemList(page);else if(page==='quiz'){try{await script(new URL('js/markup.js?v=20261118-quiz',rootURL))}catch(_){}withholdingQuiz(quizCourse)}else if(page==='review')review();else if(page==='map')learningMap();else if(page==='roadmap')SemuonRoadmap.mount(content,{getState:storedSnapshot,save:fn=>store.update(fn),href,notify:toast});else if(page==='journal')journalPage();else if(page==='register'){location.replace(href('index.html'));return}else if(page==='database'){await script(new URL('js/database.js?v=20261029-3',rootURL));SemuonDatabase.mount(content,storedSnapshot().items,href)}else if(page==='settings')settings();else if(page==='guide')guide();else content.innerHTML=head('실무 훈련','일반전표 또는 매입매출전표를 선택하세요.')+`<div class="row"><a class="btn" href="${href('pages/general.html')}">일반전표 입력</a><a class="btn" href="${href('pages/voucher.html')}">매입매출전표 입력</a></div>`}catch(e){fail(e)}finally{resume?.ready()}
 })();
