@@ -37,14 +37,16 @@ function weekHeading(d){const names=d.weeks[d.phase].tasks.filter(t=>t.refs.leng
 
 function calendarHTML(config,today,month){
  const[y,m]=month.split('-').map(Number),offset=new Date(Date.UTC(y,m-1,1)).getUTCDay(),count=new Date(Date.UTC(y,m,0)).getUTCDate(),cells=[],valid=P.validDate(config.startDate)&&P.validDate(config.targetDate)&&config.startDate<=config.targetDate;
+ const visibleStart=valid&&config.startDate>today?config.startDate:today;
  for(let i=0;i<42;i++){
   const n=i-offset+1;
   if(n<1||n>count){cells.push('<td></td>');continue}
   const date=month+'-'+String(n).padStart(2,'0');
   const start=valid&&date===config.startDate,end=valid&&date===config.targetDate;
-  const showStart=start&&date>=today,within=valid&&date>=config.startDate&&date<=config.targetDate;
+  const showStart=start&&date>=today,within=valid&&date>=visibleStart&&date<=config.targetDate;
+  const startsBand=within&&date===visibleStart;
   const isToday=date===today;
-  cells.push(`<td data-date="${date}" class="${within?'in-range ':''}${start?'range-start ':''}${end?'range-end':''}"><time datetime="${date}" ${showStart||end?`data-range-edge="${showStart?'start':'end'}"`:''} ${isToday?'aria-current="date"':''} class="${isToday?'is-today ':''}${isToday||end?'range-edge':''}" title="${date}${showStart?' · 훈련 시작일, 드래그하여 이동':''}${end?' · 훈련 목표일, 드래그하여 이동':''}${isToday?' · 오늘':''}">${n}</time></td>`);
+  cells.push(`<td data-date="${date}" class="${within?'in-range ':''}${startsBand?'range-start ':''}${end?'range-end':''}"><time datetime="${date}" ${showStart||end?`data-range-edge="${showStart?'start':'end'}"`:''} ${isToday?'aria-current="date"':''} class="${isToday?'is-today ':''}${isToday||end?'range-edge':''}" title="${date}${showStart?' · 훈련 시작일, 드래그하여 이동':''}${end?' · 훈련 목표일, 드래그하여 이동':''}${isToday?' · 오늘':''}">${n}</time></td>`);
  }
  return`<div class="rm-calendar-nav"><button type="button" class="btn ghost" data-calendar-step="-1" aria-label="이전 달">‹</button><strong>${y}년 ${m}월</strong><button type="button" class="btn ghost" data-calendar-step="1" aria-label="다음 달">›</button></div><table class="rm-range-calendar" aria-label="${y}년 ${m}월 훈련 기간 달력"><thead><tr>${['일','월','화','수','목','금','토'].map(d=>'<th scope="col">'+d+'</th>').join('')}</tr></thead><tbody>${Array.from({length:6},(_,i)=>'<tr>'+cells.slice(i*7,i*7+7).join('')+'</tr>').join('')}</tbody></table><div class="rm-calendar-key"><span><i></i>훈련 기간</span><span class="rm-today-key"><i></i>오늘</span><span class="rm-end-key"><i></i>목표일</span></div>`;
 }
