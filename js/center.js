@@ -2,9 +2,11 @@
 (async function(){
  'use strict';const C=SemuonCore,R=TrainingReview,V=SemuonReviewPlan,$=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)],page=document.body.dataset.page||'home';
  const rootURL=new URL(page==='home'?'./':'../',location.href),legacyURL=new URL('shared/',rootURL);
- const routeParams=new URLSearchParams(location.search);
- const registrationWindow=page==='quiz'&&routeParams.get('course')!=='income'&&routeParams.get('sample')==='employee-klab'&&routeParams.get('view')==='window';
- const resume=registrationWindow?null:globalThis.SemuonResume?.open(rootURL,page);
+ if(page==='quiz'&&new URLSearchParams(location.search).get('sample')==='employee-klab'){
+  location.replace(new URL('pages/quiz.html?course=withholding&sample=employee-family',rootURL));
+  return;
+ }
+ const resume=globalThis.SemuonResume?.open(rootURL,page);
  if(resume?.redirected)return;
  const store=SemuonStore.open();
  if(page==='roadmap'){location.replace(new URL(location.hash==='#rm-add'?'pages/journal.html#rm-add':'index.html',rootURL));return}
@@ -20,10 +22,8 @@
  ];
  const quizCourse=new URLSearchParams(location.search).get('course')==='income'?'income':'withholding';
  const quizSample=quizCourse==='withholding'?new URLSearchParams(location.search).get('sample'):'';
- const registrationSample=quizSample==='employee-klab';
  const employeeSample=['employee','employee-family'].includes(quizSample);
  const employeePath='pages/quiz.html?course=withholding&sample=employee-family';
- const registrationPath='pages/quiz.html?course=withholding&sample=employee-klab';
  const conceptGuide=$('#concept-guide-template')?.content;
  const conceptSubjects=[['fa','재무회계'],['vat','부가가치세법'],['cost','원가회계'],['income','소득세법']];
  const conceptArticles=conceptGuide?[...conceptGuide.querySelectorAll('[data-concept-subject]')]:[];
@@ -40,7 +40,7 @@
   const links=practiceMenu.map(([id,name,path])=>`<a data-sub-menu-id="${id}" href="${href(path)}" ${page===id?'class="active" aria-current="page"':''}>${name}</a>`);
   return `<details class="app-nav-group" data-menu-id="practice-learning" open>
    <summary><span aria-hidden="true">${icon}</span><span>${label}</span></summary>
-   <div class="app-subnav">${links.join('')}<a data-sub-menu-id="sub:quiz:withholding" href="${href('pages/quiz.html?course=withholding')}" ${page==='quiz'&&quizCourse==='withholding'&&!employeeSample&&!registrationSample?'class="active" aria-current="page"':''}>원천징수 핵심 퀴즈</a><a data-sub-menu-id="sub:quiz:employee" href="${href(employeePath)}" ${page==='quiz'&&employeeSample?'class="active" aria-current="page"':''}>사원 등록</a><a data-sub-menu-id="sub:quiz:employee-klab" data-menu-parent-id="sub:quiz:employee" href="${href(registrationPath)}" ${page==='quiz'&&registrationSample?'class="active" aria-current="page"':''}>K랩</a></div>
+   <div class="app-subnav">${links.join('')}<a data-sub-menu-id="sub:quiz:withholding" href="${href('pages/quiz.html?course=withholding')}" ${page==='quiz'&&quizCourse==='withholding'&&!employeeSample?'class="active" aria-current="page"':''}>원천징수 핵심 퀴즈</a><a data-sub-menu-id="sub:quiz:employee" href="${href(employeePath)}" ${page==='quiz'&&employeeSample?'class="active" aria-current="page"':''}>사원 등록</a></div>
   </details>`;
  }
  document.body.classList.add('semuon');document.body.innerHTML=`<aside class="app-sidebar"><a class="app-brand" href="${href('index.html')}"><img src="${href('assets/favicon.svg')}" alt=""><span>세무온<small>전산세무 2급 학습센터</small></span></a><button class="btn secondary mobile-menu" aria-expanded="false" aria-controls="app-nav" type="button">☰<span class="sr-only">메뉴 열기</span></button><nav id="app-nav" class="app-nav" aria-label="주 메뉴">${nav.map(([key,icon,label,path])=>key==='theory'?theoryNavigation(icon,label,path):key==='practice-learning'?practiceNavigation(icon,label):key==='settings'?`<details class="app-nav-group ${['settings','database'].includes(page)?'is-active':''}" data-menu-id="settings" open><summary><span>⚙</span><span>설정 · 백업</span></summary><div class="app-subnav"><a href="${href('pages/settings.html')}" ${page==='settings'?'class="active"':''}>설정 · 백업</a><a href="${href('pages/database.html')}" ${page==='database'?'class="active" aria-current="page"':''}>데이터베이스 현황</a></div></details>`:key==='status'?`<details class="app-nav-group ${['progress','map','journal','roadmap'].includes(page)?'is-active':''}" data-menu-id="status" open><summary><span aria-hidden="true">${icon}</span><span>${label}</span></summary><div class="app-subnav"><a href="${href('pages/learning-map.html')}" ${page==='map'?'class="active" aria-current="page"':''}>나의 학습 지도</a><a href="${href('pages/journal.html')}" ${page==='journal'?'class="active" aria-current="page"':''}>학습 기록</a></div></details>`:`<a data-menu-id="${key}" href="${href(path)}" ${key===page?'class="active" aria-current="page"':''}><span aria-hidden="true">${icon}</span><span>${label}</span></a>`).join('')}</nav></aside><main class="app-main"><header class="app-topbar"><p class="app-date">${new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',dateStyle:'full'}).format(new Date())}</p>${SemuonFullscreen.button()}</header><div id="save-status" class="notice error" role="alert" hidden></div><div id="content"></div><footer class="app-footer">세무온 · 전산세무 2급 전용 · <a href="${href('pages/settings.html')}">백업 · 설정</a></footer></main><div class="toast" role="status" hidden></div>`;
@@ -562,276 +562,9 @@
   }
   return url.href;
  }
- function registrationFieldsHTML(question){
-  const {year,employee,rows,basicCount,columns,detailed}=question.registration;
-  const control=(index,label,source=false)=>{
-   const field=question.fields[index],attrs=`name="answer-${index}" data-klab-criterion="${esc(field.criterion)}" aria-label="${esc(field.label)}"${source?' data-childcare-source':''}`;
-   const compact=detailed&&(/(?:id-type|:disability|self-disability|:birth-adoption)$/.test(field.key)?'number':
-    field.key==='self-basic'||field.key.endsWith(':deduction')?'label':
-    field.options?.length===3&&field.options.some(([,text])=>text==='0 부')&&field.options.some(([,text])=>text==='1 여')?'mark':'');
-   const input=field.options? `<select ${attrs}${field.relationCodes?' title="관계 코드 1~8 · 1을 반복하면 부친/모친 전환"':''}>${field.options.map(([value,text])=>`<option value="${esc(value)}">${esc(text)}</option>`).join('')}</select>`:
-    `<input ${attrs} type="${field.input==='date'?'date':'text'}" autocomplete="off"${field.input==='code'?' maxlength="3" inputmode="numeric"':field.input==='rrn'?' maxlength="14" autocapitalize="characters"':' maxlength="32"'}>`;
-   const displayed=compact?`<span class="klab-compact-choice" data-klab-display="${compact}">${input}<span aria-hidden="true"></span></span>`:input;
-   return `<label><span data-klab-text>${esc(label)}</span>${displayed}</label>`;
-  };
-  const ownField=(key,label)=>control(question.fields.findIndex(field=>field.key===key),label);
-  const familyHeaders=['연말관계','성명','내/외국인','주민(외국인, 여권)번호','나이','기본공제','부녀자','한부모','경로우대','장애인','자녀(간이)','출산·입양','자녀(세액)','위탁관계'];
-  const unused='<td class="klab-na">—</td>';
-  const ageCell=index=>`<td data-klab-age="${index}" title="귀속연도 말 기준 나이">—</td>`;
-  const familyEntry=detailed?`<div class="table-scroll klab-family-scroll" tabindex="0" role="region" aria-label="부양가족명세 입력표">
-    <table class="klab-family-grid">
-     <thead><tr>${familyHeaders.map(label=>`<th scope="col" data-klab-text>${label}</th>`).join('')}</tr></thead>
-     <tbody>
-      <tr><th scope="row" data-klab-text>0 본인</th><td data-klab-self-name>—</td><td><label><span>내/외국인</span>
-       <select data-klab-self-nationality aria-label="본인 · 내/외국인">${question.fields[5].options.map(([value,label])=>`<option value="${value}">${label}</option>`).join('')}</select>
-       </label></td><td class="klab-id-cell"><div class="klab-id-controls">${ownField('self-id-type','번호 구분')}<span data-klab-self-number>—</span></div></td>${ageCell(2)}
-       <td>${ownField('self-basic','기본공제')}</td><td>${ownField('women-deduction','부녀자')}</td><td>${ownField('single-parent','한부모')}</td>
-       <td>${ownField('self-senior','경로우대')}</td><td>${ownField('self-disability','장애인')}</td>${unused}${unused}<td>${ownField('self-child-credit','자녀(세액)')}</td>${unused}</tr>
-      ${rows.map(({start},i)=>`<tr aria-label="가족 ${i+1}">
-       <td>${control(start,'연말관계',true)}</td><td>${control(start+1,'성명')}</td><td>${control(start+8,'내/외국인')}</td>
-       <td class="klab-id-cell"><div class="klab-id-controls">${control(start+9,'번호 구분')}${control(start+2,'주민(외국인, 여권)번호',true)}</div></td>${ageCell(start+2)}
-       <td>${control(start+3,'기본공제')}</td>${unused}${unused}<td>${control(start+4,'경로우대')}</td><td>${control(start+5,'장애인')}</td>
-       <td data-klab-simple-child>${control(start+10,'자녀(간이)')}</td><td>${control(start+6,'출산·입양')}</td><td>${control(start+7,'자녀(세액)')}</td>${unused}
-      </tr>`).join('')}
-     </tbody>
-    </table>
-   </div>`:`<div class="klab-family-entries">${rows.map(({start},i)=>`<div class="klab-family-row" role="group" aria-label="가족 ${i+1}">
-    ${columns.map((label,column)=>control(start+column,label,column===0||column===2)).join('')}
-   </div>`).join('')}</div>`;
-  return `<div class="klab-layout${detailed?' klab-detailed':''}">
-   <details class="klab-material"${registrationWindow?'':' open'}>
-    <summary data-klab-text>연습 자료 · ${year}년 귀속</summary>
-    <div class="klab-material-body">
-     <dl class="klab-employee">${employee.map(([label,value])=>`<div><dt data-klab-text>${esc(label)}</dt><dd data-klab-text>${esc(value)}</dd></div>`).join('')}</dl>
-     <div class="table-scroll"><table class="klab-source-table">
-      <caption class="sr-only">연습용 부양가족 자료</caption>
-      <thead><tr>${['관계','성명','가상 주민등록번호','비고'].map(label=>`<th scope="col" data-klab-text>${label}</th>`).join('')}</tr></thead>
-      <tbody>${rows.map(row=>`<tr>${[row.relation,row.name,row.rrn,row.remarks].map(value=>`<td data-klab-text>${esc(value)}</td>`).join('')}</tr>`).join('')}</tbody>
-     </table></div>
-    </div>
-   </details>
-   ${detailed?`<section class="klab-roster" aria-label="사원 목록">
-    <h3 data-klab-text>사원 목록</h3>
-    <div class="table-scroll"><table class="klab-source-table">
-     <thead><tr><th scope="col">사번</th><th scope="col">성명</th><th scope="col">주민등록번호</th></tr></thead>
-     <tbody><tr><td data-klab-self-code>—</td><td data-klab-self-name>—</td><td data-klab-self-number>—</td></tr></tbody>
-    </table></div>
-   </section>`:''}
-   <section class="klab-entry" aria-label="사원 등록 입력">
-    <div class="klab-tabs" role="tablist" aria-label="사원 등록 탭">
-     <button type="button" id="klab-basic-tab" role="tab" aria-selected="true" aria-controls="klab-basic">기본사항</button>
-     <button type="button" id="klab-family-tab" role="tab" aria-selected="false" aria-controls="klab-family" tabindex="-1">부양가족명세</button>
-    </div>
-    <div id="klab-basic" role="tabpanel" aria-labelledby="klab-basic-tab">
-     <div class="klab-basic-grid">${question.fields.slice(0,basicCount).map((field,i)=>control(i,field.label)).join('')}</div>
-    </div>
-    <div id="klab-family" role="tabpanel" aria-labelledby="klab-family-tab" hidden>
-     ${familyEntry}
-     <div class="row spread klab-childcare">
-      <div><strong data-klab-text>6세 이하 보육수당 대상자</strong> <output role="status" id="klab-childcare-count">미반영</output></div>
-      <input type="hidden" name="answer-${question.fields.length-1}">
-      <button type="button" class="btn secondary" id="klab-import-family" aria-describedby="klab-childcare-count">부양가족 불러오기</button>
-     </div>
-     ${detailed?`<section class="klab-deduction-summary" aria-label="입력한 공제 현황">
-      <h3>공제 현황</h3>
-      <dl>${[['basic','기본공제'],['senior','경로우대'],['disability','장애인'],['children','자녀세액공제']].map(([key,label])=>
-       `<div><dt>${label}</dt><dd data-klab-total="${key}">0명</dd></div>`).join('')}</dl>
-     </section>`:''}
-    </div>
-   </section>
-  </div>`;
- }
- function bindRegistration(form,question){
-  const quiz=SemuonTaxQuiz,fields=question.fields.map((_,i)=>form.elements.namedItem('answer-'+i));
-  const {detailed,rows,year}=question.registration;
-  const imported=fields.at(-1),output=form.querySelector('#klab-childcare-count'),load=form.querySelector('#klab-import-family');
-  const tabs=[...form.querySelectorAll('.klab-tabs [role=tab]')];
-  const selfNationality=form.querySelector('[data-klab-self-nationality]');
-  const unavailable=new Map();
-  const draftValues=()=>question.fields.map((field,i)=>quiz.registrationAnswer(field,fields[i].value));
-  const values=()=>draftValues().map((value,i)=>unavailable.get(fields[i])??value);
-  const compactChoices=[...form.querySelectorAll('[data-klab-display]')];
-  function showCompactChoices(){
-   for(const container of compactChoices){
-    const select=container.querySelector('select'),output=container.querySelector('span');
-    const selected=select.value?select.selectedOptions[0]?.textContent||'':'';
-    const locked=unavailable.has(select);
-    container.title=locked?'해당 없음':[selected,'숫자 키로 선택'].filter(Boolean).join(' · ');
-    output.textContent=locked?'':container.dataset.klabDisplay==='mark'?(selected==='1 여'?'○':''):
-     container.dataset.klabDisplay==='number'?selected.charAt(0):selected.replace(/^\d /,'');
-   }
-  }
-  function bindCodes(select,field){
-   if(!field.options?.some(([,label])=>/^\d /.test(label)))return;
-   if(select.closest('.klab-compact-choice'))select.addEventListener('mousedown',event=>{
-    if(event.button!==0||document.activeElement===select||event.sourceCapabilities?.firesTouchEvents||
-     !matchMedia('(any-pointer: fine)').matches)return;
-    event.preventDefault();
-    select.focus();
-   });
-   select.addEventListener('keydown',event=>{
-    if(event.ctrlKey||event.altKey||event.metaKey||event.shiftKey||event.isComposing||event.repeat||!/^\d$/.test(event.key))return;
-    const matches=field.options.filter(([,label])=>label.startsWith(event.key+' ')).map(([value])=>value);
-    if(!matches.length)return;
-    event.preventDefault();
-    select.value=matches[(matches.indexOf(select.value)+1)%matches.length];
-    select.dispatchEvent(new Event('change',{bubbles:true}));
-   });
-  }
-  question.fields.forEach((field,i)=>bindCodes(fields[i],field));
-  if(selfNationality){
-   bindCodes(selfNationality,question.fields[5]);
-   selfNationality.onchange=()=>{
-    fields[5].value=selfNationality.value;
-    fields[5].dispatchEvent(new Event('change',{bubbles:true}));
-   };
-  }
-  form.querySelector('.klab-family-grid')?.addEventListener('keydown',event=>{
-   const direction=event.key==='ArrowLeft'?-1:event.key==='ArrowRight'?1:0;
-   const field=event.target;
-   if(!direction||event.defaultPrevented||event.altKey||event.ctrlKey||event.metaKey||event.shiftKey||
-    event.isComposing||!field.matches('input,select'))return;
-   if(field.matches('input')&&(field.selectionStart!==field.selectionEnd||
-    field.selectionStart!==(direction<0?0:field.value.length)))return;
-   const row=field.closest('tr');
-   const controls=[...row.querySelectorAll('input:not(:disabled),select:not(:disabled)')];
-   const simple=direction<0&&field.dataset.klabCriterion==='child-tax-credit'?
-    row.querySelector('[data-klab-simple-child] select:not(:disabled)'):null;
-   const next=simple||controls[controls.indexOf(field)+direction];
-   if(!next)return;
-   event.preventDefault();
-   next.focus();
-  });
-  function selectTab(index,focus=false){
-   tabs.forEach((tab,i)=>{
-    tab.setAttribute('aria-selected',String(i===index));
-    tab.tabIndex=i===index?0:-1;
-    form.querySelector('#'+tab.getAttribute('aria-controls')).hidden=i!==index;
-   });
-   if(focus)tabs[index].focus();
-  }
-  tabs.forEach((tab,i)=>{
-   tab.onclick=()=>selectTab(i);
-   tab.onkeydown=event=>{
-    const next={ArrowLeft:1-i,ArrowRight:1-i,Home:0,End:1}[event.key];
-    if(next===undefined)return;
-    event.preventDefault();
-    selectTab(next,true);
-   };
-  });
-  if(registrationWindow&&routeParams.get('tab')==='family')selectTab(1);
-  function showCount(){
-   output.textContent=imported.value===''?'미반영':imported.value+'명';
-  }
-  function showEmployee(){
-   if(!detailed)return;
-   for(const [i,key] of ['code','name','number'].entries()){
-    const value=quiz.registrationAnswer(question.fields[i],fields[i].value)||'—';
-    form.querySelectorAll('[data-klab-self-'+key+']').forEach(el=>{el.textContent=value});
-   }
-   selfNationality.value=fields[5].value;
-  }
-  function ageAtYearEnd(index){
-   const date=quiz.registrationBirthDate(fields[index].value);
-   const age=year-Number(date.slice(0,4));
-   return date&&age>=0?age:null;
-  }
-  function showFamilyAges(){
-   for(const cell of form.querySelectorAll('[data-klab-age]')){
-    cell.textContent=ageAtYearEnd(Number(cell.dataset.klabAge))??'—';
-   }
-  }
-  const ownIndex=Object.fromEntries(question.fields.map(({key},i)=>[key,i]));
-  function refreshFamilyAvailability(){
-   if(!detailed)return;
-   const update=(index,locked,negative)=>{
-    const field=fields[index];
-    field.disabled=locked;
-    field.closest('td').classList.toggle('klab-unavailable',locked);
-    if(locked)unavailable.set(field,negative);
-    else unavailable.delete(field);
-   };
-   const employeeAge=ageAtYearEnd(2);
-   const employeeNumber=quiz.registrationAnswer(question.fields[2],fields[2].value);
-   const spouseEntered=rows.some(({start})=>fields[start].value==='spouse');
-   update(ownIndex['women-deduction'],employeeAge!==null&&/^[13]$/.test(employeeNumber[7]),'no');
-   update(ownIndex['single-parent'],spouseEntered,'no');
-   update(ownIndex['self-senior'],employeeAge!==null&&employeeAge<70,'no');
-   update(ownIndex['self-child-credit'],true,'no');
-   for(const {start} of rows){
-    const relation=fields[start].value;
-    const child=relation==='child',foster=relation==='foster';
-    const age=ageAtYearEnd(start+2),hasAge=age!==null;
-    const excluded=['0','7'].includes(fields[start+3].value);
-    const disability=fields[start+5].value;
-    const unrelatedToChildCredit=Boolean(relation&&!child&&!foster);
-    // 2017 births follow the permanent minimum instead of the 2026–2029 transition.
-    const childTaxMinAge=year<2026?8:year-age===2017?13:Math.min(13,year-2017);
-    update(start+4,excluded||(hasAge&&age<70),'no');
-    update(start+5,excluded,'0');
-    update(start+6,excluded||Boolean(relation&&!child),'none');
-    update(start+7,excluded||unrelatedToChildCredit||
-     (hasAge&&(age<childTaxMinAge||(age>20&&disability==='0'))),'no');
-    update(start+10,excluded||unrelatedToChildCredit||(hasAge&&(age<8||age>20)),'0');
-   }
-  }
-  const totalGroups={
-   basic:field=>field.key==='self-basic'||field.key.endsWith(':deduction'),
-   senior:field=>field.criterion==='senior-deduction',
-   disability:field=>field.criterion==='disability-deduction',
-   children:field=>field.criterion==='child-tax-credit'
-  };
-  function showDeductionTotals(){
-   for(const total of form.querySelectorAll('[data-klab-total]')){
-    const includes=totalGroups[total.dataset.klabTotal];
-    total.textContent=question.fields.filter((field,i)=>includes(field)&&!unavailable.has(fields[i])&&/^(yes|[1-6])$/.test(fields[i].value)).length+'명';
-   }
-  }
-  load.onclick=()=>{
-   imported.value=String(quiz.childcareCount(question.registration,values()));
-   showCount();
-   imported.dispatchEvent(new Event('change',{bubbles:true}));
-  };
-  const invalidateImport=event=>{
-   if(fields.slice(0,3).includes(event.target)||event.target===fields[5])showEmployee();
-   if(event.target.matches('input[maxlength="14"],select[name^="answer-"]')){
-    if(event.target.matches('input'))showFamilyAges();
-    refreshFamilyAvailability();
-    showDeductionTotals();
-    showCompactChoices();
-   }
-   if(!event.target.hasAttribute('data-childcare-source'))return;
-   imported.value='';
-   showCount();
-  };
-  form.addEventListener('input',invalidateImport);
-  form.addEventListener('change',invalidateImport);
-  refreshFamilyAvailability();
-  showCompactChoices();
-  return {
-   values,draftValues,restore(){showCount();showEmployee();showFamilyAges();refreshFamilyAvailability();showDeductionTotals();showCompactChoices()},
-   showResult(results){
-    fields.forEach((field,i)=>{
-     field.disabled=true;
-     if(!results[i].correct)field.setAttribute('aria-invalid','true');
-    });
-    load.disabled=true;
-    if(selfNationality){
-     selfNationality.disabled=true;
-     if(!results[5].correct)selfNationality.setAttribute('aria-invalid','true');
-    }
-    output.classList.toggle('klab-count-wrong',!results.at(-1).correct);
-    const missed=results.filter(result=>!result.correct),feedback=form.querySelector('.klab-field-results');
-    feedback.innerHTML=missed.length?`<ul>${missed.map(result=>`<li><strong>${esc(result.label)}</strong> · 입력 ${esc(result.value)} · 정답 ${esc(result.expected)}</li>`).join('')}</ul>`:'';
-    const firstWrong=results.findIndex(result=>!result.correct);
-    selectTab(firstWrong===-1||firstWrong>=question.registration.basicCount?1:0);
-    return results.length-missed.length;
-   }
-  };
- }
  function withholdingQuiz(course){
   const params=new URLSearchParams(location.search),income=course==='income';
-  const registration=registrationSample,employee=employeeSample||registration;
+  const employee=employeeSample;
   const family=employee&&params.get('sample')==='employee-family';
   const dueMode=params.get('review')==='due',Q=SemuonQuizReview;
   const countKey='semuon-withholding-quiz-preview-count';
@@ -845,22 +578,12 @@
    const url=new URL(location.href);url.searchParams.set('variant',familySeed);history.replaceState(null,'',url);
   }
   const all=quiz.questions(course);
-  const savedRegistration=registration&&all.find(q=>q.registration&&q.id===params.get('question'));
-  const bank=all.filter(q=>employee?q.sample===quizSample&&(!registration||dueMode||(savedRegistration?q===savedRegistration:q.registration?.detailed)):!q.registration)
+  const bank=all.filter(q=>!q.registration&&(!employee||q.sample===quizSample))
    .map(q=>q.family&&family?quiz.employeeFamily(familySeed,q.scenario):q),attempts=new Map();
   const today=()=>SemuonProgress.day(Date.now());
   const quizState=()=>Q.analyze(storedSnapshot().quizReviewEvents);
-  const resumeCourse=registration?(savedRegistration&&!savedRegistration.registration.detailed?'employee-klab':'employee-klab-details'):course;
-  const session=globalThis.SemuonResume?.readQuiz(resumeCourse);
-  function studyURL(url){
-   const copy=new URL(url);
-   if(registration){
-    copy.searchParams.delete('view');
-    copy.searchParams.delete('tab');
-   }
-   return copy.href;
-  }
-  const restoreQuiz=session?.url===studyURL(location.href)?session:null;
+  const session=globalThis.SemuonResume?.readQuiz(course);
+  const restoreQuiz=session?.url===location.href?session:null;
   const drafts=new Map();
   let initialQuiz=true,flushQuizMemo=()=>true;
   for(const q of bank){
@@ -909,15 +632,12 @@
   }catch(_){}
   const initialLevel=employee?quiz.levels[0]:quiz.levels.find(level=>level.id===params.get('level'))||
    quiz.levels.find(level=>level.id===preferredLevel)||quiz.levels[0];
-  const back=registration?employeePath:income?'pages/concepts.html?subject=income':'pages/forms.html?practice=withholding';
-  const desktopInk=!registration&&!matchMedia('(max-width:760px), (pointer:coarse)').matches;
-  const title=registration?'K랩 · 사원 등록':employee?'사원 등록':income?'소득세법 핵심 퀴즈':'원천징수 핵심 퀴즈';
+  const back=income?'pages/concepts.html?subject=income':'pages/forms.html?practice=withholding';
+  const desktopInk=!matchMedia('(max-width:760px), (pointer:coarse)').matches;
+  const title=employee?'사원 등록':income?'소득세법 핵심 퀴즈':'원천징수 핵심 퀴즈';
   document.title=title+' · 전산세무 2급';
-  if(registrationWindow)document.body.classList.add('klab-window');
-  const windowLink=registration?(registrationWindow?`<a class="btn secondary" id="klab-window-return" href="${esc(studyURL(location.href))}">학습센터 화면</a>`:
-   '<a class="btn secondary" id="klab-open-window" target="_blank" rel="noopener">새 창에서 열기</a>'):'';
-  content.innerHTML=head(title,'',`<div class="row quiz-heading-actions">${windowLink}${dueMode?`<a class="btn secondary" href="${registration?href(registrationPath):quizPage(course)}">${registration?'사원 등록 연습':'전체 퀴즈'}</a>`:''}<a class="btn secondary" href="${href(back)}">${registration?'사원 등록 퀴즈':income?'소득세법 개념':'원천징수 실무'}</a></div>`)+`
-   <div class="quiz-workspace ${desktopInk?'quiz-ink-layout':''}${registration?' klab-workspace':''}">
+  content.innerHTML=head(title,'',`<div class="row quiz-heading-actions">${dueMode?`<a class="btn secondary" href="${quizPage(course)}">전체 퀴즈</a>`:''}<a class="btn secondary" href="${href(back)}">${income?'소득세법 개념':'원천징수 실무'}</a></div>`)+`
+   <div class="quiz-workspace ${desktopInk?'quiz-ink-layout':''}">
    <div class="withholding-quiz">
     ${dueMode?'<p class="quiz-due-heading"><strong>오늘 복습</strong></p>':''}
     <section class="card withholding-quiz-settings row" aria-label="퀴즈 조건"${dueMode||employee?' hidden':''}>
@@ -977,25 +697,6 @@
   const count=$('#withholding-quiz-count'),card=$('#withholding-quiz-card');
   const unit=$('#withholding-quiz-unit'),detail=$('#withholding-quiz-detail'),level=$('#withholding-quiz-level');
   const total=$('.withholding-quiz-total');
-  const openWindow=$('#klab-open-window'),returnWindow=$('#klab-window-return');
-  if(openWindow){
-   const savedDraft=()=>JSON.stringify(globalThis.SemuonResume?.readQuiz(resumeCourse));
-   let carried;
-   openWindow.onclick=event=>{
-    if(!flushQuizMemo()){event.preventDefault();return}
-    const url=new URL(openWindow.href);
-    if($('#klab-family-tab')?.getAttribute('aria-selected')==='true')url.searchParams.set('tab','family');
-    else url.searchParams.delete('tab');
-    openWindow.href=url.href;
-    carried=savedDraft();
-    if(event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
-    const opened=window.open(openWindow.href,'_blank','popup,width=1420,height=880');
-    if(opened){opened.opener=null;event.preventDefault();opened.focus()}
-   };
-   window.addEventListener('focus',()=>{
-    if(carried!==undefined&&(savedDraft()!==carried||!store.isCurrent()))location.reload();
-   });
-  }
   function setOptions(select,values,label,selected){
    select.replaceChildren(new Option(label,''),...[...new Set(values)].map(value=>new Option(value,value)));
    if([...select.options].some(option=>option.value===selected))select.value=selected;
@@ -1046,14 +747,8 @@
     if(value)url.searchParams.set(key,value);else url.searchParams.delete(key);
    }
    history.replaceState(null,'',url);
-   if(openWindow){
-    const detached=new URL(url);
-    detached.searchParams.set('view','window');
-    openWindow.href=detached.href;
-   }
-   if(returnWindow)returnWindow.href=studyURL(url);
-   globalThis.SemuonResume?.saveQuiz(resumeCourse,{
-    url:studyURL(url),day:today(),ids:questions.map(q=>q.id),current:questions[position]?.id,
+   globalThis.SemuonResume?.saveQuiz(course,{
+    url:url.href,day:today(),ids:questions.map(q=>q.id),current:questions[position]?.id,
     drafts:Object.fromEntries([...drafts].map(([q,values])=>[q.id,values])),
     attempts:Object.fromEntries([...attempts].map(([q,attempt])=>[q.id,{...attempt,signature:C.stable(q.answers)}]))
    });
@@ -1077,7 +772,6 @@
   };
 
   function answerFields(question){
-   if(question.registration)return registrationFieldsHTML(question);
    if(question.family){
     const control=i=>`<select name="answer-${i}" required aria-label="${esc(question.fields[i].label)}">${question.fields[i].options.map(([value,label])=>`<option value="${esc(value)}">${esc(label)}</option>`).join('')}</select>`;
     return `<section class="employee-source" aria-labelledby="employee-source-title"><h3 id="employee-source-title">자료 1 · 사원 정보</h3><dl class="employee-meta">${question.family.employee.map(([label,value])=>`<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join('')}</dl></section>
@@ -1109,7 +803,7 @@
    const difficulty=quiz.levels.find(option=>option.id===question.level);
    const book=quiz.books[question.book];
    const {bookPage,pdfPage}=question.reference||{bookPage:126,pdfPage:143};
-   const referenceLabel=registration?'':`${book.label} ${bookPage}쪽 (PDF ${pdfPage}쪽)`;
+   const referenceLabel=`${book.label} ${bookPage}쪽 (PDF ${pdfPage}쪽)`;
    const localPdf=location.protocol==='file:'&&!rootURL.pathname.includes('/github-publish/site/');
    const reference=localPdf&&referenceLabel
     ?`<a href="${esc(href(book.file+'#page='+pdfPage))}" target="_blank" rel="noopener">${referenceLabel}</a>`
@@ -1124,25 +818,13 @@
        ${answerFields(question)}
       </fieldset>
       <div class="row">
-       ${registration?`<button type="button" class="btn secondary" data-klab-self="pass">✓ 알고 있어요 · 통과</button>
-        <button type="button" class="btn secondary" data-klab-self="retry">↻ 틀렸어요 · 다시 연습</button>
-        <button type="button" class="btn secondary" id="klab-confused">헷갈려요</button>`:''}
-       <button type="submit" class="btn">${registration?'채점하기':'정답 확인'}</button>
-       <button type="button" class="btn secondary" id="withholding-quiz-reset"${registration?'':' hidden'}>${registration?'초기화':'다시 풀기'}</button>
-       ${registration?'<span id="klab-attempt-count" class="help" role="status"></span>':''}
+       <button type="submit" class="btn">정답 확인</button>
+       <button type="button" class="btn secondary" id="withholding-quiz-reset" hidden>다시 풀기</button>
       </div>
-      ${registration?'<p id="klab-self-status" class="help" role="status"></p>':''}
       <p id="withholding-quiz-result" class="feedback" role="status" tabindex="-1" hidden></p>
-      ${registration?`<details class="klab-answer-preview">
-       <summary>정답 · 해설 보기</summary>
-       <p data-klab-text>${esc(question.explanation)}</p>
-       <div class="table-scroll"><table><thead><tr><th scope="col">항목</th><th scope="col">정답</th></tr></thead><tbody>
-        ${quiz.fieldResults(question,question.answers).map(field=>`<tr><th scope="row" data-klab-text>${esc(field.label)}</th><td data-klab-text>${esc(field.expected)}</td></tr>`).join('')}
-       </tbody></table></div></details>`:''}
       <div id="withholding-quiz-explanation" hidden>
        ${question.family?'':`<p><strong>정답</strong> ${esc(question.solution)}</p>`}
        <p>${esc(question.explanation)}</p>
-       ${registration?'<div class="klab-field-results"></div>':''}
        <p class="help">${reference}${question.articles
         ?(reference?' · ':'')+question.articles.map(n=>`<a href="${esc(lawLinks[n][1])}" target="_blank" rel="noopener">${esc(lawLinks[n][0])}</a>`).join(' · ')
         :''}</p>
@@ -1166,7 +848,7 @@
      '.withholding-quiz-options label > span','.withholding-quiz-fields label > span:first-child',
      '.employee-source h3','.employee-family-heading h3','.employee-meta dt','.employee-meta dd',
      '.employee-family-table thead th','.employee-family-table tbody tr > :nth-child(-n+4)',
-     '#withholding-quiz-explanation p','.klab-field-results li','[data-klab-text]'
+     '#withholding-quiz-explanation p'
     ].join(',')).forEach(el=>el.setAttribute('data-mark-text',''));
     card.querySelectorAll('.employee-feedback summary,.employee-feedback details p').forEach(el=>el.setAttribute('data-mark-text','feedback'));
     markup.attach(card,{shortcuts:()=>C.markupShortcuts(snapshot().settings),onUndo:recordScreenUndo});
@@ -1174,7 +856,6 @@
    attachQuizMarkup();
    const form=$('#withholding-quiz-form'),grade=form.querySelector('[type=submit]');
    const options=form.querySelector('fieldset'),reset=$('#withholding-quiz-reset');
-   const registrationUI=registration?bindRegistration(form,question):null;
    const quizReport={course,title:title+" · "+question.topic,prompt:question.prompt,
     conditions:[quiz.caseText(question),question.choices?.map(([,label],i)=>(i+1)+". "+label).join("\n")||question.fields.map(field=>field.label+(field.options?" · "+field.options.filter(([value])=>value).map(([,label])=>label).join(" / "):"")).join("\n")].filter(Boolean).join("\n"),
     answer:[question.family?question.family.rows.map(row=>row.label+': '+(row.eligible==='yes'?'공제 가능':'공제 불가')+' · '+row.explanation).join('\n'):question.solution,question.explanation,referenceLabel].filter(Boolean).join("\n")};
@@ -1199,29 +880,6 @@
    memoInput.oninput=()=>{memoForm.dataset.dirty='true';memoStatus.textContent='작성 중'};
    memoInput.onchange=memoInput.onblur=()=>flushQuizMemo();
    memoForm.onsubmit=event=>{event.preventDefault();flushQuizMemo()};
-   function showRegistrationCounts(){
-    if(!registrationUI)return;
-    const counted=quizState().get(question.id);
-    $('#klab-attempt-count').textContent='채점 '+(counted?.attempts||0)+'회 · 틀림 '+(counted?.wrong||0)+'회';
-    $('#klab-self-status').textContent=counted?.selfDay===today()?
-     (counted.self.correct?'직접 통과로 기록했습니다.':'다시 연습할 문제로 기록했습니다.'):'';
-   }
-   showRegistrationCounts();
-   if(registrationUI){
-    card.querySelectorAll('[data-klab-self]').forEach(button=>button.onclick=()=>act(()=>{
-     if(problemReportsSyncing){toast('동기화가 끝난 뒤 다시 눌러 주세요.');return}
-     store.update(state=>(state.quizReviewEvents||(state.quizReviewEvents=[])).push({
-      id:crypto.randomUUID(),kind:'self',course,questionId:question.id,correct:button.dataset.klabSelf==='pass',at:new Date().toISOString()
-     }));
-     showRegistrationCounts();
-     if(dueMode)selectQuestions();
-    }));
-    $('#klab-confused').onclick=()=>{
-     memoForm.hidden=false;
-     memoInput.focus();
-    };
-   }
-
    function showRatings(attempt){
     const state=quizState().get(question.id),date=today();
     if(!state){ratingBox.hidden=true;return}
@@ -1248,7 +906,7 @@
    function showResult(attempt){
     const {correct,missed}=attempt;
     grade.disabled=true;
-    if(!registrationUI)options.disabled=true;
+    options.disabled=true;
     reset.hidden=result.hidden=explanation.hidden=false;
     memoForm.hidden=false;
     const special=quiz.adultDisabledChildren(question);
@@ -1280,13 +938,7 @@
      });
      result.textContent=complete===question.family.rows.length?complete+'명 모두 정확합니다.':question.family.rows.length+'명 중 '+complete+'명 정확 · '+(question.family.rows.length-complete)+'명 재확인';
     }
-    if(registrationUI){
-     const results=quiz.fieldResults(question,attempt.values),matched=registrationUI.showResult(results);
-     const importMissed=!results.at(-1).correct&&attempt.values.at(-1)==='';
-     result.textContent=matched+'/'+results.length+'항목 정확'+(importMissed?' · 부양가족 불러오기가 누락되었습니다.':'');
-    }
     showRatings(attempt);
-    showRegistrationCounts();
     attachQuizMarkup();
     globalThis.SemuonMarkup?.retire(markId);
    }
@@ -1295,23 +947,20 @@
      const field=form.elements.namedItem('answer-'+i);
      field.value=value;
     });
-    registrationUI?.restore();
     showResult(attempt);
    }else if(drafts.has(question)){
     drafts.get(question).forEach((value,i)=>{
      const field=form.elements.namedItem('answer-'+i);
      if(field)field.value=value;
     });
-    registrationUI?.restore();
    }
    const answerValues=()=>{
-    if(registrationUI)return registrationUI.values();
     const data=new FormData(form);
     return question.answers.map((_,i)=>String(data.get('answer-'+i)??''));
    };
    const saveQuizInputs=()=>{
     if(grade.disabled)return;
-    drafts.set(question,registrationUI?registrationUI.draftValues():answerValues());
+    drafts.set(question,answerValues());
     rememberQuiz();
    };
    form.addEventListener('input',saveQuizInputs);
@@ -1323,7 +972,7 @@
     if(problemReportsSyncing){toast('동기화가 끝난 뒤 다시 눌러 주세요.');return}
     const values=answerValues();
     const fieldResults=quiz.fieldResults(question,values);
-    const matches=registrationUI?fieldResults.map(field=>field.correct):question.answers.map((expected,i)=>typeof expected==='number'
+    const matches=question.answers.map((expected,i)=>typeof expected==='number'
      ?Number(values[i].replaceAll(',',''))===expected
      :values[i]===expected);
     const answer={
@@ -1400,19 +1049,17 @@
   content.innerHTML=head('오늘 복습','핵심 개념을 확인한 뒤 분야와 세부 유형을 고르게 복습합니다.')+statsCards()+`<section class="card rv-unit-section"><div class="row spread"><h2>단원 복습 · 무엇을 볼까요?</h2><a class="btn secondary" href="${href('pages/learning-map.html')}">학습 지도 →</a></div><div id="rv-unit-plans"></div></section>${external.length?`<section class="card"><h2>교재·외부 실습 재확인</h2><p class="help">사용자가 기록한 어려움입니다. 실제 채점 점수와 별도로 확인하세요.</p>${external.slice(0,4).map(e=>`<p><a href="${href('pages/journal.html?date='+e.date+'&entry='+encodeURIComponent(e.entryId))}">${esc([...SemuonCurriculum.units,...SemuonCurriculum.practiceUnits].find(u=>u.id===e.unitId)?.title||'학습 기록')}${e.focus?' · '+esc(e.focus):''}</a> · ${esc(C.STUDY_RESULTS[e.outcome])}</p>`).join('')}</section>`:''}<div class="toolbar rv-filter-toolbar"><button class="btn" id="combo-start" type="button" title="세 분야 3문제씩 바로 복습" aria-label="세 분야 3문제씩 바로 복습">3문제씩 복습</button><label class="field"><span>분야</span><select id="review-subject"><option value="">세 분야 골고루</option>${V.fields.map(([id,name])=>`<option value="${id}">${name}</option>`).join('')}<option value="all">모든 영역 골고루</option></select></label><label class="field"><span>하루 목표</span><select id="review-limit">${[6,9,12].map(n=>`<option value="${n}" ${settings.reviewLimit===n?'selected':''}>${n}유형</option>`).join('')}</select></label><label class="field"><span>방식</span><select id="review-mode"><option value="balanced">오늘 복습</option><option value="focus">집중훈련 · 직접 선택</option></select></label><label class="field" id="review-type-label" hidden><span>집중할 유형</span><select id="review-type"><option value="">최근 오답 유형</option></select></label><label class="field rv-date-field"><span>추천 날짜</span><span class="rv-date-controls"><button type="button" class="btn secondary" data-review-day="-1" aria-label="이전 날짜">‹</button><input id="review-date" type="date" value="${viewDate}" aria-label="추천 날짜"><button type="button" class="btn secondary" data-review-day="1" aria-label="다음 날짜">›</button><button type="button" class="btn secondary" id="review-today">오늘</button></span></label></div><p id="review-date-notice" class="rv-preview-notice" hidden></p><div class="rv-review-layout"><section aria-label="추천 복습 문제"><div id="review-list"></div></section></div>`;
 
   $('.rv-unit-section').insertAdjacentHTML('beforebegin','<section class="card quiz-due-card"><h2>핵심 퀴즈 복습</h2><div class="row" id="quiz-due-courses"></div></section>');
-  const quizBanks=Object.entries(SemuonQuizReview.courses).map(([course,label])=>{
-   const all=SemuonTaxQuiz.questions(course),standard={label,bank:all.filter(q=>!q.registration),url:quizPage(course,true)};
-   return course==='withholding'?[standard,{label:'K랩 · 사원 등록',bank:all.filter(q=>q.registration),url:href(registrationPath+'&review=due'),onlyDue:true}]:[standard];
-  }).flat();
+  const quizBanks=Object.entries(SemuonQuizReview.courses).map(([course,label])=>({
+   label,bank:SemuonTaxQuiz.questions(course).filter(q=>!q.registration),url:quizPage(course,true)
+  }));
   {const h1=$('.page-head h1'),row=document.createElement('div');row.className='title-row';h1.before(row);row.append(h1,$('#combo-start'))}
   if([...$('#review-subject').options].some(o=>o.value===params.get('field')))$('#review-subject').value=params.get('field');
   $('#combo-start').onclick=()=>act(startCombo);
   function render(){
    const future=viewDate>today,now=viewDate===today?Date.now():Date.parse(viewDate+'T23:59:59+09:00'),gs=V.analyze(snapshot(),{now}),field=$('#review-subject').value,mode=$('#review-mode').value,limit=Number($('#review-limit').value),scope=gs.filter(g=>V.matchesField(g,field)),selected=$('#review-type').value;
    const cards=SemuonQuizReview.analyze(storedSnapshot().quizReviewEvents,now);
-   $('#quiz-due-courses').innerHTML=quizBanks.map(({label,bank,url,onlyDue})=>{
+   $('#quiz-due-courses').innerHTML=quizBanks.map(({label,bank,url})=>{
     const n=SemuonQuizReview.due(bank,cards,viewDate).length;
-    if(onlyDue&&!n)return '';
     return n&&!future?`<a class="btn secondary" href="${url}">${label} · ${n}문제</a>`:
      `<span class="pill">${label} · ${n}문제</span>`;
    }).join('');
