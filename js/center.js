@@ -641,11 +641,11 @@
    <div class="withholding-quiz">
     ${dueMode?'<p class="quiz-due-heading"><strong>오늘 복습</strong></p>':''}
     <section class="card withholding-quiz-settings row" aria-label="퀴즈 조건"${dueMode||employee?' hidden':''}>
-     <label><span id="quiz-unit-label">단원</span><select id="withholding-quiz-unit" aria-labelledby="quiz-unit-label"></select></label>
-     <label><span id="quiz-detail-label">세부 주제</span><select id="withholding-quiz-detail" aria-labelledby="quiz-detail-label"></select></label>
+     <label><span id="quiz-unit-label">단원</span><select id="withholding-quiz-unit" aria-labelledby="quiz-unit-label"></select><span class="quiz-filter-value" aria-hidden="true"></span></label>
+     <label><span id="quiz-detail-label">세부 주제</span><select id="withholding-quiz-detail" aria-labelledby="quiz-detail-label"></select><span class="quiz-filter-value" aria-hidden="true"></span></label>
      <label><span id="quiz-level-label">난이도</span><select id="withholding-quiz-level" aria-labelledby="quiz-level-label">${quiz.levels.map(level=>
-      `<option value="${level.id}"${level===initialLevel?' selected':''}>${esc(level.option)}</option>`).join('')}</select></label>
-     <label><span id="quiz-count-label">풀 문제 수</span><select id="withholding-quiz-count" aria-labelledby="quiz-count-label">${allowed.map(n=>`<option value="${n}"${daily===n?' selected':''}>${n==='all'?'전체':n+'문제'}</option>`).join('')}</select></label>
+      `<option value="${level.id}"${level===initialLevel?' selected':''}>${esc(level.option)}</option>`).join('')}</select><span class="quiz-filter-value" aria-hidden="true"></span></label>
+     <label><span id="quiz-count-label">풀 문제 수</span><select id="withholding-quiz-count" aria-labelledby="quiz-count-label">${allowed.map(n=>`<option value="${n}"${daily===n?' selected':''}>${n==='all'?'전체':n+'문제'}</option>`).join('')}</select><span class="quiz-filter-value" aria-hidden="true"></span></label>
      <span class="help withholding-quiz-total" role="status"></span>
     </section>
     <div id="quiz-ink-question" class="quiz-ink-over-question">
@@ -701,8 +701,14 @@
    select.replaceChildren(new Option(label,''),...[...new Set(values)].map(value=>new Option(value,value)));
    if([...select.options].some(option=>option.value===selected))select.value=selected;
   }
-  function selectQuestions(){
+  function selectQuestions({afterQuestion}={}){
    if(!flushQuizMemo())return;
+   if(afterQuestion)detail.value='';
+   const compactLabels={'전체 단원':'단원','전체 주제':'주제','수당·공제 등록':'수당·공제'};
+   for(const select of [unit,detail,level,count]){
+    const label=select.selectedOptions[0]?.label||'';
+    select.nextElementSibling.textContent=select===level?label.split(' · ')[0]:compactLabels[label]||label;
+   }
    const matching=bank.filter(question=>question.level===level.value&&quiz.inUnit(question,unit.value)&&
     (!detail.value||question.detail===detail.value));
    questions=dueMode?Q.due(bank,quizState(),today()):family||count.value==='all'?matching:quiz.selectQuestions(matching,Number(count.value),level.value);
@@ -723,6 +729,9 @@
     if(index>=0)position=index;
    }
    initialQuiz=false;
+   if(afterQuestion&&questions.length>1){
+    position=(questions.indexOf(afterQuestion)+1)%questions.length;
+   }
    rememberQuiz();
    total.textContent=questions.length===matching.length?`${matching.length}문제`:`${matching.length}문제 중 ${questions.length}문제`;
    if(!questions.length){
@@ -734,7 +743,7 @@
     resume?.ready();
     return;
    }
-   renderQuestion();
+   renderQuestion(Boolean(afterQuestion));
   }
   function updateTopics(selected){
    setOptions(detail,bank.filter(question=>quiz.inUnit(question,unit.value)).map(question=>question.detail),'전체 주제',selected);
@@ -756,7 +765,7 @@
   }
   setOptions(unit,quiz.units[course],'전체 단원',employee?'사원등록':params.get('unit'));
   unit.onchange=()=>updateTopics(detail.value);
-  detail.onchange=selectQuestions;
+  detail.onchange=()=>selectQuestions();
   level.onchange=()=>{
    try{localStorage.setItem(levelKey,level.value)}catch(_){}
    if(params.has('level')){
@@ -795,6 +804,8 @@
   }
   function renderQuestion(focus=false){
    const question=questions[position],attempt=attempts.get(question);
+   const canExpand=!dueMode&&!employee&&questions.length===1&&detail.value&&bank.some(candidate=>
+    candidate.level===level.value&&quiz.inUnit(candidate,unit.value)&&candidate.detail!==detail.value);
    const markId=question.variant===undefined?question.id:question.id+'-v'+question.variant;
    const layout=card.closest('.quiz-workspace');
    layout.classList.toggle('employee-family-layout',Boolean(question.family));
@@ -836,10 +847,11 @@
       <span class="help" role="status"></span>
      </form>
      <section class="quiz-review-rating" aria-label="다음 복습 평가" hidden></section>
-     ${questions.length>1?`<nav class="row withholding-quiz-pagination" aria-label="퀴즈 문제 이동">
+     <nav class="row withholding-quiz-pagination" aria-label="퀴즈 문제 이동">
+      ${canExpand?'<button type="button" class="btn secondary" id="quiz-next-topic" aria-label="전체 주제에서 이어 풀기">다른 주제</button>':''}
       <button type="button" class="btn secondary" data-quiz-step="-1"${position===0?' disabled':''}>이전 문제</button>
       <button type="button" class="btn secondary" data-quiz-step="1"${position===questions.length-1?' disabled':''}>다음 문제</button>
-     </nav>`:''}</div>`;
+     </nav></div>`;
    function attachQuizMarkup(){
     const markup=globalThis.SemuonMarkup;
     if(!markup)return;
@@ -1007,6 +1019,8 @@
     rememberQuiz();
     renderQuestion(true);
    });
+   const nextTopic=card.querySelector('#quiz-next-topic');
+   if(nextTopic)nextTopic.onclick=()=>selectQuestions({afterQuestion:question});
    if(focus)$('#withholding-question').focus();
    resume?.ready();
   }
