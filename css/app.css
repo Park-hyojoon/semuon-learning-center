@@ -386,8 +386,11 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
  display:grid;place-items:center;width:34px;height:34px;padding:0;
  color:var(--primary);background:var(--surface);border:1px solid transparent;border-radius:7px
 }
-.quiz-ink-tools>button:hover:not(:disabled),.quiz-ink-tools>button[aria-pressed=true],
+.quiz-ink-tools>button[aria-pressed=true],
 .quiz-ink-tools>button[aria-expanded=true]{border-color:var(--line);background:var(--soft)}
+@media(hover:hover) and (pointer:fine){
+ .quiz-ink-tools>button:hover:not(:disabled){border-color:var(--line);background:var(--soft)}
+}
 .quiz-ink-width{
  position:absolute;z-index:20;top:calc(100% + 7px);right:0;width:min(240px,80vw);
  padding:9px 12px;background:var(--surface);border:1px solid var(--line);
