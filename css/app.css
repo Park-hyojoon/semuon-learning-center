@@ -450,14 +450,14 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
 @media(max-width:760px),(pointer:coarse){
  .withholding-quiz-settings:not([hidden]){
   display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.28fr) minmax(0,.73fr) minmax(0,.87fr);
-  gap:4px;padding:6px
+  gap:4px;padding:3px 6px
  }
  .withholding-quiz-settings label{position:relative;display:block;min-width:0}
  .withholding-quiz-settings label>span:first-child,.withholding-quiz-total{
   position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)
  }
  .withholding-quiz-settings select{
-  display:block;width:100%;min-height:44px;appearance:none;color:transparent;padding:0
+  display:block;width:100%;min-height:32px;appearance:none;color:transparent;padding:0
  }
  .withholding-quiz-settings option{color:var(--ink);background:var(--surface)}
  .withholding-quiz-settings label::after{
@@ -466,6 +466,7 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
  }
  .quiz-filter-value{
   display:block;position:absolute;inset-inline:6px 15px;top:50%;transform:translateY(-50%);
+  font-size:max(12px,calc(var(--font-ui)*.8));line-height:1.2;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none
  }
 }
@@ -485,6 +486,7 @@ html[data-design-theme=night] .semuon .question button:not(.notebook-pass):not(.
 }
 .withholding-quiz-fields .field{margin:0;font-size:var(--font-ui)}
 .withholding-quiz-fields .field>span:first-child{font-weight:700}
+.quiz-short-field-label{font-size:max(12px,.9em)}
 .withholding-quiz-fields :is(input,select){background:var(--surface);color:var(--ink)}
 .withholding-quiz-amount{display:flex;align-items:center;gap:8px;white-space:nowrap}
 .withholding-quiz-pagination{justify-content:flex-end;margin-top:16px}

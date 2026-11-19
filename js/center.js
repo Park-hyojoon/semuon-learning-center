@@ -794,11 +794,11 @@
    }
    if(question.choices)return `<div class="withholding-quiz-options">${question.choices.map(([value,label])=>
     `<label><input type="radio" name="answer-0" value="${value}" required> <span>${esc(label)}</span></label>`).join('')}</div>`;
-   return `<div class="withholding-quiz-fields">${question.fields.map(({label,options},i)=>`
-    <label class="field"><span>${esc(label)}</span>
+   return `<div class="withholding-quiz-fields">${question.fields.map(({label,shortLabel,options},i)=>`
+    <label class="field"><span${shortLabel?' class="quiz-short-field-label"':''}>${esc(shortLabel||label)}</span>
      ${options
       ?`<select name="answer-${i}" required>${options.map(([value,text])=>`<option value="${value}">${text}</option>`).join('')}</select>`
-      :`<span class="withholding-quiz-amount"><input type="text" name="answer-${i}" inputmode="numeric" autocomplete="off"
+      :`<span class="withholding-quiz-amount"><input type="text" name="answer-${i}" inputmode="numeric" autocomplete="off"${shortLabel?` aria-label="${esc(label)}"`:''}
          pattern="[0-9]+|[0-9]{1,3}(,[0-9]{3})+" maxlength="10" required aria-describedby="withholding-quiz-unit-${i}"><span id="withholding-quiz-unit-${i}">만 원</span></span>`}
     </label>`).join('')}</div>`;
   }
