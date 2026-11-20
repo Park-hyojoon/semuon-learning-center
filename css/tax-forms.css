@@ -43,6 +43,11 @@ html[data-design-theme=night] .tax-fields-compact .field input:is([type=date],[t
 .tax-fields-compact .tax-rate input{max-width:12ch}
 .tax-fields-compact .tax-save{margin:6px 0 0}
 .tax-form-question>.answer-reveal{margin:10px 0 0}
+.payroll-practice-question .problem-material-table table{min-width:0}
+.payroll-practice-question .problem-material-table :is(th,td):last-child{text-align:end}
+.payroll-practice-question .tax-answer-grid{
+ grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));padding:8px 0
+}
 @container tax-workspace (min-width:660px){
  .tax-form-workspace{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
  @media(min-height:360px){.tax-form-context{position:sticky;top:var(--tax-context-top,76px)}}

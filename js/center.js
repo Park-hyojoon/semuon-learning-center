@@ -24,6 +24,9 @@
  const quizSample=quizCourse==='withholding'?new URLSearchParams(location.search).get('sample'):'';
  const employeeSample=['employee','employee-family'].includes(quizSample);
  const employeePath='pages/quiz.html?course=withholding&sample=employee-family';
+ const payrollPracticeId='tax2-payroll-practice-01';
+ const payrollPracticePath='pages/general.html?id='+payrollPracticeId;
+ const payrollPracticeActive=page==='practical'&&new URLSearchParams(location.search).get('id')===payrollPracticeId;
  const conceptGuide=$('#concept-guide-template')?.content;
  const conceptSubjects=[['fa','재무회계'],['vat','부가가치세법'],['cost','원가회계'],['income','소득세법']];
  const conceptArticles=conceptGuide?[...conceptGuide.querySelectorAll('[data-concept-subject]')]:[];
@@ -37,10 +40,10 @@
   </details>`;
  }
  function practiceNavigation(icon,label){
-  const links=practiceMenu.map(([id,name,path])=>`<a data-sub-menu-id="${id}" href="${href(path)}" ${page===id?'class="active" aria-current="page"':''}>${name}</a>`);
+  const links=practiceMenu.map(([id,name,path])=>`<a data-sub-menu-id="${id}" href="${href(path)}" ${page===id&&!payrollPracticeActive?'class="active" aria-current="page"':''}>${name}</a>`);
   return `<details class="app-nav-group" data-menu-id="practice-learning" open>
    <summary><span aria-hidden="true">${icon}</span><span>${label}</span></summary>
-   <div class="app-subnav">${links.join('')}<a data-sub-menu-id="sub:quiz:withholding" href="${href('pages/quiz.html?course=withholding')}" ${page==='quiz'&&quizCourse==='withholding'&&!employeeSample?'class="active" aria-current="page"':''}>원천징수 핵심 퀴즈</a><a data-sub-menu-id="sub:quiz:employee" href="${href(employeePath)}" ${page==='quiz'&&employeeSample?'class="active" aria-current="page"':''}>사원 등록</a></div>
+   <div class="app-subnav">${links.join('')}<a data-sub-menu-id="sub:quiz:withholding" href="${href('pages/quiz.html?course=withholding')}" ${page==='quiz'&&quizCourse==='withholding'&&!employeeSample?'class="active" aria-current="page"':''}>원천징수 핵심 퀴즈</a><a data-sub-menu-id="sub:quiz:employee" href="${href(employeePath)}" ${page==='quiz'&&employeeSample?'class="active" aria-current="page"':''}>사원 등록</a><a data-sub-menu-id="sub:payroll-entry" href="${href(payrollPracticePath)}" ${payrollPracticeActive?'class="active" aria-current="page"':''}>급여 자료 입력</a></div>
   </details>`;
  }
  document.body.classList.add('semuon');document.body.innerHTML=`<aside class="app-sidebar"><a class="app-brand" href="${href('index.html')}"><img src="${href('assets/favicon.svg')}" alt=""><span>세무온<small>전산세무 2급 학습센터</small></span></a><button class="btn secondary mobile-menu" aria-expanded="false" aria-controls="app-nav" type="button">☰<span class="sr-only">메뉴 열기</span></button><nav id="app-nav" class="app-nav" aria-label="주 메뉴">${nav.map(([key,icon,label,path])=>key==='theory'?theoryNavigation(icon,label,path):key==='practice-learning'?practiceNavigation(icon,label):key==='settings'?`<details class="app-nav-group ${['settings','database'].includes(page)?'is-active':''}" data-menu-id="settings" open><summary><span>⚙</span><span>설정 · 백업</span></summary><div class="app-subnav"><a href="${href('pages/settings.html')}" ${page==='settings'?'class="active"':''}>설정 · 백업</a><a href="${href('pages/database.html')}" ${page==='database'?'class="active" aria-current="page"':''}>데이터베이스 현황</a></div></details>`:key==='status'?`<details class="app-nav-group ${['progress','map','journal','roadmap'].includes(page)?'is-active':''}" data-menu-id="status" open><summary><span aria-hidden="true">${icon}</span><span>${label}</span></summary><div class="app-subnav"><a href="${href('pages/learning-map.html')}" ${page==='map'?'class="active" aria-current="page"':''}>나의 학습 지도</a><a href="${href('pages/journal.html')}" ${page==='journal'?'class="active" aria-current="page"':''}>학습 기록</a></div></details>`:`<a data-menu-id="${key}" href="${href(path)}" ${key===page?'class="active" aria-current="page"':''}><span aria-hidden="true">${icon}</span><span>${label}</span></a>`).join('')}</nav></aside><main class="app-main"><header class="app-topbar"><p class="app-date">${new Intl.DateTimeFormat('ko-KR',{timeZone:'Asia/Seoul',dateStyle:'full'}).format(new Date())}</p>${SemuonFullscreen.button()}</header><div id="save-status" class="notice error" role="alert" hidden></div><div id="content"></div><footer class="app-footer">세무온 · 전산세무 2급 전용 · <a href="${href('pages/settings.html')}">백업 · 설정</a></footer></main><div class="toast" role="status" hidden></div>`;
@@ -374,7 +377,13 @@
  const isGeneral=p=>p.subject==='practical'&&SemuonCurriculum.practiceGroup(p)==='general';
  function confidenceButton(p){return `<button class="btn secondary" type="button" data-confidence-problem="${esc(p.id)}" aria-pressed="${uncertainNotes().has(p.id)}">${uncertainNotes().has(p.id)?'헷갈림 표시 해제':'헷갈려요'}</button>`}
  function gradeNotice(p,box=$('#grade-notice')){const plan=schedules().get(p.id),e=latest(p.id),general=isGeneral(p);if(!box)return;if(general&&box.id==='grade-notice'&&content.querySelector('.question .inline-notice')){box.innerHTML='';return}const uncertain=uncertainNotes().has(p.id);if(general)content.querySelectorAll('[data-confidence-problem]').forEach(b=>{if(b.dataset.confidenceProblem===p.id){b.textContent=uncertain?'헷갈림 표시 해제':'헷갈려요';b.setAttribute('aria-pressed',String(uncertain))}});box.innerHTML=(e?`<p class="feedback ${e.correct?'good':'wrong'}">${e.source==='semuon-self'?(e.correct?'직접 통과로 기록했습니다.':'다시 연습할 문제로 기록했습니다.'):e.correct?'정답입니다.':'다시 확인해 주세요.'} ${e.wrongLabels?.length?'확인할 항목: '+e.wrongLabels.map(esc).join(', ')+' · ':''}이 문제의 다음 복습일: ${plan.due} (${plan.interval}일 간격)</p>`:'')+`<div class="row review-feedback-actions">${!general&&e?confidenceButton(p):''}${uncertain?`<form class="uncertainty-form" data-uncertainty-form="${esc(p.id)}"><label>헷갈린 이유<input name="reason" maxlength="200" placeholder="예: 자본화 요건과 비용 구분" value="${esc(uncertainNotes().get(p.id).reason||'')}"></label><button type="submit" class="btn secondary">이유 저장</button></form>`:''}${!general&&e&&plan.practicedToday&&($('#show-all-problems')||$('#review-session-next'))&&!$('#show-all-problems')?.checked?'<button class="btn secondary" type="button" data-dismiss-completed>확인 후 다음 문제 →</button>':''}</div>`;}
- async function solve(p){await ensureExhibits([p]);editor?.dispose();const back=p.subject==='practical'?'general':p.subject==='voucher'?'voucher':'theory';content.innerHTML=head(p.form&&!p.voucher&&p.formEntry!=='practical'?'신고서 · 급여':C.labels[p.subject],p.type,`<a class="btn secondary" href="${href('pages/'+back+'.html')}">전체 문제 목록</a>`)+`<div class="toolbar"><a class="btn" href="${href('pages/review.html')}">오늘 복습 목록으로</a><button class="btn secondary" id="undo-grade">마지막 채점 취소</button></div><div id="entry-host" data-entry-host="${p.subject}"><div id="questions"></div></div><div id="grade-notice" role="status"></div>${sourceBox(p)}`;
+ async function solve(p){
+  await ensureExhibits([p]);editor?.dispose();
+  const payroll=p.id===payrollPracticeId;
+  const back=p.subject==='practical'?'general':p.subject==='voucher'?'voucher':'theory';
+  const title=payroll?'급여 자료 입력':p.form&&!p.voucher&&p.formEntry!=='practical'?'신고서 · 급여':C.labels[p.subject];
+  const backPath=payroll?'pages/forms.html?practice=withholding':'pages/'+back+'.html';
+  content.innerHTML=head(title,payroll?'':p.type,`<a class="btn secondary" href="${href(backPath)}">${payroll?'원천징수 기출·연습 목록':'전체 문제 목록'}</a>`)+`<div class="toolbar"><a class="btn" href="${href('pages/review.html')}">오늘 복습 목록으로</a><button class="btn secondary" id="undo-grade">마지막 채점 취소</button></div><div id="entry-host" data-entry-host="${p.subject}"><div id="questions"></div></div><div id="grade-notice" role="status"></div>${sourceBox(p)}`;
   $('#undo-grade').onclick=()=>act(()=>{const e=latest(p.id);if(!e){toast('취소할 채점이 없습니다.');return}store.cancel(e.id);toast('채점을 취소했습니다. 통계와 복습 일정에서 제외됩니다.');solve(p)});
   await mountList(p.subject,[p],$('#questions'),$('#entry-host'),{rerender:()=>solve(p),onUpdate:()=>gradeNotice(p)});gradeNotice(p);
  }
@@ -488,7 +497,7 @@
    const text=values.map(x=>x===true?'체크':x===false?'체크 안 함':typeof x==='number'?x.toLocaleString('ko-KR'):x);
    return `<p>${esc(f.label)}: <strong>${esc(text.join(' 또는 '))}</strong></p>`;
   }).join('');
-  target.innerHTML=`<article class="tax-form-question" data-problem-id="${esc(p.id)}">
+  target.innerHTML=`<article class="tax-form-question${p.id===payrollPracticeId?' payroll-practice-question':''}" data-problem-id="${esc(p.id)}">
    <span class="pill">${esc(p.type)}</span>
    <div class="tax-form-workspace">
     <div class="tax-form-context">${formConditions(p)}</div>
